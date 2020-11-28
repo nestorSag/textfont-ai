@@ -108,9 +108,12 @@ def get_dafont_fonts():
 		page_html = BeautifulSoup(raw_html,"html.parser")
 		## find number of letter pages
 		letter_pages = page_html.find(class_="noindex").find_all("a")
-		for page in letter_pages:
+		page_refs = [page["href"] for page in letter_pages]
+		# add first page
+		page_refs = ["alpha.php?lettre={l}&page=1&fpp=200".format(l=letter.lower())] + page_refs
+		for page in page_refs:
 			print("downloading page {p}".format(p=page))
-			page_url = "https://www.dafont.com/" + page["href"].replace("&amp;","")
+			page_url = "https://www.dafont.com/" + page.replace("&amp;","")
 
 			raw_html = requests.get(page_url,headers = {"user-agent": my_ua}).text
 			#print("raw_html: {x}".format(x=raw_html))
