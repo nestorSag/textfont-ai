@@ -10,10 +10,11 @@ import numpy as np
 import urllib.request
 from bs4 import BeautifulSoup
 
+from abc import ABC, abstractmethod
 #https://www.1001freefonts.com/
 #https://www.dafont.com/
-DATA_DIR = "data/fonts"
 
+DATA_DIR = "data/fonts"
 def download_url(url, save_path, chunk_size=128):
     r = requests.get(url, stream=True)
     with open(save_path, 'wb') as fd:
@@ -109,50 +110,42 @@ def get_dafont_fonts():
 		## find number of letter pages
 		letter_pages = page_html.find(class_="noindex").find_all("a")
 		page_refs = [page["href"] for page in letter_pages]
-		# add first page
-		page_refs = ["alpha.php?lettre={l}&page=1&fpp=200".format(l=letter.lower())] + page_refs
-		for page in page_refs:
-			print("downloading page {p}".format(p=page))
-			page_url = "https://www.dafont.com/" + page.replace("&amp;","")
-
-			raw_html = requests.get(page_url,headers = {"user-agent": my_ua}).text
-			#print("raw_html: {x}".format(x=raw_html))
-			page_html = BeautifulSoup(raw_html,"html.parser")
-			dl_links = page_html.findAll("a",{"class": "dl"})
-
-			#print("dl_links {d}".format(d=dl_links))
-			for link in dl_links:
-				href = link["href"]
-				# random sleep time 
-				time.sleep(np.random.uniform(size=1,low=1,high=2)[0])
-				fontname = href.split("=")[-1]
-				font_path = fonts_zipdir + "/" + str(fontname)
-				try:
-					download_url("https:" + href,font_path)
-					unzip_file(font_path,fonts_ttfdir + "/" + fontname)
-				except Exception as e:
-					print("error: {e}".format(e=e))
-		
-	for font_id in range(min_id,max_id):
-
-		fid = str(font_id)
-		print("downloading id {id}...".format(id=fid))
-		font_url = "https://www.1001freefonts.com/d/{id}/".format(id=fid)
-		font_path = fonts_zipdir + "/" + str(fid)
-
+		# get number of pages for current letter
+		n_pages_rgx = re.compile("page=([0-9]+)")
 		try:
-			download_url(font_url,font_path)
-			unzip_file(font_path,fonts_ttfdir + "/" + fid)
+			# if this happens, there is a single page
+			n_pages = max([int(n_pages_rgx.search(x).group(1)) for x in page_refs])
 		except Exception as e:
 			print("error: {e}".format(e=e))
+			n_pages = 1
+		print("There are {n} pages for character {l}".format(n=n_pages,l=letter))
 
+		for page_number in range(1,n_pages+1):
+			page = "alpha.php?lettre={l}&page={k}&fpp=200".format(l=letter.lower(),k=page_number)
+			if True: #not ((letter == "A" and page_number in list(range(1,11)) + [20]) or (letter == "B" and page_number in list(range(1,11)) + [24])):
+				print("downloading page {p}".format(p=page))
+				page_url = "https://www.dafont.com/" + page.replace("&amp;","")
+
+				raw_html = requests.get(page_url,headers = {"user-agent": my_ua}).text
+				#print("raw_html: {x}".format(x=raw_html))
+				page_html = BeautifulSoup(raw_html,"html.parser")
+				dl_links = page_html.findAll("a",{"class": "dl"})
+
+				#print("dl_links {d}".format(d=dl_links))
+				for link in dl_links:
+					href = link["href"]
+					# random sleep time 
+					time.sleep(np.random.uniform(size=1,low=1,high=2)[0])
+					fontname = href.split("=")[-1]
+					font_path = fonts_zipdir + "/" + str(fontname)
+					try:
+						download_url("https:" + href,font_path)
+						unzip_file(font_path,fonts_ttfdir + "/" + fontname)
+					except Exception as e:
+						print("error: {e}".format(e=e))
 
 if __name__=="__main__":
 
 	#get_google_fonts()
 	#get_1001free_fonts()
 	get_dafont_fonts()
-	
-
-
-
