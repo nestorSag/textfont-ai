@@ -11,6 +11,7 @@ pillow = "*"
 "beautifulsoup4" = "*"
 imageio = "*"
 matplotlib = "*"
+apache-beam = {version = "*", extras = ["gcp"]}
 
 [requires]
 python_version = "3.6"
