@@ -20,52 +20,6 @@ from apache_beam.options.value_provider import StaticValueProvider
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
-# class UserOptions(PipelineOptions):
-#   @classmethod
-#   def _add_argparse_args(cls, parser):
-#       # parser.add_value_provider_argument(
-#       #     '--path',
-#       #     type=str,
-#       #     help='path of input file')
-#       # parser.add_value_provider_argument(
-#       #     '--source',
-#       #     type=str,
-#       #     help='source name')
-#     parser.add_value_provider_argument(
-#         '--input_folder',
-#         dest='input_folder',
-#         required = True,
-#         help='Input file to process.')
-#     parser.add_value_provider_argument(
-#         '--output_folder',
-#         dest='output_folder',
-#         # CHANGE 1/6: The Google Cloud Storage path is required
-#         # for outputting the results.
-#         required = True,      
-#         help='Output file to write results to.')
-#     parser.add_value_provider_argument(
-#         '--png_size',
-#         dest='png_size',
-#         # CHANGE 1/6: The Google Cloud Storage path is required
-#         # for outputting the results.
-#         default='500',
-#         help='Dim of PNG output in which characters will be embedded. Needs to be large enough for provided font size')
-#     parser.add_value_provider_argument(
-#         '--font_size',
-#         dest='font_size',
-#         # CHANGE 1/6: The Google Cloud Storage path is required
-#         # for outputting the results.
-#         default='100',
-#         help='Font size to use when extracting PNGs from TTFs')
-#     parser.add_value_provider_argument(
-#         '--png_offset',
-#         dest='png_offset',
-#         # CHANGE 1/6: The Google Cloud Storage path is required
-#         # for outputting the results.
-#         default='128',
-#         help='Offset from top left corner of PNG when embedding the characters PNG; barroque fonts can overflow bounding PNG if offset is too small or too large.')
-
-
 def get_bounding_box(gray_img):
   nonzero = np.where(gray_img > 0)
   if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
@@ -93,7 +47,7 @@ class ImageExtractor(beam.DoFn):
       return ".otf"
 
   def process(self, gcs_file):
-    logging.info("processing {f}".format(f=gcs_file))
+    #logging.info("processing {f}".format(f=gcs_file))
     try:
       zip_ = zipfile.ZipFile(io.BytesIO(GcsIO().open(gcs_file,mode="r").read()))
     except Exception as e:
@@ -115,7 +69,7 @@ class ImageExtractor(beam.DoFn):
         logging.error("error reading TTF file: {e}".format(e=e))
         return 
       for letter in string.ascii_letters + string.digits:
-        logging.info("working on letter {l}".format(l=letter))
+        #logging.info("working on letter {l}".format(l=letter))
         try:
           im = Image.new("RGB",(self.png_size,self.png_size))
           draw = ImageDraw.Draw(im)
@@ -157,7 +111,6 @@ class DataCompressor(beam.DoFn):
     yield (key, zip_bf.getvalue())
 
 class ZipUploader(beam.DoFn):
-  #returns the byte stream of zipped images
 
   def __init__(self,output_folder):
     self.output_folder = output_folder
@@ -174,7 +127,7 @@ class ZipUploader(beam.DoFn):
       logging.error("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
 
 class BoundingBoxProcessor(beam.CombineFn):
-
+  # implementation of elementwise maximum in a 2-dimensional list
   def create_accumulator(self):
     return [0,0]
 
@@ -192,7 +145,6 @@ class BoundingBoxProcessor(beam.CombineFn):
 
 
 def run(argv=None, save_main_session=True):
-  """Main entry point; defines and runs the wordcount pipeline."""
 
   parser = argparse.ArgumentParser(description = "processes font ZIP files into individual characters' PNG files")
   parser.add_argument(
@@ -243,8 +195,7 @@ def run(argv=None, save_main_session=True):
   pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
   with beam.Pipeline(options=pipeline_options) as p:
 
-    # didn't find an easy way of processing all subfolders with beam, so these lines gather subfolder file names
-    # and create an in-memory Beam PCollection from it
+    # these lines gather subfolder file names and create an in-memory Beam PCollection from it
     input_files = GcsIO().list_prefix(user_options.input_folder)
     input_files_list = list(input_files.keys())
     #print("input_file_list: {l}".format(l=input_files_list))
