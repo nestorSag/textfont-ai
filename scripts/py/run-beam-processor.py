@@ -72,10 +72,10 @@ class ImageExtractor(beam.DoFn):
       try:
         ttf = zip_.read(file) #can be otf, but anyway
       except Exception as e:
-        print("error readint TTF file: {e}".format(e=e))
+        print("error reading TTF file: {e}".format(e=e))
         return 
       for letter in string.ascii_letters + string.digits:
-        print("working on letter {l}".format(l=letter))
+        #print("working on letter {l}".format(l=letter))
         try:
           im = Image.new("RGB",(self.png_size,self.png_size))
           draw = ImageDraw.Draw(im)
@@ -126,9 +126,12 @@ class ZipUploader(beam.DoFn):
     key, byte_stream = kvp
     output_suffix = ("" if self.output_folder[-1] == "/" else "/") + key + ".zip"
     outfile = self.output_folder + output_suffix
-    gcs_file = GcsIO().open(outfile,mode="w")
-    gcs_file.write(byte_stream)
-    gcs_file.close()
+    try:
+      gcs_file = GcsIO().open(outfile,mode="w")
+      gcs_file.write(byte_stream)
+      gcs_file.close()
+    except Exception as e:
+      print("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
 
 class BoundingBoxProcessor(beam.CombineFn):
 
