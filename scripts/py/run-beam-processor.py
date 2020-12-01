@@ -1,0 +1,230 @@
+from __future__ import absolute_import
+
+import argparse
+import logging
+from typing import Tuple
+import string
+import zipfile
+import io
+from datetime import datetime
+
+import numpy as np
+from PIL import Image, ImageFont, ImageDraw
+import imageio
+
+import apache_beam as beam
+from apache_beam.io.gcp.gcsio import GcsIO
+from apache_beam.io import ReadFromText
+from apache_beam.io import WriteToText
+from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.pipeline_options import SetupOptions
+
+from google.cloud import storage
+
+# def input_file_generator(bucket,folder):
+#   client = storage.Client()
+#   for file in client.list_blobs(bucket,folder):
+#     yield file
+
+def get_bounding_box(gray_img):
+  nonzero = np.where(gray_img > 0)
+  if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
+    return (0, 0), (0,0)
+  else:
+    dims = [(np.min(axis),np.max(axis)) for axis in nonzero]
+    return dims
+
+class ImageExtractor(beam.DoFn):
+  
+  def __init__(self, font_size = 100, png_size=500, offset=50):
+    self.font_size = font_size
+    self.png_size = png_size
+    self.offset = offset
+
+  def get_fontname(self,str,ext=".ttf"):
+    return str.split("/")[-1].lower().replace(ext,"")
+
+  def choose_ext(self,lst):
+    ttfs = len([x for x in lst if ".ttf" in x.lower()])
+    otfs = len([x for x in lst if ".otf" in x.lower()])
+    if ttfs >= otfs:
+      return ".ttf"
+    else:
+      return ".otf"
+
+  def process(self, gcs_file):
+    print("processing {f}".format(f=gcs_file))
+    try:
+      zip_ = zipfile.ZipFile(io.BytesIO(GcsIO().open(gcs_file,mode="r").read()))
+    except Exception as e:
+      print("error unzipping file: {e}".format(e=e))
+      return 
+    files_in_zip = zip_.namelist()
+    # choose whether to proces TTFs or OTFs, but not both
+    ext = self.choose_ext(files_in_zip)
+    valid = sorted([filename for filename in files_in_zip if ext in filename.lower()])
+    main_file = valid[0] #pressumably the file with the shortest name is the main font type in the ZIP
+    main_fontname = self.get_fontname(main_file)
+
+    #tag font variations for possible downstream filtering
+    types = [self.get_fontname(filename).replace(main_fontname,"") for filename in valid]
+    for file, tag in zip(valid,types):
+      try:
+        ttf = zip_.read(file) #can be otf, but anyway
+      except Exception as e:
+        print("error readint TTF file: {e}".format(e=e))
+        return 
+      for letter in string.ascii_letters + string.digits:
+        print("working on letter {l}".format(l=letter))
+        try:
+          im = Image.new("RGB",(self.png_size,self.png_size))
+          draw = ImageDraw.Draw(im)
+          font = ImageFont.truetype(io.BytesIO(ttf),self.font_size)
+          draw.text((self.offset,self.offset),letter,font=font)
+          # filename indexes letter and font type, avoids overwritting data with timestamp
+          output_filename = letter + "@" + tag + "@" + self.get_fontname(file) + str(datetime.now().time()) + ".png"
+          yield output_filename, im
+        except Exception as e:
+          print("error processing letter: {e}".format(e=e))
+          return 
+
+def crop_and_group(tuple) -> Tuple[str,Tuple[str,np.ndarray]]:
+  # prepare png
+  output_filename, im = tuple
+  bf = io.BytesIO()
+  im.save(bf,format="png")
+  # get bounding box dimension
+  gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
+  h_bound, w_bound = get_bounding_box(gray_img)
+  h = h_bound[1] - h_bound[0] + 1
+  w = w_bound[1] - w_bound[0] + 1
+  #crop and map to png
+  cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+  key = output_filename[0] #character in png
+  return (key,(output_filename,cropped))
+
+class DataCompressor(beam.DoFn):
+  #returns the byte stream of zipped images
+  def process(self,kvp) -> Tuple[str,bytes]:
+    key,value_list = kvp
+    zip_bf = io.BytesIO()
+    with zipfile.ZipFile(zip_bf,mode="w") as zp:
+      for filename, img in value_list:
+        elem_bf = io.BytesIO()
+        imageio.imwrite(elem_bf,im=img,format="png")
+        zp.writestr(filename,elem_bf.getvalue())
+
+    yield (key, zip_bf.getvalue())
+
+class ZipUploader(beam.DoFn):
+  #returns the byte stream of zipped images
+
+  def __init__(self,output_folder):
+    self.output_folder = output_folder
+
+  def process(self,kvp) -> None:
+    key, byte_stream = kvp
+    output_suffix = ("" if self.output_folder[-1] == "/" else "/") + key + ".zip"
+    outfile = self.output_folder + output_suffix
+    gcs_file = GcsIO().open(outfile,mode="w")
+    gcs_file.write(byte_stream)
+    gcs_file.close()
+
+class BoundingBoxProcessor(beam.CombineFn):
+
+  def create_accumulator(self):
+    return [0,0]
+
+  def add_input(self,accumulator,input):
+    return [max(accumulator[k],input[k]) for k in range(2)]
+
+  def merge_accumulators(self, accumulators):
+    merged = self.create_accumulator()
+    for acc in accumulators:
+      merged = self.add_input(merged,acc)
+    return merged
+
+  def extract_output(self,accumulator):
+    return str(accumulator)
+
+
+def run(argv=None, save_main_session=True):
+  """Main entry point; defines and runs the wordcount pipeline."""
+
+  parser = argparse.ArgumentParser(description = "processes font ZIP files into individual characters' PNG files")
+  parser.add_argument(
+      '--input-folder',
+      dest='input_folder',
+      required = True,
+      help='Input file to process.')
+  parser.add_argument(
+      '--output-folder',
+      dest='output_folder',
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
+      required = True,      
+      help='Output file to write results to.')
+  parser.add_argument(
+      '--png-size',
+      dest='png_size',
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
+      default='500',
+      help='Dim of PNG output in which characters will be embedded. Needs to be large enough for provided font size')
+  parser.add_argument(
+      '--font-size',
+      dest='font_size',
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
+      default='100',
+      help='Font size to use when extracting PNGs from TTFs')
+  parser.add_argument(
+      '--png-offset',
+      dest='png_offset',
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
+      default='128',
+      help='Offset from top left corner of PNG when embedding the characters PNG; barroque fonts can overflow bounding PNG if offset is too small or too large.')
+
+  proc_args, pipeline_args = parser.parse_known_args(argv)
+
+  if proc_args.input_folder[0:5] != "gs://":
+    raise Exception("Input must be a folder in GCS")
+
+  # We use the save_main_session option because one or more DoFn's in this
+  # workflow rely on global context (e.g., a module imported at module level).
+  pipeline_options = PipelineOptions(pipeline_args)
+  pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
+  with beam.Pipeline(options=pipeline_options) as p:
+
+    # didn't find an easy way of processing all subfolders with beam, so these lines gather subfolder file names
+    # and create an in-memory Beam PCollection from it
+    input_files = GcsIO().list_prefix(proc_args.input_folder)
+    input_files_list = list(input_files.keys())
+    print("input_file_list: {l}".format(l=input_files_list))
+
+    files = p | beam.Create(input_files_list)# ReadFromText(input_file_list_path)
+
+    # unzip files, extract character PNGs from TTFs, crop PNGs to minimal size
+    cropped_pngs = (files 
+    | 'getPNGs' >> beam.ParDo(ImageExtractor(
+        font_size=int(proc_args.font_size),
+        png_size=int(proc_args.png_size),
+        offset=int(proc_args.png_offset)))
+    | 'cropAndGroup' >> beam.Map(lambda x: crop_and_group(x)))
+
+    # find size of bounding box that works for entire dataset
+    global_bounding_box = (cropped_pngs
+      | 'findBoundingBox' >> beam.Map(lambda tuple: tuple[1][1].shape)
+      | 'GetGlobalBoundingBox' >> beam.CombineGlobally(BoundingBoxProcessor())
+      | 'saveBoundingBoxInfo' >> WriteToText(proc_args.output_folder + ("" if proc_args.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
+
+    # compress all PNGs for each character together and save them to GCS
+    compressed_imgs = (cropped_pngs
+      | 'groupByChar' >> beam.GroupByKey()
+      | 'zipImgs' >> beam.ParDo(DataCompressor())
+      | 'saveZip' >> beam.ParDo(ZipUploader(proc_args.output_folder)))
+
+if __name__ == '__main__':
+  logging.getLogger().setLevel(logging.INFO)
+  run()
