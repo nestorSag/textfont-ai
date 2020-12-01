@@ -16,15 +16,55 @@ import apache_beam as beam
 from apache_beam.io.gcp.gcsio import GcsIO
 from apache_beam.io import ReadFromText
 from apache_beam.io import WriteToText
+from apache_beam.options.value_provider import StaticValueProvider
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
-from google.cloud import storage
+# class UserOptions(PipelineOptions):
+#   @classmethod
+#   def _add_argparse_args(cls, parser):
+#       # parser.add_value_provider_argument(
+#       #     '--path',
+#       #     type=str,
+#       #     help='path of input file')
+#       # parser.add_value_provider_argument(
+#       #     '--source',
+#       #     type=str,
+#       #     help='source name')
+#     parser.add_value_provider_argument(
+#         '--input_folder',
+#         dest='input_folder',
+#         required = True,
+#         help='Input file to process.')
+#     parser.add_value_provider_argument(
+#         '--output_folder',
+#         dest='output_folder',
+#         # CHANGE 1/6: The Google Cloud Storage path is required
+#         # for outputting the results.
+#         required = True,      
+#         help='Output file to write results to.')
+#     parser.add_value_provider_argument(
+#         '--png_size',
+#         dest='png_size',
+#         # CHANGE 1/6: The Google Cloud Storage path is required
+#         # for outputting the results.
+#         default='500',
+#         help='Dim of PNG output in which characters will be embedded. Needs to be large enough for provided font size')
+#     parser.add_value_provider_argument(
+#         '--font_size',
+#         dest='font_size',
+#         # CHANGE 1/6: The Google Cloud Storage path is required
+#         # for outputting the results.
+#         default='100',
+#         help='Font size to use when extracting PNGs from TTFs')
+#     parser.add_value_provider_argument(
+#         '--png_offset',
+#         dest='png_offset',
+#         # CHANGE 1/6: The Google Cloud Storage path is required
+#         # for outputting the results.
+#         default='128',
+#         help='Offset from top left corner of PNG when embedding the characters PNG; barroque fonts can overflow bounding PNG if offset is too small or too large.')
 
-# def input_file_generator(bucket,folder):
-#   client = storage.Client()
-#   for file in client.list_blobs(bucket,folder):
-#     yield file
 
 def get_bounding_box(gray_img):
   nonzero = np.where(gray_img > 0)
@@ -53,11 +93,11 @@ class ImageExtractor(beam.DoFn):
       return ".otf"
 
   def process(self, gcs_file):
-    print("processing {f}".format(f=gcs_file))
+    logging.info("processing {f}".format(f=gcs_file))
     try:
       zip_ = zipfile.ZipFile(io.BytesIO(GcsIO().open(gcs_file,mode="r").read()))
     except Exception as e:
-      print("error unzipping file: {e}".format(e=e))
+      logging.error("error unzipping file: {e}".format(e=e))
       return 
     files_in_zip = zip_.namelist()
     # choose whether to proces TTFs or OTFs, but not both
@@ -72,10 +112,10 @@ class ImageExtractor(beam.DoFn):
       try:
         ttf = zip_.read(file) #can be otf, but anyway
       except Exception as e:
-        print("error reading TTF file: {e}".format(e=e))
+        logging.error("error reading TTF file: {e}".format(e=e))
         return 
       for letter in string.ascii_letters + string.digits:
-        #print("working on letter {l}".format(l=letter))
+        logging.info("working on letter {l}".format(l=letter))
         try:
           im = Image.new("RGB",(self.png_size,self.png_size))
           draw = ImageDraw.Draw(im)
@@ -85,7 +125,7 @@ class ImageExtractor(beam.DoFn):
           output_filename = letter + "@" + tag + "@" + self.get_fontname(file) + str(datetime.now().time()) + ".png"
           yield output_filename, im
         except Exception as e:
-          print("error processing letter: {e}".format(e=e))
+          logging.error("error processing letter: {e}".format(e=e))
           return 
 
 def crop_and_group(tuple) -> Tuple[str,Tuple[str,np.ndarray]]:
@@ -131,7 +171,7 @@ class ZipUploader(beam.DoFn):
       gcs_file.write(byte_stream)
       gcs_file.close()
     except Exception as e:
-      print("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
+      logging.error("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
 
 class BoundingBoxProcessor(beam.CombineFn):
 
@@ -189,44 +229,47 @@ def run(argv=None, save_main_session=True):
       default='128',
       help='Offset from top left corner of PNG when embedding the characters PNG; barroque fonts can overflow bounding PNG if offset is too small or too large.')
 
-  proc_args, pipeline_args = parser.parse_known_args(argv)
+  user_options, other = parser.parse_known_args(argv)
+  pipeline_options = PipelineOptions(other)
 
-  if proc_args.input_folder[0:5] != "gs://":
+  #pipeline_options = PipelineOptions()
+  #user_options = pipeline_options.view_as(UserOptions)
+
+  if user_options.input_folder[0:5] != "gs://":
     raise Exception("Input must be a folder in GCS")
 
   # We use the save_main_session option because one or more DoFn's in this
   # workflow rely on global context (e.g., a module imported at module level).
-  pipeline_options = PipelineOptions(pipeline_args)
   pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
   with beam.Pipeline(options=pipeline_options) as p:
 
     # didn't find an easy way of processing all subfolders with beam, so these lines gather subfolder file names
     # and create an in-memory Beam PCollection from it
-    input_files = GcsIO().list_prefix(proc_args.input_folder)
+    input_files = GcsIO().list_prefix(user_options.input_folder)
     input_files_list = list(input_files.keys())
-    print("input_file_list: {l}".format(l=input_files_list))
+    #print("input_file_list: {l}".format(l=input_files_list))
 
     files = p | beam.Create(input_files_list)# ReadFromText(input_file_list_path)
 
     # unzip files, extract character PNGs from TTFs, crop PNGs to minimal size
     cropped_pngs = (files 
     | 'getPNGs' >> beam.ParDo(ImageExtractor(
-        font_size=int(proc_args.font_size),
-        png_size=int(proc_args.png_size),
-        offset=int(proc_args.png_offset)))
+        font_size=int(user_options.font_size),
+        png_size=int(user_options.png_size),
+        offset=int(user_options.png_offset)))
     | 'cropAndGroup' >> beam.Map(lambda x: crop_and_group(x)))
 
     # find size of bounding box that works for entire dataset
     global_bounding_box = (cropped_pngs
       | 'findBoundingBox' >> beam.Map(lambda tuple: tuple[1][1].shape)
       | 'GetGlobalBoundingBox' >> beam.CombineGlobally(BoundingBoxProcessor())
-      | 'saveBoundingBoxInfo' >> WriteToText(proc_args.output_folder + ("" if proc_args.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
+      | 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
 
     # compress all PNGs for each character together and save them to GCS
     compressed_imgs = (cropped_pngs
       | 'groupByChar' >> beam.GroupByKey()
       | 'zipImgs' >> beam.ParDo(DataCompressor())
-      | 'saveZip' >> beam.ParDo(ZipUploader(proc_args.output_folder)))
+      | 'saveZip' >> beam.ParDo(ZipUploader(user_options.output_folder)))
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)
