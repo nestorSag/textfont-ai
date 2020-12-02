@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import argparse
 import logging
+import traceback
 from typing import Tuple
 import string
 import zipfile
@@ -49,37 +50,48 @@ class ImageExtractor(beam.DoFn):
   def process(self, gcs_file):
     #logging.info("processing {f}".format(f=gcs_file))
     try:
-      zip_ = zipfile.ZipFile(io.BytesIO(GcsIO().open(gcs_file,mode="r").read()))
-    except Exception as e:
-      logging.error("error unzipping file: {e}".format(e=e))
-      return 
-    files_in_zip = zip_.namelist()
-    # choose whether to proces TTFs or OTFs, but not both
-    ext = self.choose_ext(files_in_zip)
-    valid = sorted([filename for filename in files_in_zip if ext in filename.lower()])
-    main_file = valid[0] #pressumably the file with the shortest name is the main font type in the ZIP
-    main_fontname = self.get_fontname(main_file)
+      bf = io.BytesIO()
+      bf.write(GcsIO().open(gcs_file,mode="r").read())
+      zip_ = zipfile.ZipFile(bf)
+      
+      files_in_zip = zip_.namelist()
+      # choose whether to proces TTFs or OTFs, but not both
+      ext = self.choose_ext(files_in_zip)
+      available = sorted([filename for filename in files_in_zip if ext in filename.lower()])
+      main_file = available[0] #pressumably the file with the shortest name is the main font type in the ZIP
+      main_fontname = self.get_fontname(main_file)
 
-    #tag font variations for possible downstream filtering
-    types = [self.get_fontname(filename).replace(main_fontname,"") for filename in valid]
-    for file, tag in zip(valid,types):
-      try:
-        ttf = zip_.read(file) #can be otf, but anyway
-      except Exception as e:
-        logging.error("error reading TTF file: {e}".format(e=e))
-        return 
+      valid_files = []
+      identifiers = []
+      for filename in available:
+        try:
+          valid_files.append(zip_.read(filename))
+          #tag font variations for possible downstream filtering: store (filename,tag) tuples
+          #tag should mostly have the form: bold, italic, 3d, etc.
+          identifiers.append((filename,self.get_fontname(filename).replace(main_fontname,"")))
+        except Exception as e:
+          logging.exception("Error reading font file: {e}".format(e=e))
+      zip_.close()
+      bf.close()
+    except Exception as e:
+      logging.exception("error unzipping files: {e}".format(e=e))
+      return 
+    for file, (filename,tag) in zip(valid_files,identifiers):
       for letter in string.ascii_letters + string.digits:
         #logging.info("working on letter {l}".format(l=letter))
         try:
+          letter_bf = io.BytesIO(file)
           im = Image.new("RGB",(self.png_size,self.png_size))
           draw = ImageDraw.Draw(im)
-          font = ImageFont.truetype(io.BytesIO(ttf),self.font_size)
+          font = ImageFont.truetype(letter_bf,self.font_size)
+          #font = ImageFont.truetype(bytes(ttf),self.font_size)
           draw.text((self.offset,self.offset),letter,font=font)
           # filename indexes letter and font type, avoids overwritting data with timestamp
-          output_filename = letter + "@" + tag + "@" + self.get_fontname(file) + str(datetime.now().time()) + ".png"
+          output_filename = letter + "@" + tag + "@" + self.get_fontname(filename) + str(datetime.now().time()) + ".png"
+          letter_bf.close()
           yield output_filename, im
         except Exception as e:
-          logging.error("error processing letter: {e}".format(e=e))
+          logging.exception("error processing letter: {e}".format(e=e))
           return 
 
 def crop_and_group(tuple) -> Tuple[str,Tuple[str,np.ndarray]]:
@@ -89,6 +101,7 @@ def crop_and_group(tuple) -> Tuple[str,Tuple[str,np.ndarray]]:
   im.save(bf,format="png")
   # get bounding box dimension
   gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
+  bf.close()
   h_bound, w_bound = get_bounding_box(gray_img)
   h = h_bound[1] - h_bound[0] + 1
   w = w_bound[1] - w_bound[0] + 1
@@ -107,8 +120,11 @@ class DataCompressor(beam.DoFn):
         elem_bf = io.BytesIO()
         imageio.imwrite(elem_bf,im=img,format="png")
         zp.writestr(filename,elem_bf.getvalue())
+        elem_bf.close()
 
-    yield (key, zip_bf.getvalue())
+    zip_stream = zip_bf.getvalue()
+    zip_bf.close()
+    yield (key, zip_stream)
 
 class ZipUploader(beam.DoFn):
 
@@ -124,7 +140,7 @@ class ZipUploader(beam.DoFn):
       gcs_file.write(byte_stream)
       gcs_file.close()
     except Exception as e:
-      logging.error("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
+      logging.exception("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
 
 class BoundingBoxProcessor(beam.CombineFn):
   # implementation of elementwise maximum in a 2-dimensional list

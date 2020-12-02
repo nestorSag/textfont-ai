@@ -14,7 +14,7 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
 # run beam test on dataflow
 pipenv run python scripts/py/run-beam-preprocessing.py \
   --requirements_file=conf/dataflow-preprocessing-requirements.txt \
-  --input-folder=gs://textfont-ai-data/raw_sample/1001free/zip \
+  --input-folder=gs://textfont-ai-data/raw_sample/dafont/zip \
   --output-folder=gs://textfont-ai-data/cloud-test-output \
   --runner=DataflowRunner \
   --project=textfont-ai \
