@@ -64,11 +64,18 @@ class ImageExtractor(beam.DoFn):
       valid_files = []
       identifiers = []
       for filename in available:
+        fontname = self.get_fontname(filename)
         try:
           valid_files.append(zip_.read(filename))
           #tag font variations for possible downstream filtering: store (filename,tag) tuples
           #tag should mostly have the form: bold, italic, 3d, etc.
-          identifiers.append((filename,self.get_fontname(filename).replace(main_fontname,"")))
+          tag = fontname.replace(main_fontname,"")
+          if tag == fontname:
+            # if this happens, probably there is more than one font type in this ZIP, so update main_fontname
+            # and set tag as empty
+            main_fontname = self.get_fontname(filename)
+            tag = ""
+          identifiers.append((filename,tag))
         except Exception as e:
           logging.exception("Error reading font file: {e}".format(e=e))
       zip_.close()
