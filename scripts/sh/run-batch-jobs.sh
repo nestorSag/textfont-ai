@@ -37,6 +37,7 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
   --temp_location=gs://textfont-ai-misc/dataflow/temp/ \
   --staging_location=gs://textfont-ai-misc/dataflow/staging/ \
   --machine_type=n2-standard-4 \
-  --max_num_workers=20 \
+  --max_num_workers=18 \
   --disk_size_gb=50 \
-  --num_workers=10
+  --num_workers=8 \
+  --autoscaling_algorithm=THROUGHPUT_BASED 

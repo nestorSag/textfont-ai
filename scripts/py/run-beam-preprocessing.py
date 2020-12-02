@@ -77,11 +77,11 @@ class ImageExtractor(beam.DoFn):
             tag = ""
           identifiers.append((filename,tag))
         except Exception as e:
-          logging.exception("Error reading font file: {e}".format(e=e))
+          logging.exception("Error reading font file {x}: {e}".format(x=filename,e=e))
       zip_.close()
       bf.close()
     except Exception as e:
-      logging.exception("error unzipping files: {e}".format(e=e))
+      logging.exception("error unzipping files from {f}: {e}".format(f=gcs_file,e=e))
       return 
     for file, (filename,tag) in zip(valid_files,identifiers):
       for letter in string.ascii_letters + string.digits:
@@ -98,7 +98,7 @@ class ImageExtractor(beam.DoFn):
           letter_bf.close()
           yield output_filename, im
         except Exception as e:
-          logging.exception("error processing letter: {e}".format(e=e))
+          logging.exception("error processing letter {x}: {e}".format(x=letter,e=e))
           return 
 
 def crop_and_group(tuple) -> Tuple[str,Tuple[str,np.ndarray]]:
