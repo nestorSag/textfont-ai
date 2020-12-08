@@ -101,21 +101,44 @@ class ImageExtractor(beam.DoFn):
           logging.exception("error processing letter {x}: {e}".format(x=letter,e=e))
           return 
 
-def crop_and_group(tuple) -> Tuple[str,Tuple[str,np.ndarray]]:
-  # prepare png
-  output_filename, im = tuple
-  bf = io.BytesIO()
-  im.save(bf,format="png")
-  # get bounding box dimension
-  gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
-  bf.close()
-  h_bound, w_bound = get_bounding_box(gray_img)
-  h = h_bound[1] - h_bound[0] + 1
-  w = w_bound[1] - w_bound[0] + 1
-  #crop and map to png
-  cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
-  key = output_filename[0] #character in png
-  return (key,(output_filename,cropped))
+def embed_and_resize(img,output_dim):
+  output = np.zeros((output_dim,output_dim),dtype=np.uint8)
+  # resize img to fit into output dimensions
+  img_h, img_w = img.shape
+  if img_h >= img_w:
+    resize_dim = (output_dim,int(img_w*output_dim/img_h))
+  else:
+    resize_dim = (int(img_h*output_dim/img_w),output_dim)
+  resized = np.array(Image.fromarray(np.uint8(img)).resize(size=tuple(reversed(resize_dim))))
+  # embed into squared image
+  resized_h, resized_w = resized.shape
+  h_pad, w_pad = int((output_dim - resized_h)/2), int((output_dim - resized_w)/2)
+  output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
+  # make the image binary
+  #output[output > int(255/2)] = 255
+  #output[output < int(255/2)] = 0
+  return output.astype(np.uint8)
+
+class Cropper(beam.DoFn):
+
+  def process(self,tuple): #  -> Tuple[str,Tuple[str,np.ndarray]]
+    # prepare png
+    output_filename, im = tuple
+    bf = io.BytesIO()
+    im.save(bf,format="png")
+    # get bounding box dimension
+    gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
+    bf.close()
+    h_bound, w_bound = get_bounding_box(gray_img)
+    if h_bound == (0,0) or w_bound == (0,0):
+      return
+    else:
+      h = h_bound[1] - h_bound[0] + 1
+      w = w_bound[1] - w_bound[0] + 1
+      #crop and map to png
+      cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+      key = output_filename[0] #character in png
+      yield (key,(output_filename,cropped))
 
 class DataCompressor(beam.DoFn):
   #returns the byte stream of zipped images
@@ -149,23 +172,41 @@ class ZipUploader(beam.DoFn):
     except Exception as e:
       logging.exception("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
 
-class BoundingBoxProcessor(beam.CombineFn):
-  # implementation of elementwise maximum in a 2-dimensional list
-  def create_accumulator(self):
-    return [0,0]
 
-  def add_input(self,accumulator,input):
-    return [max(accumulator[k],input[k]) for k in range(2)]
+# class MaxBoundingBoxProcessor(beam.CombineFn):
+#   # implementation of elementwise maximum in a 2-dimensional list
+#   def create_accumulator(self):
+#     return [0,0]
+
+#   def add_input(self,accumulator,input):
+#     return [max(accumulator[k],input[k]) for k in range(2)]
+
+#   def merge_accumulators(self, accumulators):
+#     merged = self.create_accumulator()
+#     for acc in accumulators:
+#       merged = self.add_input(merged,acc)
+#     return merged
+
+#   def extract_output(self,accumulator):
+#     return str(accumulator)
+
+class DimGatherer(beam.CombineFn):
+  # simply gather a list of image dimensions to reduce later
+  def create_accumulator(self):
+    return []
+
+  def add_input(self,accumulator,other):
+    return accumulator + [other]
 
   def merge_accumulators(self, accumulators):
-    merged = self.create_accumulator()
-    for acc in accumulators:
-      merged = self.add_input(merged,acc)
-    return merged
+    return [tpl for accumulator in accumulators for tpl in accumulator]
 
   def extract_output(self,accumulator):
-    return str(accumulator)
+    ## implement median calculation
+    return accumulator
 
+def get_median_dims(lst):
+  return int(max([np.quantile([x[0] for x in lst],0.5),np.quantile([x[1] for x in lst],0.5)]))
 
 def run(argv=None, save_main_session=True):
 
@@ -231,16 +272,19 @@ def run(argv=None, save_main_session=True):
         font_size=int(user_options.font_size),
         png_size=int(user_options.png_size),
         offset=int(user_options.png_offset)))
-    | 'cropAndGroup' >> beam.Map(lambda x: crop_and_group(x)))
+    | 'cropAndGroup' >> beam.ParDo(Cropper()))
 
-    # find size of bounding box that works for entire dataset
-    global_bounding_box = (cropped_pngs
+    # find median dimensions for entire dataset
+    dims = (cropped_pngs
       | 'findBoundingBox' >> beam.Map(lambda tuple: tuple[1][1].shape)
-      | 'GetGlobalBoundingBox' >> beam.CombineGlobally(BoundingBoxProcessor())
-      | 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
+      | 'GetDimList' >> beam.CombineGlobally(DimGatherer())
+      | 'findMedianDims' >> beam.Map(lambda dimlist: get_median_dims(dimlist)))
 
-    # compress all PNGs for each character together and save them to GCS
+      #| 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
+
+    # standardise PNG size and compress all PNGs for each character together, then save them to GCS
     compressed_imgs = (cropped_pngs
+      | "standardisePNGs" >> beam.Map(lambda png_tuple, img_dims: (png_tuple[0], (png_tuple[1][0], embed_and_resize(png_tuple[1][1],img_dims))),img_dims=beam.pvalue.AsSingleton(dims))
       | 'groupByChar' >> beam.GroupByKey()
       | 'zipImgs' >> beam.ParDo(DataCompressor())
       | 'saveZip' >> beam.ParDo(ZipUploader(user_options.output_folder)))

@@ -29,7 +29,7 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
 pipenv run python scripts/py/run-beam-preprocessing.py \
   --requirements_file=conf/dataflow-preprocessing-requirements.txt \
   --input-folder=gs://textfont-ai-data/raw \
-  --output-folder=gs://textfont-ai-data/processed-pngs \
+  --output-folder=gs://textfont-ai-data/processed \
   --runner=DataflowRunner \
   --project=textfont-ai \
   --region=europe-west2 \
@@ -39,5 +39,5 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
   --machine_type=n2-standard-4 \
   --max_num_workers=18 \
   --disk_size_gb=50 \
-  --num_workers=8 \
+  --num_workers=3 \
   --autoscaling_algorithm=THROUGHPUT_BASED 
