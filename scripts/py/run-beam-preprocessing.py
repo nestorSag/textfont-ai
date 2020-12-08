@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from collections.abc import Iterable
 
 import argparse
 import logging
@@ -31,9 +32,9 @@ def get_bounding_box(gray_img):
 
 class ImageExtractor(beam.DoFn):
   
-  def __init__(self, font_size = 100, png_size=500, offset=50):
+  def __init__(self, font_size = 100, font_padding=500, offset=50):
     self.font_size = font_size
-    self.png_size = png_size
+    self.font_padding = font_padding
     self.offset = offset
 
   def get_fontname(self,str,ext=".ttf"):
@@ -88,7 +89,7 @@ class ImageExtractor(beam.DoFn):
         #logging.info("working on letter {l}".format(l=letter))
         try:
           letter_bf = io.BytesIO(file)
-          im = Image.new("RGB",(self.png_size,self.png_size))
+          im = Image.new("RGB",(self.font_padding,self.font_padding))
           draw = ImageDraw.Draw(im)
           font = ImageFont.truetype(letter_bf,self.font_size)
           #font = ImageFont.truetype(bytes(ttf),self.font_size)
@@ -196,7 +197,10 @@ class DimGatherer(beam.CombineFn):
     return []
 
   def add_input(self,accumulator,other):
-    return accumulator + [other]
+    if isinstance(other,Iterable) and len(other) == 2 and other[0] > 0 and other[1] > 0:
+      return accumulator + [other]
+    else:
+      return accumulator
 
   def merge_accumulators(self, accumulators):
     return [tpl for accumulator in accumulators for tpl in accumulator]
@@ -206,7 +210,9 @@ class DimGatherer(beam.CombineFn):
     return accumulator
 
 def get_median_dims(lst):
-  return int(max([np.quantile([x[0] for x in lst],0.5),np.quantile([x[1] for x in lst],0.5)]))
+  median = [np.quantile([x[0] for x in lst],0.5),np.quantile([x[1] for x in lst],0.5)]
+  logger.info("median is {x}".format(median))
+  return int(max(median))
 
 def run(argv=None, save_main_session=True):
 
@@ -224,12 +230,19 @@ def run(argv=None, save_main_session=True):
       required = True,      
       help='Output file to write results to.')
   parser.add_argument(
+      '--font-padding',
+      dest='font_padding',
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
+      default='500',
+      help='Dim of PNG canvas in which characters will be rendered. Needs to be large enough for provided font size')
+  parser.add_argument(
       '--png-size',
       dest='png_size',
       # CHANGE 1/6: The Google Cloud Storage path is required
       # for outputting the results.
-      default='500',
-      help='Dim of PNG output in which characters will be embedded. Needs to be large enough for provided font size')
+      default='64',
+      help='Size of fila PNG outputs')
   parser.add_argument(
       '--font-size',
       dest='font_size',
@@ -270,21 +283,21 @@ def run(argv=None, save_main_session=True):
     cropped_pngs = (files 
     | 'getPNGs' >> beam.ParDo(ImageExtractor(
         font_size=int(user_options.font_size),
-        png_size=int(user_options.png_size),
+        font_padding=int(user_options.font_padding),
         offset=int(user_options.png_offset)))
     | 'cropAndGroup' >> beam.ParDo(Cropper()))
 
     # find median dimensions for entire dataset
-    dims = (cropped_pngs
-      | 'findBoundingBox' >> beam.Map(lambda tuple: tuple[1][1].shape)
-      | 'GetDimList' >> beam.CombineGlobally(DimGatherer())
-      | 'findMedianDims' >> beam.Map(lambda dimlist: get_median_dims(dimlist)))
+    # dims = (cropped_pngs
+    #   | 'findBoundingBox' >> beam.Map(lambda tuple: tuple[1][1].shape)
+    #   | 'GetDimList' >> beam.CombineGlobally(DimGatherer())
+    #   | 'findMedianDims' >> beam.Map(lambda dimlist: get_median_dims(dimlist)))
 
       #| 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
 
     # standardise PNG size and compress all PNGs for each character together, then save them to GCS
     compressed_imgs = (cropped_pngs
-      | "standardisePNGs" >> beam.Map(lambda png_tuple, img_dims: (png_tuple[0], (png_tuple[1][0], embed_and_resize(png_tuple[1][1],img_dims))),img_dims=beam.pvalue.AsSingleton(dims))
+      | "standardisePNGs" >> beam.Map(lambda png_tuple: (png_tuple[0], (png_tuple[1][0], embed_and_resize(png_tuple[1][1],int(user_options.png_size)))))
       | 'groupByChar' >> beam.GroupByKey()
       | 'zipImgs' >> beam.ParDo(DataCompressor())
       | 'saveZip' >> beam.ParDo(ZipUploader(user_options.output_folder)))
