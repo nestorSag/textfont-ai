@@ -77,7 +77,7 @@ class ImageExtractor(beam.DoFn):
             tag = ""
           identifiers.append((filename,tag))
         except Exception as e:
-          logging.exception("Error reading font file {x}: {e}".format(x=filename,e=e))
+          logging.exception("Error reading font file {x} from {l}: {e}".format(l=gcs_file,x=filename,e=e))
       zip_.close()
       bf.close()
     except Exception as e:
@@ -98,7 +98,7 @@ class ImageExtractor(beam.DoFn):
           letter_bf.close()
           yield output_filename, im
         except Exception as e:
-          logging.exception("error processing letter {x}: {e}".format(x=letter,e=e))
+          logging.exception("error processing letter {x} from file {l}: {e}".format(l=gcs_file,x=letter,e=e))
           return 
 
 def embed_and_resize(img,output_dim):
