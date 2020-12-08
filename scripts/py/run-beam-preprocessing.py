@@ -102,29 +102,42 @@ class ImageExtractor(beam.DoFn):
           logging.exception("error processing letter {x} from file {l}: {e}".format(l=gcs_file,x=letter,e=e))
           return 
 
-def embed_and_resize(img,output_dim):
-  output = np.zeros((output_dim,output_dim),dtype=np.uint8)
-  # resize img to fit into output dimensions
-  img_h, img_w = img.shape
-  if img_h >= img_w:
-    resize_dim = (output_dim,int(img_w*output_dim/img_h))
-  else:
-    resize_dim = (int(img_h*output_dim/img_w),output_dim)
-  resized = np.array(Image.fromarray(np.uint8(img)).resize(size=tuple(reversed(resize_dim))))
-  # embed into squared image
-  resized_h, resized_w = resized.shape
-  h_pad, w_pad = int((output_dim - resized_h)/2), int((output_dim - resized_w)/2)
-  output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
-  # make the image binary
-  #output[output > int(255/2)] = 255
-  #output[output < int(255/2)] = 0
-  return output.astype(np.uint8)
+class Resizer(beam.DoFn):
+
+  def __init__(self,output_dim):
+    self.output_dim = output_dim
+
+  def process(self,kvp):
+    key,(filename,img) = kvp
+    output = np.zeros((self.output_dim,self.output_dim),dtype=np.uint8)
+    # resize img to fit into output dimensions
+    img_h, img_w = img.shape
+    if img_h > 0 and img_w > 0:
+      if img_h >= img_w:
+        resize_dim = (self.output_dim,int(img_w*self.output_dim/img_h))
+      else:
+        resize_dim = (int(img_h*self.output_dim/img_w),self.output_dim)
+      try:
+        resized = np.array(Image.fromarray(np.uint8(img)).resize(size=tuple(reversed(resize_dim))))
+        # embed into squared image
+        resized_h, resized_w = resized.shape
+        h_pad, w_pad = int((self.output_dim - resized_h)/2), int((self.output_dim - resized_w)/2)
+        output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
+        # make the image binary
+        #output[output > int(255/2)] = 255
+        #output[output < int(255/2)] = 0
+        yield key,(filename,output.astype(np.uint8))
+      except Exception as e:
+        logging.exception("error resizing png: {e}".format(e=e))
+        return 
+    else:
+      return
 
 class Cropper(beam.DoFn):
 
-  def process(self,tuple): #  -> Tuple[str,Tuple[str,np.ndarray]]
+  def process(self,tuple_): #  -> Tuple[str,Tuple[str,np.ndarray]]
     # prepare png
-    output_filename, im = tuple
+    output_filename, im = tuple_
     bf = io.BytesIO()
     im.save(bf,format="png")
     # get bounding box dimension
@@ -297,7 +310,7 @@ def run(argv=None, save_main_session=True):
 
     # standardise PNG size and compress all PNGs for each character together, then save them to GCS
     compressed_imgs = (cropped_pngs
-      | "standardisePNGs" >> beam.Map(lambda png_tuple: (png_tuple[0], (png_tuple[1][0], embed_and_resize(png_tuple[1][1],int(user_options.png_size)))))
+      | "standardisePNGs" >> beam.ParDo(Resizer(output_dim=int(user_options.png_size)))
       | 'groupByChar' >> beam.GroupByKey()
       | 'zipImgs' >> beam.ParDo(DataCompressor())
       | 'saveZip' >> beam.ParDo(ZipUploader(user_options.output_folder)))

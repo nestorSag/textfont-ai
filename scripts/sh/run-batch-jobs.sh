@@ -29,7 +29,7 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
 pipenv run python scripts/py/run-beam-preprocessing.py \
   --requirements_file=conf/dataflow-preprocessing-requirements.txt \
   --input-folder=gs://textfont-ai-data/raw \
-  --output-folder=gs://textfont-ai-data/processed \
+  --output-folder=gs://textfont-ai-data/processed/64 \
   --runner=DataflowRunner \
   --project=textfont-ai \
   --region=europe-west2 \
