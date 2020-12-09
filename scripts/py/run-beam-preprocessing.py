@@ -177,6 +177,8 @@ class TensorCreator(beam.DoFn):
 
     yield (key, letters, filenames, imgs)
 
+
+
 class TensorUploader(beam.DoFn):
 
   def __init__(self,output_folder):
@@ -199,8 +201,6 @@ class TensorUploader(beam.DoFn):
         bf.close()
       except Exception as e:
         logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
-
-
 
 class DataCompressor(beam.DoFn):
   #returns the byte stream of zipped images
@@ -234,24 +234,6 @@ class ZipUploader(beam.DoFn):
       gcs_file.close()
     except Exception as e:
       logging.exception("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
-
-
-# class MaxBoundingBoxProcessor(beam.CombineFn):
-#   # implementation of elementwise maximum in a 2-dimensional list
-#   def create_accumulator(self):
-#     return [0,0]
-
-#   def add_input(self,accumulator,input):
-#     return [max(accumulator[k],input[k]) for k in range(2)]
-
-#   def merge_accumulators(self, accumulators):
-#     merged = self.create_accumulator()
-#     for acc in accumulators:
-#       merged = self.add_input(merged,acc)
-#     return merged
-
-#   def extract_output(self,accumulator):
-#     return str(accumulator)
 
 class DimGatherer(beam.CombineFn):
   # simply gather a list of image dimensions to reduce later
