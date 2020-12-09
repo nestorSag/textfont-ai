@@ -106,22 +106,25 @@ class Cropper(beam.DoFn):
 
   def process(self,tuple_): #  -> Tuple[str,Tuple[str,np.ndarray]]
     # prepare png
-    letter, output_filename, im = tuple_
-    bf = io.BytesIO()
-    im.save(bf,format="png")
-    # get bounding box dimension
-    gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
-    bf.close()
-    h_bound, w_bound = get_bounding_box(gray_img)
-    if h_bound == (0,0) or w_bound == (0,0):
-      return
-    else:
-      h = h_bound[1] - h_bound[0] + 1
-      w = w_bound[1] - w_bound[0] + 1
-      #crop and map to png
-      cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
-      key = output_filename[0] #character in png
-      yield letter, output_filename, cropped
+    try:
+      letter, output_filename, im = tuple_
+      bf = io.BytesIO()
+      im.save(bf,format="png")
+      # get bounding box dimension
+      gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
+      bf.close()
+      h_bound, w_bound = get_bounding_box(gray_img)
+      if h_bound == (0,0) or w_bound == (0,0):
+        return
+      else:
+        h = h_bound[1] - h_bound[0] + 1
+        w = w_bound[1] - w_bound[0] + 1
+        #crop and map to png
+        cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+        key = output_filename[0] #character in png
+        yield letter, output_filename, cropped
+    except Exception as e:
+      print("error cropping image: {e}".format(e=e))
 
 class Resizer(beam.DoFn):
 
@@ -130,38 +133,41 @@ class Resizer(beam.DoFn):
 
   def process(self,triplet):
 
-    letter, output_filename, img = triplet
-    output = np.zeros((self.output_dim,self.output_dim),dtype=np.uint8)
-    # resize img to fit into output dimensions
-    img_h, img_w = img.shape
-    if img_h > 0 and img_w > 0:
-      if img_h >= img_w:
-        resize_dim = (self.output_dim,int(img_w*self.output_dim/img_h))
+    try:
+      letter, output_filename, img = triplet
+      output = np.zeros((self.output_dim,self.output_dim),dtype=np.uint8)
+      # resize img to fit into output dimensions
+      img_h, img_w = img.shape
+      if img_h > 0 and img_w > 0:
+        if img_h >= img_w:
+          resize_dim = (self.output_dim,int(img_w*self.output_dim/img_h))
+        else:
+          resize_dim = (int(img_h*self.output_dim/img_w),self.output_dim)
+        try:
+          resized = np.array(Image.fromarray(np.uint8(img)).resize(size=tuple(reversed(resize_dim))))
+          # embed into squared image
+          resized_h, resized_w = resized.shape
+          h_pad, w_pad = int((self.output_dim - resized_h)/2), int((self.output_dim - resized_w)/2)
+          output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
+          # make the image binary
+          #output[output > int(255/2)] = 255
+          #output[output < int(255/2)] = 0
+          yield letter, output_filename, output.astype(np.uint8)
+        except Exception as e:
+          logging.exception("error resizing png: {e}".format(e=e))
+          return 
       else:
-        resize_dim = (int(img_h*self.output_dim/img_w),self.output_dim)
-      try:
-        resized = np.array(Image.fromarray(np.uint8(img)).resize(size=tuple(reversed(resize_dim))))
-        # embed into squared image
-        resized_h, resized_w = resized.shape
-        h_pad, w_pad = int((self.output_dim - resized_h)/2), int((self.output_dim - resized_w)/2)
-        output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
-        # make the image binary
-        #output[output > int(255/2)] = 255
-        #output[output < int(255/2)] = 0
-        yield letter, output_filename, output.astype(np.uint8)
-      except Exception as e:
-        logging.exception("error resizing png: {e}".format(e=e))
-        return 
-    else:
-      return
+        return
+    except Exception as e:
+      print("error resizing image: {e}".format(e=e))
 
 def set_letter_as_key(triplet):
   return (triplet[0],triplet)
 
-def set_hash_as_key(triplet,n_buckets=20):
+def set_hash_as_key(triplet,n_buckets=100):
   # create hash from name
-  hashed = str(hash(triplet[1])%n_buckets)
-  return(hashed,triplet)
+  hashed = np.random.randint(n_buckets)
+  return (hashed,triplet)
 
 class TensorCreator(beam.DoFn):
   #returns the byte stream of zipped images
@@ -171,11 +177,14 @@ class TensorCreator(beam.DoFn):
   def process(self,kvp) -> Tuple[str,np.ndarray,np.ndarray,np.ndarray]:
     key,value_list = kvp
     #
-    letters = np.array([x[0] for x in value_list])
-    filenames = np.array([x[1] for x in value_list])
-    imgs = np.array([x[2].reshape(self.image_dim,self.image_dim,1) for x in value_list])
+    try:
+      letters = np.array([x[0] for x in value_list])
+      filenames = np.array([x[1] for x in value_list])
+      imgs = np.array([x[2].reshape(self.image_dim,self.image_dim,1) for x in value_list])
 
-    yield (key, letters, filenames, imgs)
+      yield (key, letters, filenames, imgs)
+    except Exception as e:
+      print("error converting to numpy: {e}".format(e=e))
 
 
 
@@ -340,17 +349,18 @@ def run(argv=None, save_main_session=True):
 
       #| 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
 
-    # useful to sort by letter for generative models 
+    
     output_folder = user_options.output_folder if user_options.output_folder[-1] == "/" else user_options.output_folder + "/"
-    sorted_by_char = (standardised
-      | 'setLetterAsKey' >> beam.Map(lambda x: set_letter_as_key(x))
-      | 'groupByChar' >> beam.GroupByKey()
-      | 'createCharTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
-      | 'saveCharTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-char")))
+    
+    # sorted_by_char = (standardised
+    #   | 'setLetterAsKey' >> beam.Map(lambda x: set_letter_as_key(x))
+    #   | 'groupByChar' >> beam.GroupByKey()
+    #   | 'createCharTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
+    #   | 'saveCharTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-char")))
 
     # useful to train letter classifiers
     sorted_by_hash = (standardised
-      | 'setHashAKey' >> beam.Map(lambda x: set_hash_as_key(x))
+      | 'setHashAsKey' >> beam.Map(lambda x: set_hash_as_key(x))
       | 'groupByHash' >> beam.GroupByKey()
       | 'createHashTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
       | 'saveHashTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-hash")))
