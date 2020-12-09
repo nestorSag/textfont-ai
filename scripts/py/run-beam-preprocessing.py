@@ -59,24 +59,24 @@ class ImageExtractor(beam.DoFn):
       # choose whether to proces TTFs or OTFs, but not both
       ext = self.choose_ext(files_in_zip)
       available = sorted([filename for filename in files_in_zip if ext in filename.lower()])
-      main_file = available[0] #pressumably the file with the shortest name is the main font type in the ZIP
-      main_fontname = self.get_fontname(main_file)
+      #main_file = available[0] #pressumably the file with the shortest name is the main font type in the ZIP
+      #main_fontname = self.get_fontname(main_file)
 
       valid_files = []
-      identifiers = []
+      #identifiers = []
       for filename in available:
         fontname = self.get_fontname(filename)
         try:
-          valid_files.append(zip_.read(filename))
+          valid_files.append((filename,zip_.read(filename)))
           #tag font variations for possible downstream filtering: store (filename,tag) tuples
           #tag should mostly have the form: bold, italic, 3d, etc.
-          tag = fontname.replace(main_fontname,"")
-          if tag == fontname:
-            # if this happens, probably there is more than one font type in this ZIP, so update main_fontname
-            # and set tag as empty
-            main_fontname = self.get_fontname(filename)
-            tag = ""
-          identifiers.append((filename,tag))
+          # tag = fontname.replace(main_fontname,"")
+          # if tag == fontname:
+          #   # if this happens, probably there is more than one font type in this ZIP, so update main_fontname
+          #   # and set tag as empty
+          #   main_fontname = self.get_fontname(filename)
+          #   tag = ""
+          # identifiers.append((filename,tag))
         except Exception as e:
           logging.exception("Error reading font file {x} from {l}: {e}".format(l=gcs_file,x=filename,e=e))
       zip_.close()
@@ -84,7 +84,7 @@ class ImageExtractor(beam.DoFn):
     except Exception as e:
       logging.exception("error unzipping files from {f}: {e}".format(f=gcs_file,e=e))
       return 
-    for file, (filename,tag) in zip(valid_files,identifiers):
+    for name, file in valid_files:
       for letter in string.ascii_letters + string.digits:
         #logging.info("working on letter {l}".format(l=letter))
         try:
@@ -95,20 +95,42 @@ class ImageExtractor(beam.DoFn):
           #font = ImageFont.truetype(bytes(ttf),self.font_size)
           draw.text((self.offset,self.offset),letter,font=font)
           # filename indexes letter and font type, avoids overwritting data with timestamp
-          output_filename = letter + "@" + tag + "@" + self.get_fontname(filename) + str(datetime.now().time()) + ".png"
+          output_filename = self.get_fontname(name).lower()# + str(datetime.now().time())
           letter_bf.close()
-          yield output_filename, im
+          yield letter, output_filename, im
         except Exception as e:
           logging.exception("error processing letter {x} from file {l}: {e}".format(l=gcs_file,x=letter,e=e))
           return 
+
+class Cropper(beam.DoFn):
+
+  def process(self,tuple_): #  -> Tuple[str,Tuple[str,np.ndarray]]
+    # prepare png
+    letter, output_filename, im = tuple_
+    bf = io.BytesIO()
+    im.save(bf,format="png")
+    # get bounding box dimension
+    gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
+    bf.close()
+    h_bound, w_bound = get_bounding_box(gray_img)
+    if h_bound == (0,0) or w_bound == (0,0):
+      return
+    else:
+      h = h_bound[1] - h_bound[0] + 1
+      w = w_bound[1] - w_bound[0] + 1
+      #crop and map to png
+      cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+      key = output_filename[0] #character in png
+      yield letter, output_filename, cropped
 
 class Resizer(beam.DoFn):
 
   def __init__(self,output_dim):
     self.output_dim = output_dim
 
-  def process(self,kvp):
-    key,(filename,img) = kvp
+  def process(self,triplet):
+
+    letter, output_filename, img = triplet
     output = np.zeros((self.output_dim,self.output_dim),dtype=np.uint8)
     # resize img to fit into output dimensions
     img_h, img_w = img.shape
@@ -126,33 +148,59 @@ class Resizer(beam.DoFn):
         # make the image binary
         #output[output > int(255/2)] = 255
         #output[output < int(255/2)] = 0
-        yield key,(filename,output.astype(np.uint8))
+        yield letter, output_filename, output.astype(np.uint8)
       except Exception as e:
         logging.exception("error resizing png: {e}".format(e=e))
         return 
     else:
       return
 
-class Cropper(beam.DoFn):
+def set_letter_as_key(triplet):
+  return (triplet[0],triplet)
 
-  def process(self,tuple_): #  -> Tuple[str,Tuple[str,np.ndarray]]
-    # prepare png
-    output_filename, im = tuple_
-    bf = io.BytesIO()
-    im.save(bf,format="png")
-    # get bounding box dimension
-    gray_img = np.mean(imageio.imread(bf.getvalue(),format="png"),axis=-1).astype(np.uint8)
-    bf.close()
-    h_bound, w_bound = get_bounding_box(gray_img)
-    if h_bound == (0,0) or w_bound == (0,0):
-      return
-    else:
-      h = h_bound[1] - h_bound[0] + 1
-      w = w_bound[1] - w_bound[0] + 1
-      #crop and map to png
-      cropped = gray_img[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
-      key = output_filename[0] #character in png
-      yield (key,(output_filename,cropped))
+def set_hash_as_key(triplet,n_buckets=20):
+  # create hash from name
+  hashed = str(hash(triplet[1])%n_buckets)
+  return(hashed,triplet)
+
+class TensorCreator(beam.DoFn):
+  #returns the byte stream of zipped images
+  def __init__(self,image_dim):
+    self.image_dim = image_dim
+
+  def process(self,kvp) -> Tuple[str,np.ndarray,np.ndarray,np.ndarray]:
+    key,value_list = kvp
+    #
+    letters = np.array([x[0] for x in value_list])
+    filenames = np.array([x[1] for x in value_list])
+    imgs = np.array([x[2].reshape(self.image_dim,self.image_dim,1) for x in value_list])
+
+    yield (key, letters, filenames, imgs)
+
+class TensorUploader(beam.DoFn):
+
+  def __init__(self,output_folder):
+    self.output_folder = output_folder
+
+  def process(self,values) -> None:
+    #print("values: {v}".format)
+    key, letters, filenames, imgs = values
+
+    output_suffix = ("" if self.output_folder[-1] == "/" else "/") + key
+
+    for kind, obj in (("char",letters),("filenames",filenames),("img",imgs)):
+      try:
+        bf = io.BytesIO()
+        np.save(bf,obj)
+        outfile = self.output_folder + output_suffix + "-" + kind + ".npy"
+        gcs_file = GcsIO().open(outfile,mode="w")
+        gcs_file.write(bf.getvalue())
+        gcs_file.close()
+        bf.close()
+      except Exception as e:
+        logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
+
+
 
 class DataCompressor(beam.DoFn):
   #returns the byte stream of zipped images
@@ -169,6 +217,7 @@ class DataCompressor(beam.DoFn):
     zip_stream = zip_bf.getvalue()
     zip_bf.close()
     yield (key, zip_stream)
+
 
 class ZipUploader(beam.DoFn):
 
@@ -293,12 +342,13 @@ def run(argv=None, save_main_session=True):
     files = p | beam.Create(input_files_list)# ReadFromText(input_file_list_path)
 
     # unzip files, extract character PNGs from TTFs, crop PNGs to minimal size
-    cropped_pngs = (files 
+    standardised = (files 
     | 'getPNGs' >> beam.ParDo(ImageExtractor(
         font_size=int(user_options.font_size),
         font_padding=int(user_options.font_padding),
         offset=int(user_options.png_offset)))
-    | 'cropAndGroup' >> beam.ParDo(Cropper()))
+    | 'cropAndGroup' >> beam.ParDo(Cropper())
+    | "standardisePNGs" >> beam.ParDo(Resizer(output_dim=int(user_options.png_size))))
 
     # find median dimensions for entire dataset
     # dims = (cropped_pngs
@@ -308,12 +358,20 @@ def run(argv=None, save_main_session=True):
 
       #| 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
 
-    # standardise PNG size and compress all PNGs for each character together, then save them to GCS
-    compressed_imgs = (cropped_pngs
-      | "standardisePNGs" >> beam.ParDo(Resizer(output_dim=int(user_options.png_size)))
+    # useful to sort by letter for generative models 
+    output_folder = user_options.output_folder if user_options.output_folder[-1] == "/" else user_options.output_folder + "/"
+    sorted_by_char = (standardised
+      | 'setLetterAsKey' >> beam.Map(lambda x: set_letter_as_key(x))
       | 'groupByChar' >> beam.GroupByKey()
-      | 'zipImgs' >> beam.ParDo(DataCompressor())
-      | 'saveZip' >> beam.ParDo(ZipUploader(user_options.output_folder)))
+      | 'createCharTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
+      | 'saveCharTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-char")))
+
+    # useful to train letter classifiers
+    sorted_by_hash = (standardised
+      | 'setHashAKey' >> beam.Map(lambda x: set_hash_as_key(x))
+      | 'groupByHash' >> beam.GroupByKey()
+      | 'createHashTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
+      | 'saveHashTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-hash")))
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)
