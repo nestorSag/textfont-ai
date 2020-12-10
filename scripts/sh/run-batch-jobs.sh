@@ -11,25 +11,11 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
   --job_name=textffont-ai-zip2png \
   --temp-location=gs://textfont-ai-misc/dataflow/temp/
 
-# run beam test on dataflow
-pipenv run python scripts/py/run-beam-preprocessing.py \
-  --requirements_file=conf/dataflow-preprocessing-requirements.txt \
-  --input-folder=gs://textfont-ai-data/raw_sample/dafont/zip \
-  --output-folder=gs://textfont-ai-data/cloud-test-output \
-  --runner=DataflowRunner \
-  --project=textfont-ai \
-  --region=europe-west2 \
-  --job_name=textfont-ai-zip2png \
-  --temp_location=gs://textfont-ai-misc/dataflow/temp/ \
-  --staging_location=gs://textfont-ai-misc/dataflow/staging/ \
-  --machine_type=n2-standard-2 \
-  --max_num_workers=2
-
 # run dataflow on entire datasets
 pipenv run python scripts/py/run-beam-preprocessing.py \
   --requirements_file=conf/dataflow-preprocessing-requirements.txt \
   --input-folder=gs://textfont-ai-data/raw \
-  --output-folder=gs://textfont-ai-data/processed/npy/64\
+  --output-folder=gs://textfont-ai-data/processed/npz/64\
   --runner=DataflowRunner \
   --project=textfont-ai \
   --region=europe-west2 \

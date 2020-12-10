@@ -164,7 +164,7 @@ class Resizer(beam.DoFn):
 def set_letter_as_key(triplet):
   return (triplet[0],triplet)
 
-def set_hash_as_key(triplet,n_buckets=100):
+def set_hash_as_key(triplet,n_buckets=20):
   # create hash from name
   hashed = np.random.randint(n_buckets)
   return (hashed,triplet)
@@ -199,17 +199,18 @@ class TensorUploader(beam.DoFn):
 
     output_suffix = ("" if self.output_folder[-1] == "/" else "/") + str(key)
 
-    for kind, obj in (("char",letters),("filenames",filenames),("img",imgs)):
-      try:
-        bf = io.BytesIO()
-        np.save(bf,obj)
-        outfile = self.output_folder + output_suffix + "-" + kind + ".npy"
-        gcs_file = GcsIO().open(outfile,mode="w")
-        gcs_file.write(bf.getvalue())
-        gcs_file.close()
-        bf.close()
-      except Exception as e:
-        logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
+    #for kind, obj in (("char",letters),("filenames",filenames),("img",imgs)):
+    try:
+      #save npz data
+      bf = io.BytesIO()
+      np.savez_compressed(bf,img=imgs,char=letters,filenames=filenames)
+      outfile = self.output_folder + output_suffix + ".npz"
+      gcs_file = GcsIO().open(outfile,mode="w")
+      gcs_file.write(bf.getvalue())
+      gcs_file.close()
+      bf.close()
+    except Exception as e:
+      logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
 
 class DataCompressor(beam.DoFn):
   #returns the byte stream of zipped images
@@ -341,22 +342,22 @@ def run(argv=None, save_main_session=True):
     | 'cropAndGroup' >> beam.ParDo(Cropper())
     | "standardisePNGs" >> beam.ParDo(Resizer(output_dim=int(user_options.png_size))))
 
-    # find median dimensions for entire dataset
+    # #find median dimensions for entire dataset
     # dims = (cropped_pngs
     #   | 'findBoundingBox' >> beam.Map(lambda tuple: tuple[1][1].shape)
     #   | 'GetDimList' >> beam.CombineGlobally(DimGatherer())
     #   | 'findMedianDims' >> beam.Map(lambda dimlist: get_median_dims(dimlist)))
 
-      #| 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
+    #   | 'saveBoundingBoxInfo' >> WriteToText(user_options.output_folder + ("" if user_options.output_folder[-1] == "/" else "/") + "GLOBAL_BOUNDING_BOX.txt"))
 
     
     output_folder = user_options.output_folder if user_options.output_folder[-1] == "/" else user_options.output_folder + "/"
     
-    # sorted_by_char = (standardised
-    #   | 'setLetterAsKey' >> beam.Map(lambda x: set_letter_as_key(x))
-    #   | 'groupByChar' >> beam.GroupByKey()
-    #   | 'createCharTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
-    #   | 'saveCharTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-char")))
+    sorted_by_char = (standardised
+      | 'setLetterAsKey' >> beam.Map(lambda x: set_letter_as_key(x))
+      | 'groupByChar' >> beam.GroupByKey()
+      | 'createCharTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
+      | 'saveCharTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-char")))
 
     # useful to train letter classifiers
     sorted_by_hash = (standardised
