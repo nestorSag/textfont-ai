@@ -2,7 +2,7 @@
 gsutil -m cp -r data/raw/* gs://textfont-ai-data/raw/
 
 ## run beam test on local
-pipenv run python scripts/py/run-beam-preprocessing.py \
+pipenv run python scripts/py/run-font-preprocessing.py \
   --input-folder=gs://textfont-ai-data/raw_sample/google/zip \
   --output-folder=gs://textfont-ai-data/local-test-output \
   --runner=DirectRunner \
@@ -12,10 +12,10 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
   --temp-location=gs://textfont-ai-misc/dataflow/temp/
 
 # run dataflow on entire datasets
-pipenv run python scripts/py/run-beam-preprocessing.py \
+pipenv run python scripts/py/run-font-preprocessing.py \
   --requirements_file=conf/dataflow-preprocessing-requirements.txt \
   --input-folder=gs://textfont-ai-data/raw \
-  --output-folder=gs://textfont-ai-data/processed/npz/64\
+  --output-folder=gs://textfont-ai-data/processed/tfr/64\
   --runner=DataflowRunner \
   --project=textfont-ai \
   --region=europe-west2 \

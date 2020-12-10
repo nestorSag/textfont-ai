@@ -22,6 +22,8 @@ from apache_beam.options.value_provider import StaticValueProvider
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
+import tensorflow as tf
+
 def get_bounding_box(gray_img):
   nonzero = np.where(gray_img > 0)
   if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
@@ -161,7 +163,7 @@ class Resizer(beam.DoFn):
     except Exception as e:
       print("error resizing image: {e}".format(e=e))
 
-def set_letter_as_key(triplet):
+def set_char_as_key(triplet):
   return (triplet[0],triplet)
 
 def set_hash_as_key(triplet,n_buckets=20):
@@ -169,23 +171,65 @@ def set_hash_as_key(triplet,n_buckets=20):
   hashed = np.random.randint(n_buckets)
   return (hashed,triplet)
 
-class TensorCreator(beam.DoFn):
+class ImageCompressor(beam.DoFn):
   #returns the byte stream of zipped images
   def __init__(self,image_dim):
     self.image_dim = image_dim
 
   def process(self,kvp) -> Tuple[str,np.ndarray,np.ndarray,np.ndarray]:
     key,value_list = kvp
+
+    def img_to_png_bytes(img):
+      bf = io.BytesIO()
+      imageio.imwrite(bf,img,"png")
+      val = bf.getvalue()
+      bf.close()
+      return val
     #
     try:
-      letters = np.array([x[0] for x in value_list])
-      filenames = np.array([x[1] for x in value_list])
-      imgs = np.array([x[2].reshape(self.image_dim,self.image_dim,1) for x in value_list])
+      letters = [str.encode(x[0]) for x in value_list]
+      filenames = [str.encode(x[1],errors="replace") for x in value_list]
+      imgs = [img_to_png_bytes(x[2]) for x in value_list]
 
       yield (key, letters, filenames, imgs)
     except Exception as e:
       print("error converting to numpy: {e}".format(e=e))
 
+class TFRecordUploader(beam.DoFn):
+
+  def __init__(self,output_folder):
+    self.output_folder = output_folder
+
+  def process(self,values) -> None:
+    #print("values: {v}".format)
+    def _bytes_feature(value):
+      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+    key, chars, filenames, imgs = values
+
+    output_suffix = ("" if self.output_folder[-1] == "/" else "/") + str(key)
+
+    #for kind, obj in (("char",letters),("filenames",filenames),("img",imgs)):
+    try:
+      #save tf record
+      with tf.io.TFRecordWriter(self.output_folder + output_suffix + ".tfr") as writer:
+        for i in range(len(chars)):
+          img = imgs[i]
+          char = chars[i]
+          filename = filenames[i]
+          example = tf.train.Example(
+            features=tf.train.Features(
+              feature={
+              "img": _bytes_feature(img),
+              "char":_bytes_feature(bytes(char)),
+              "filename":_bytes_feature(bytes(filename))}))
+          writer.write(example.SerializeToString())
+    except Exception as e:
+      logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
+
+
+# classes below this point were used in previous iterations to 
+# output zips of PNGs grouped by character, .npy files, and .npz files
+# currently the output is a TFRecord object, which are compressable and language agnostic
 
 
 class TensorUploader(beam.DoFn):
@@ -195,7 +239,7 @@ class TensorUploader(beam.DoFn):
 
   def process(self,values) -> None:
     #print("values: {v}".format)
-    key, letters, filenames, imgs = values
+    key, chars, filenames, imgs = values
 
     output_suffix = ("" if self.output_folder[-1] == "/" else "/") + str(key)
 
@@ -203,12 +247,13 @@ class TensorUploader(beam.DoFn):
     try:
       #save npz data
       bf = io.BytesIO()
-      np.savez_compressed(bf,img=imgs,char=letters,filenames=filenames)
+      np.savez_compressed(bf,img=imgs,char=chars,filename=filenames)
       outfile = self.output_folder + output_suffix + ".npz"
       gcs_file = GcsIO().open(outfile,mode="w")
       gcs_file.write(bf.getvalue())
       gcs_file.close()
       bf.close()
+
     except Exception as e:
       logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
 
@@ -354,17 +399,17 @@ def run(argv=None, save_main_session=True):
     output_folder = user_options.output_folder if user_options.output_folder[-1] == "/" else user_options.output_folder + "/"
     
     sorted_by_char = (standardised
-      | 'setLetterAsKey' >> beam.Map(lambda x: set_letter_as_key(x))
+      | 'setLetterAsKey' >> beam.Map(lambda x: set_char_as_key(x))
       | 'groupByChar' >> beam.GroupByKey()
-      | 'createCharTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
-      | 'saveCharTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-char")))
+      | 'createCharBundles' >> beam.ParDo(ImageCompressor(int(user_options.png_size)))
+      | 'saveCharTFRecords' >> beam.ParDo(TFRecordUploader(output_folder + "sorted-by-char")))
 
     # useful to train letter classifiers
     sorted_by_hash = (standardised
       | 'setHashAsKey' >> beam.Map(lambda x: set_hash_as_key(x))
       | 'groupByHash' >> beam.GroupByKey()
-      | 'createHashTensors' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
-      | 'saveHashTensors' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-hash")))
+      | 'createHashBundles' >> beam.ParDo(ImageCompressor(int(user_options.png_size)))
+      | 'saveHashTFRecords' >> beam.ParDo(TFRecordUploader(output_folder + "sorted-by-hash")))
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)

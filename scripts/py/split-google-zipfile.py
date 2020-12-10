@@ -1,5 +1,8 @@
 import re
 
+### split large google fonts master zip file into multiple smaller zip files that will be consumed 
+### by beam workers, improving load balancing in the preprocessing stage
+
 def get_fontname(str,ext=".ttf"):
     return str.split("/")[-1].lower().replace(ext,"")
 
