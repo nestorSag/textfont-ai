@@ -33,7 +33,7 @@ pipenv run python scripts/py/run-beam-preprocessing.py \
   --runner=DataflowRunner \
   --project=textfont-ai \
   --region=europe-west2 \
-  --job_name=zip-to-png-preprocessing \
+  --job_name=zip-to-npy-preprocessing \
   --temp_location=gs://textfont-ai-misc/dataflow/temp/ \
   --staging_location=gs://textfont-ai-misc/dataflow/staging/ \
   --machine_type=n2-standard-4 \

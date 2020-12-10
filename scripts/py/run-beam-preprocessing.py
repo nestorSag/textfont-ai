@@ -197,7 +197,7 @@ class TensorUploader(beam.DoFn):
     #print("values: {v}".format)
     key, letters, filenames, imgs = values
 
-    output_suffix = ("" if self.output_folder[-1] == "/" else "/") + key
+    output_suffix = ("" if self.output_folder[-1] == "/" else "/") + str(key)
 
     for kind, obj in (("char",letters),("filenames",filenames),("img",imgs)):
       try:
