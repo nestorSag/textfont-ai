@@ -12,6 +12,7 @@ pillow = "*"
 imageio = "*"
 matplotlib = "*"
 apache-beam = {version = "*", extras = ["gcp"]}
+tfx = "*"
 
 [requires]
 python_version = "3.6"

@@ -1,5 +1,5 @@
 import re
-
+import sys
 ### split large google fonts master zip file into multiple smaller zip files that will be consumed 
 ### by beam workers, improving load balancing in the preprocessing stage
 
@@ -44,3 +44,7 @@ def process(inzip,outfolder):
 inzip = "data/raw/google/zip/fonts-master"
 outfolder = "data/raw/google/ttf"
 process(inzip,outfolder)
+
+if __name__ == "__main__":
+  inzip,outfolder = sys.argv
+  process(inzip,outfolder)
