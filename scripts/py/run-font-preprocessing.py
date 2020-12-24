@@ -111,18 +111,17 @@ def run(argv=None, save_main_session=True):
     
     output_folder = user_options.output_folder if user_options.output_folder[-1] == "/" else user_options.output_folder + "/"
     
-    # sorted_by_char = (standardised
-    #   | 'setLetterAsKey' >> beam.Map(lambda x: set_char_as_key(x))
-    #   | 'groupByChar' >> beam.GroupByKey()
-    #   | 'createCharBundles' >> beam.ParDo(ImageCompressor(int(user_options.png_size)))
-    #   | 'saveCharsToNpz' >> beam.ParDo(TFRecordUploader(output_folder + "sorted-by-char")))
+    # sorted_by_hash = (standardised
+    #   | 'setHashAsKey' >> beam.Map(lambda x: set_hash_as_key(x))
+    #   | 'groupByHash' >> beam.GroupByKey()
+    #   | 'createHashBundles' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
+    #   | 'saveHashToNpz' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-hash")))
 
-    # useful to train letter classifiers
     sorted_by_hash = (standardised
       | 'setHashAsKey' >> beam.Map(lambda x: set_hash_as_key(x))
       | 'groupByHash' >> beam.GroupByKey()
-      | 'createHashBundles' >> beam.ParDo(TensorCreator(int(user_options.png_size)))
-      | 'saveHashToNpz' >> beam.ParDo(TensorUploader(output_folder + "sorted-by-hash")))
+      | 'createHashBundles' >> beam.ParDo(TFRecordContentCreator(int(user_options.png_size)))
+      | 'saveHashToTFR' >> beam.ParDo(TFRecordUploader(output_folder + "sorted-by-hash")))
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)
