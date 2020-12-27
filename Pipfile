@@ -13,6 +13,7 @@ imageio = "*"
 matplotlib = "*"
 apache-beam = {version = "*", extras = ["gcp"]}
 tfx = "*"
+"b7287bc" = {path = "./src"}
 
 [requires]
 python_version = "3.6"

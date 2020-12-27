@@ -28,35 +28,53 @@ from fontai.preprocessing import Preprocessor
 
 class ImageExtractor(beam.DoFn):
   
-  def __init__(self, font_size = 100, font_padding=500, offset=50):
+  def __init__(self, font_size = 100, canvas_size=500, offset=50):
     self.font_size = font_size
-    self.font_padding = font_padding
+    self.canvas_size = canvas_size
     self.offset = offset
+
+  def get_zip_from_gcp(self,gcs_file):
+    """
+    Download byte stream from cloud storage and cast it as zip file
+    """
+    # with io.BytesIO() as bf:
+    #   bf.write(GcsIO().open(gcs_file,mode="r").read())
+    #   zip_ = zipfile.ZipFile(bf)
+    #   return zip_
+
+    return zipfile.ZipFile(io.BytesIO(GcsIO().open(gcs_file,mode="r").read()))
 
   def process(self, gcs_file):
     #logging.info("processing {f}".format(f=gcs_file))
     try:
-      zip_ = Preprocessor.get_zip_from_gcp(gcs_file)
+      zip_ = self.get_zip_from_gcp(gcs_file)
       try:
-        yield Preprocessor.extract_imgs_from_zip(zip_)
+        triplets = Preprocessor.extract_imgs_from_zip(zip_,self.canvas_size,self.font_size,self.offset)
+        for triplet in triplets:
+          yield triplet
       except Exception as e:
-        logging.exception("Error processing zip file {l}: {e}".format(l=gcs_file,e=e))
-        return 
+        logging.exception(f"Error processing zip file {gcs_file}: {e}")
+        return
+      # finally:
+      #   zip_.close()
+
     except Exception as e:
-      logging.exception("Error retrieving {l}: {e}".format(l=gcs_file,e=e))
+      logging.exception(f"Error retrieving {gcs_file}: {e}")
       return 
 
 class Cropper(beam.DoFn):
 
-  def process(self,tuple_): #  -> Tuple[str,Tuple[str,np.ndarray]]
+  def process(self,triplet): #  -> Tuple[str,Tuple[str,np.ndarray]]
     # prepare png
     try:
-      letter, output_filename, im = tuple_
+      letter, output_filename, im = triplet
       cropped = Preprocessor.crop_img(im)
-      key = output_filename[0] #character in png
-      return letter, output_filename, cropped
+      if cropped is not None:
+        yield letter, output_filename, cropped
+      else:
+        return
     except Exception as e:
-      print("error cropping image: {e}".format(e=e))
+      logging.exception(f"error cropping image: {e}")
       return 
 
 class Resizer(beam.DoFn):
@@ -65,21 +83,27 @@ class Resizer(beam.DoFn):
     self.output_dim = output_dim
 
   def process(self,triplet):
-
+    letter, output_filename, img = triplet
     try:
-      letter, output_filename, img = triplet
       output = Preprocessor.resize(img,self.output_dim)
-      return letter, output_filename, output
+      if output is not None:
+        yield letter, output_filename, output
+      else:
+        return
     except Exception as e:
-      print(f"error resizing char {letter} in file {output_filename}: {e}")
+      #print(f"***\n{img}\n***")
+      #print(f"***\n{output}\n***")
+      logging.exception(f"error resizing char {letter} in file {output_filename}: {e}")
       return 
 
 def set_char_as_key(triplet):
   return (triplet[0],triplet)
 
-def set_hash_as_key(triplet,n_buckets=20):
+def set_hash_as_key(triplet,n_buckets=100):
   # create hash from name
-  hashed = np.random.randint(n_buckets)
+  hashed = np.random.randint(low=0,high=n_buckets,size=1)[0]
+  #print(f"***\n{triplet}\n***")
+  #print(f"***\n{hashed}\n***")
   return (hashed,triplet)
 
 class TensorCreator(beam.DoFn):
@@ -95,7 +119,7 @@ class TensorCreator(beam.DoFn):
       imgs = np.array([x[2].reshape(self.image_dim,self.image_dim,1) for x in value_list])
       yield (key, letters, filenames, imgs)
     except Exception as e:
-      print("error converting to numpy: {e}".format(e=e))
+      logging.exception(f"error converting to numpy: {e}")
 
 class TensorUploader(beam.DoFn):
   # uploads a compressed numpy array zip to cloud storage
@@ -120,7 +144,7 @@ class TensorUploader(beam.DoFn):
       bf.close()
 
     except Exception as e:
-      logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
+      logging.exception(f"Error uploading numpy objects for character {c}: {e}")
 
 
 class TFRecordContentCreator(beam.DoFn):
@@ -145,7 +169,7 @@ class TFRecordContentCreator(beam.DoFn):
 
       yield (key, letters, filenames, imgs)
     except Exception as e:
-      print("error converting to numpy: {e}".format(e=e))
+      logging.exception(f"error converting to numpy: {e}")
 
       
 class TFRecordUploader(beam.DoFn):
@@ -177,7 +201,7 @@ class TFRecordUploader(beam.DoFn):
               "filename":_bytes_feature(bytes(filename))}))
           writer.write(example.SerializeToString())
     except Exception as e:
-      logging.exception("Error uploading numpy objects for character {c}: {e}".format(c=key,e=e))
+      logging.exception(f"Error uploading numpy objects for character {key}: {e}")
 
 
 # classes below this point were used in previous iterations to 
@@ -215,7 +239,7 @@ class ZipUploader(beam.DoFn):
       gcs_file.write(byte_stream)
       gcs_file.close()
     except Exception as e:
-      logging.exception("Error uploading ZIP for character {c}: {e}".format(c=key,e=e))
+      logging.exception(f"Error uploading ZIP for character {key}: {e}")
 
 # class DimGatherer(beam.CombineFn):
 #   # simply gather a list of image dimensions to reduce later
@@ -258,8 +282,8 @@ def run(argv=None, save_main_session=True):
       required = True,      
       help='Output file to write results to.')
   parser.add_argument(
-      '--font-padding',
-      dest='font_padding',
+      '--canvas-size',
+      dest='canvas_size',
       # CHANGE 1/6: The Google Cloud Storage path is required
       # for outputting the results.
       default='500',
@@ -270,7 +294,7 @@ def run(argv=None, save_main_session=True):
       # CHANGE 1/6: The Google Cloud Storage path is required
       # for outputting the results.
       default='64',
-      help='Size of fila PNG outputs')
+      help='Size of PNG outputs')
   parser.add_argument(
       '--font-size',
       dest='font_size',
@@ -311,7 +335,7 @@ def run(argv=None, save_main_session=True):
     standardised = (files 
     | 'getPNGs' >> beam.ParDo(ImageExtractor(
         font_size=int(user_options.font_size),
-        font_padding=int(user_options.font_padding),
+        canvas_size=int(user_options.canvas_size),
         offset=int(user_options.png_offset)))
     | 'cropAndGroup' >> beam.ParDo(Cropper())
     | "standardisePNGs" >> beam.ParDo(Resizer(output_dim=int(user_options.png_size))))

@@ -3,10 +3,6 @@ from distutils.core import Extension
 
 LATEST = "1.0.0"
 
-with open("README.md", "r") as fh:
-
-    long_description = fh.read()
-
 setuptools.setup(
 
      name='fontai',  
@@ -32,9 +28,7 @@ setuptools.setup(
 
     ],
 
-     long_description=long_description,
-
-     long_description_content_type="text/markdown",
+     long_description="Codebase for training text font AI models",
 
      url="https://bitbucket.com/nestorsag/phd",
 

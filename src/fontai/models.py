@@ -58,3 +58,4 @@ class ScatterGatherConvLayer(tf.keras.layer.Layer):
     return tf.concat(getattr(self,"module" + str(i))(inputs) for i in range(self.module_number), axis=3)
 
 # {"submodules":[{"layers":[...]},{"layers":[...]}]}
+

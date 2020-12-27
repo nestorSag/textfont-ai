@@ -1,4 +1,4 @@
-from src.ingestion import *
+from fontai.ingestion import *
 
 data_folder = "raw"
 sources = [GoogleFontsUrlGenerator(),FreefontsUrlGenerator(),DafontsUrlGenerator()]
@@ -6,5 +6,5 @@ sinks = [data_folder + "/" subdir + "/zip" for subdir in ["google","1001free","d
 
 scrapper = ZipScrapperIngestor()
 
-for (souce,sink) in zip(sources,sinks):
+for (source,sink) in zip(sources,sinks):
   scrapper.ingest(source.get_urls(),sink)
