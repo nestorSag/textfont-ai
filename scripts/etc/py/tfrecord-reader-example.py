@@ -10,11 +10,18 @@ filenames = ["sample.tfr"]
 records = tf.data.TFRecordDataset(filenames)
 
 def parse_record(serialized):
-  return tf.io.parse_single_example(serialized,img_spec)
+  return tf.io.parse_single_example(serialized,record_spec)
 
-examples = dt.map(parse_record)
+examples = records.map(parse_record)
 
-objs = []
-counter = 0
+imgs = []
+filenames = []
+chars = []
 for example in examples:
-    objs.append(example["img"])
+  with io.BytesIO() as bf:
+    img = imageio.imread(io.BytesIO(example["img"].numpy()))
+  imgs.append(img.reshape((1,) + img.shape + (1,)))
+  filenames.append(example["filename"].numpy().decode("utf-8"))
+  chars.append(example["char"].numpy().decode("utf-8"))
+
+ims = np.concatenate(imgs,axis=0)
