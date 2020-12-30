@@ -1,7 +1,7 @@
 
 # Generative models for text font generation
 
-This projects addresses all the stages of an ML project whose objective is to train a generative model to come up with new text fonts, provided different types of user-supplied constraints.
+This project addresses all the stages of an ML model whose objective is to train a generative model to come up with new text fonts, provided different types of user-supplied constraints.
 
 ## Organisation
 
