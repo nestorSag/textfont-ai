@@ -1,19 +1,19 @@
 [[source]]
-url = "https://pypi.org/simple"
+url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[dev-packages]
-
 [packages]
-tensorflow = "*"
-pillow = "*"
-"beautifulsoup4" = "*"
+Pillow = "*"
+beautifulsoup4 = "*"
 imageio = "*"
 matplotlib = "*"
-apache-beam = {version = "*", extras = ["gcp"]}
-tfx = "*"
-"b7287bc" = {path = "./src"}
+tensorflow = "==2.2.0"
+
+[dev-packages]
 
 [requires]
-python_version = "3.6"
+python_version = "3.8"
+
+[packages.apache-beam]
+extras = [ "gcp",]
