@@ -1,27 +1,32 @@
 import tensorflow as tf
 
-record_spec = {
-    'char': tf.io.FixedLenFeature([], tf.string),
-    'filename': tf.io.FixedLenFeature([], tf.string),
-    'img': tf.io.FixedLenFeature([], tf.string),
-}
+class TFRHandler(object):
 
-filenames = ["sample.tfr"]
-records = tf.data.TFRecordDataset(filenames)
+  def __init__(self):
 
-def parse_record(serialized):
-  return tf.io.parse_single_example(serialized,record_spec)
+    self.record_spec = {
+        'char': tf.io.FixedLenFeature([], tf.string),
+        'filename': tf.io.FixedLenFeature([], tf.string),
+        'img': tf.io.FixedLenFeature([], tf.string),
+    }
 
-examples = records.map(parse_record)
+  def parse_record(serialized):
+    return tf.io.parse_single_example(serialized,self.record_spec)
 
-imgs = []
-filenames = []
-chars = []
-for example in examples:
-  with io.BytesIO() as bf:
-    img = imageio.imread(io.BytesIO(example["img"].numpy()))
-  imgs.append(img.reshape((1,) + img.shape + (1,)))
-  filenames.append(example["filename"].numpy().decode("utf-8"))
-  chars.append(example["char"].numpy().decode("utf-8"))
 
-ims = np.concatenate(imgs,axis=0)
+  def to_numpy(self,filepath):
+    records = tf.data.TFRecordDataset(filepath)
+    examples = records.map(parse_records)
+
+    mgs = []
+    filenames = []
+    chars = []
+    for example in examples:
+      with io.BytesIO() as bf:
+      img = imageio.imread(io.BytesIO(example["img"].numpy()))
+      imgs.append(img.reshape((1,) + img.shape + (1,)))
+      filenames.append(example["filename"].numpy().decode("utf-8"))
+      chars.append(example["char"].numpy().decode("utf-8"))
+
+    imgs = np.concatenate(imgs,axis=0)
+    return imgs, np.array(filenames) np.array(chars)

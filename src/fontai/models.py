@@ -1,43 +1,56 @@
+import sys
+import re
 import tensorflow as tf
 
+thismodule = sys.modules[__name__]
 
-def get_layer_instance(layer_name):
+def get_layer_instance(layer_dict):
+  layer_name = layer_dict["class"]
+
   ## returns the layer class based on its name; looks in the tf and local modules
   try:
-    layer = getattr(tf.keras.layers,layer_name)
-    return layer
-  except AttributeError as e:
-    try:
-      layer = getattr(__name__,layer_name)
-      return layer
-    except Exception as e:
-      print(f"error instantiating layer class: {e}")
+    if re.match("tf.keras.layers",layer_name):
+      layer = getattr(tf.keras.layers,layer_name.replace("tf.keras.layers.",""))
+    elif re.match("tf.keras",layer_name):
+      layer = getattr(tf.keras,layer_name.replace("tf.keras.",""))
+    else:
+      layer = getattr(thismodule,layer_name)
+    #print(f"layer: {layer}")
+    return layer(**layer_dict["kwargs"])
+  except Exception as e:
+    raise Exception(f"an error occured instantiating a layer: {e}")
 
-class StackedNetwork(tf.keras.Model):
-  """ Network formed by stacking layers
+def get_stacked_network(hyperpar_dict):
+  layers_dict = hyperpar_dict["layers"]
+  layer_list = []
+  for layer_spec in layers_dict:
+    layer_list.append(get_layer_instance(layer_spec))
+  return tf.keras.Sequential(layer_list)
 
-  Parameters:
+# class StackedNetwork(tf.keras.Model):
+#   """ Network formed by stacking layers
 
-  layers (`dict`): dict with a "layers" key, whose value is a list of dicts with two keys: "class" and "kwargs".
-  Class is the name of the class from the tf.keras.layers package
+#   Parameters:
 
-  """
-  def __init__(self,layers):
-    super(StackedNetwork,self).__init__()
-    layer_number = 0
-    for layer in layers["layers"]:
-      #layer_class = getattr(tf.keras.layers,layer["class"])
-      layer_class = get_layer_instance(layer["class"])
-      setattr(self,"layer" + str(layer_number),layer_class(layer["kwargs"]))
-      layer_number += 1
-    self.n_layers = layer_number
+#   layers (`dict`): dict with a "layers" key, whose value is a list of dicts with two keys: "class" and "kwargs".
+#   Class is the name of the class from the tf.keras.layers package
 
-  def call(self,inputs):
-    for k in range(self.n_layers):
-      x = getattr(self,"layer" + str(k))(x)
-    return x
+#   """
+#   def __init__(self,layers):
+#     super(StackedNetwork,self).__init__()
+#     layer_number = 0
+#     for layer in layers["layers"]:
+#       #layer_class = getattr(tf.keras.layers,layer["class"])
+#       setattr(self,"layer" + str(layer_number),layer_instance(layer))
+#       layer_number += 1
+#     self.n_layers = layer_number
 
-class ScatterGatherConvLayer(tf.keras.layer.Layer):
+#   def call(self,x):
+#     for k in range(self.n_layers):
+#       x = getattr(self,"layer" + str(k))(x)
+#     return x
+
+class ScatterGatherConvLayer(tf.keras.layers.Layer):
   """ This layer passes its input through multiple separate layers and then concatenate their output in a single tensor
       #with same dimensions as input
   Parameters:
@@ -55,7 +68,7 @@ class ScatterGatherConvLayer(tf.keras.layer.Layer):
     self.module_number = module_number
 
   def call(self,inputs):
-    return tf.concat(getattr(self,"module" + str(i))(inputs) for i in range(self.module_number), axis=3)
+    return tf.concat([getattr(self,"module" + str(i))(inputs) for i in range(self.module_number)], axis=3)
 
 # {"submodules":[{"layers":[...]},{"layers":[...]}]}
 

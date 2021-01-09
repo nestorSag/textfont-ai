@@ -1,3 +1,4 @@
+#!/bin/bash
 ## scrap websites to get font zips 
 
 ## run beam test on local
@@ -9,6 +10,9 @@
 #   --region=europe-west2 \
 #   --job_name=textffont-ai-zip2png \
 #   --temp-location=gs://textfont-ai-misc/dataflow/temp/
+
+# create main library's tarball
+pipenv run python src/setup.py sdist
 
 # run dataflow on entire datasets and store it in different folder
 pipenv run python scripts/preprocessing/py/preprocessing.py \
@@ -25,4 +29,5 @@ pipenv run python scripts/preprocessing/py/preprocessing.py \
   --max_num_workers=18 \
   --disk_size_gb=50 \
   --num_workers=3 \
-  --autoscaling_algorithm=THROUGHPUT_BASED 
+  --autoscaling_algorithm=THROUGHPUT_BASED \
+  --extra_package dist/$(ls dist/)

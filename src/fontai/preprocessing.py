@@ -135,3 +135,35 @@ class Preprocessor(object):
       # except Exception as e:
       #   logging.exception("error resizing png: {e}".format(e=e))
       #   return 
+
+class TFRHandler(object):
+
+  def __init__(self):
+
+    self.record_spec = {
+      'char': tf.io.FixedLenFeature([], tf.string),
+      'filename': tf.io.FixedLenFeature([], tf.string),
+      'img': tf.io.FixedLenFeature([], tf.string),
+    }
+
+    self.classes = string.ascii_letters + string.digits
+
+  def parse_record(self,serialized):
+    return tf.io.parse_single_example(serialized,self.record_spec)
+
+
+  def to_numpy(self,filepath):
+    records = tf.data.TFRecordDataset(filepath)
+    examples = records.map(self.parse_record)
+
+    imgs = []
+    filenames = []
+    chars = []
+    for example in examples:
+      img = imageio.imread(io.BytesIO(example["img"].numpy()))
+      imgs.append(img.reshape((1,) + img.shape + (1,)))
+      filenames.append(example["filename"].numpy().decode("utf-8"))
+      chars.append(example["char"].numpy().decode("utf-8"))
+
+    imgs = np.concatenate(imgs,axis=0)
+    return imgs.astype(np.int32), np.array([self.classes.index(char) for char in chars],dtype=np.int32), np.array(filenames), np.array(chars)
