@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "98265f6f09881638a0aa440a1efaf5c566b6cbc01a5ce38cde314a50fbb23b32"
+            "sha256": "5622d1d69a60f4e87ecd2dfe9e749df53787471c0590b29205d63117d9f237c0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -416,6 +416,13 @@
                 "sha256:e292605effc7da39b7a8734c719afb12ec4b5362add3528d8afad3aa3aa9057c"
             ],
             "version": "==0.2.2"
+        },
+        "gviz-api": {
+            "hashes": [
+                "sha256:43d13ccc21834d0501b33a291ef3265e933dbb4bbdca3d34b1ed0a048c0ef640",
+                "sha256:4f1edcc54443e67c5699c6962ce9bb8bb9289551e918db6f6f8ed74b53294ff9"
+            ],
+            "version": "==1.9.0"
         },
         "h5py": {
             "hashes": [
@@ -924,10 +931,10 @@
         },
         "rsa": {
             "hashes": [
-                "sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa",
-                "sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233"
+                "sha256:69805d6b69f56eb05b62daea3a7dbd7aa44324ad1306445e05da8060232d00f4",
+                "sha256:a8774e55b59fd9fc893b0d05e9bfc6f47081f46ff5b46f39ccf24631b7be356b"
             ],
-            "version": "==4.6"
+            "version": "==4.7"
         },
         "scikit-learn": {
             "hashes": [
@@ -983,7 +990,6 @@
                 "sha256:dc60bb302f48acf6da8ca4444cfa17d52c63c5415302a9ee77b3b21618090521",
                 "sha256:dee1bbf3a6c8f73b6b218cb28eed8dd13347ea2f87d572ce19b289d6fd3fbc59"
             ],
-            "markers": "python_version >= '3'",
             "version": "==1.4.1"
         },
         "six": {
@@ -1013,6 +1019,14 @@
                 "sha256:a3feb73e1221c0a512398ad2cd08570fb082d8a2ba364aa0562543ecbd3659ef"
             ],
             "version": "==2.2.2"
+        },
+        "tensorboard-plugin-profile": {
+            "hashes": [
+                "sha256:72a538667aa1d164249e22a937142e1f6a67b95a5ec42e6badff8e39b764cd7c",
+                "sha256:dfbf254ee960440e3b2518324f876a6d6704c60b936887d99214fa36988a206a"
+            ],
+            "index": "pypi",
+            "version": "==2.4.0"
         },
         "tensorboard-plugin-wit": {
             "hashes": [

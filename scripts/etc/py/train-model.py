@@ -1,9 +1,11 @@
 import json 
+import datetime
 import numpy as np
 
 from sklearn.model_selection import train_test_split
 from fontai.preprocessing import TFRHandler
 from fontai.models import * 
+import tensorflow as tf
 
 num_classes=62
 
@@ -27,6 +29,7 @@ model = tf.keras.Sequential(
    tf.keras.layers.Dense(62,activation="softmax")
   ]
 )
+
 model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
 model.summary()
 
@@ -51,6 +54,9 @@ x_test = (x_test/255).astype(np.float32)
 
 
 #x_train_t, x_test_t, y_train_t, y_test_t = tf.convert_to_tensor(x_train), tf.convert_to_tensor(x_test), tf.convert_to_tensor(y_train), tf.convert_to_tensor(y_test)
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
+#/etc/modprobe.d/nvidia-kernel-common.conf
 
-model.fit(x_train,y_train, batch_size = 128, epochs = 100, validation_split = 0.1)
+model.fit(x_train,y_train, batch_size = 128, epochs = 40, validation_split = 0.1,callbacks=[tensorboard_callback])
