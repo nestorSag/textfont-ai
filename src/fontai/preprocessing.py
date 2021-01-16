@@ -147,12 +147,29 @@ class TFRHandler(object):
     }
 
     self.classes = string.ascii_letters + string.digits
+    self.tf_classes = tf.convert_to_tensor(list(self.classes))
+    self.num_classes = len(self.classes)
 
   def parse_record(self,serialized):
     return tf.io.parse_single_example(serialized,self.record_spec)
 
+  def files_to_numpy(self,filepaths):
+    if isinstance(filepaths,str):
+      return file_to_numpy(filepaths)
+    elif isinstance(filepaths,list):
+      img0 = np.empty((0,64,64,1))
+      class0 = np.empty((0,))
+      files0 = np.empty((0,))
+      chars0 = np.empty((0,))
+      for filepath in filepaths:
+        img, classes, filenames, chars = self.file_to_numpy(filepath)
+        img0 = np.concatenate([img0,img],axis=0)
+        class0 = np.concatenate([class0,classes],axis=0)
+        files0 = np.concatenate([files0,filenames],axis=0)
+        chars0 = np.concatenate([chars0,chars],axis=0)
+      return img0, class0, filenames, chars0
 
-  def to_numpy(self,filepath):
+  def file_to_numpy(self,filepath):
     records = tf.data.TFRecordDataset(filepath)
     examples = records.map(self.parse_record)
 
@@ -167,3 +184,14 @@ class TFRHandler(object):
 
     imgs = np.concatenate(imgs,axis=0)
     return imgs.astype(np.int32), np.array([self.classes.index(char) for char in chars],dtype=np.int32), np.array(filenames), np.array(chars)
+
+  def parse_tf_objects(self,serialized):
+    parsed = tf.io.parse_single_example(serialized,self.record_spec)
+    img = (tf.image.decode_png(parsed["img"])/255)
+    y = tf.cast(tf.where(self.tf_classes == parsed["char"]),dtype=tf.int32)
+    label = tf.reshape(tf.one_hot(indices=y,depth=self.num_classes),(self.num_classes,))#.reshape((num_classes,))
+    return img, label
+
+  def get_tf_dataset(self,files,batch_size=32):
+    dataset = tf.data.TFRecordDataset(filenames=files)
+    return dataset.map(self.parse_tf_objects).batch(batch_size)
