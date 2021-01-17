@@ -194,4 +194,4 @@ class TFRHandler(object):
 
   def get_tf_dataset(self,files,batch_size=32):
     dataset = tf.data.TFRecordDataset(filenames=files)
-    return dataset.map(self.parse_tf_objects).batch(batch_size)
+    return dataset.map(self.parse_tf_objects).shuffle(buffer_size=2*batch_size).repeat().batch(batch_size)
