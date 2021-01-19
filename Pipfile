@@ -11,6 +11,8 @@ matplotlib = "*"
 sklearn = "*"
 tensorflow-gpu = "==2.2.0"
 tensorboard-plugin-profile = "*"
+pandas = "*"
+seaborn = "*"
 
 [dev-packages]
 

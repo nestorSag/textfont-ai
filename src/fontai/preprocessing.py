@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from collections.abc import Iterable
 
+import os
 import argparse
 import logging
 import traceback
@@ -136,62 +137,65 @@ class Preprocessor(object):
       #   logging.exception("error resizing png: {e}".format(e=e))
       #   return 
 
-class TFRHandler(object):
+class InputDataHandler(object):
 
-  def __init__(self):
+  def __init__(self,padding=2,pixel_threshold=100,charset="all"):
 
     self.record_spec = {
       'char': tf.io.FixedLenFeature([], tf.string),
       'filename': tf.io.FixedLenFeature([], tf.string),
       'img': tf.io.FixedLenFeature([], tf.string),
     }
+    if charset != "all":
+      if charset == "lowercase":
+        self.classes = string.ascii_letters[0:26]
+      elif charset == "uppercase":
+        self.classes = string.ascii_letters[26::]
+      elif charset == "numbers":
+        self.classes = string.digits
+      else:
+        raise Exception("Only 'lowercase', 'uppercase', 'numbers' or 'all' are allowed as options for charset")
+    else:
+      self.classes = string.ascii_letters + string.digits
 
-    self.classes = string.ascii_letters + string.digits
     self.tf_classes = tf.convert_to_tensor(list(self.classes))
     self.num_classes = len(self.classes)
-
-  def parse_record(self,serialized):
-    return tf.io.parse_single_example(serialized,self.record_spec)
-
-  def files_to_numpy(self,filepaths):
-    if isinstance(filepaths,str):
-      return file_to_numpy(filepaths)
-    elif isinstance(filepaths,list):
-      img0 = np.empty((0,64,64,1))
-      class0 = np.empty((0,))
-      files0 = np.empty((0,))
-      chars0 = np.empty((0,))
-      for filepath in filepaths:
-        img, classes, filenames, chars = self.file_to_numpy(filepath)
-        img0 = np.concatenate([img0,img],axis=0)
-        class0 = np.concatenate([class0,classes],axis=0)
-        files0 = np.concatenate([files0,filenames],axis=0)
-        chars0 = np.concatenate([chars0,chars],axis=0)
-      return img0, class0, filenames, chars0
-
-  def file_to_numpy(self,filepath):
-    records = tf.data.TFRecordDataset(filepath)
-    examples = records.map(self.parse_record)
-
-    imgs = []
-    filenames = []
-    chars = []
-    for example in examples:
-      img = imageio.imread(io.BytesIO(example["img"].numpy()))
-      imgs.append(img.reshape((1,) + img.shape + (1,)))
-      filenames.append(example["filename"].numpy().decode("utf-8"))
-      chars.append(example["char"].numpy().decode("utf-8"))
-
-    imgs = np.concatenate(imgs,axis=0)
-    return imgs.astype(np.int32), np.array([self.classes.index(char) for char in chars],dtype=np.int32), np.array(filenames), np.array(chars)
+    self.padding = padding
+    self.pixel_threshold = pixel_threshold
 
   def parse_tf_objects(self,serialized):
-    parsed = tf.io.parse_single_example(serialized,self.record_spec)
-    img = (tf.image.decode_png(parsed["img"])/255)
+    return tf.io.parse_single_example(serialized,self.record_spec)
+
+  def filter_by_char(self,parsed):
+    return tf.reduce_any(self.tf_classes == parsed["char"])
+
+  def process_tf_objects(self,parsed):
+    img = tf.image.resize_with_crop_or_pad((tf.image.decode_png(parsed["img"])/255),64+self.padding,64+self.padding)
     y = tf.cast(tf.where(self.tf_classes == parsed["char"]),dtype=tf.int32)
     label = tf.reshape(tf.one_hot(indices=y,depth=self.num_classes),(self.num_classes,))#.reshape((num_classes,))
     return img, label
 
-  def get_tf_dataset(self,files,batch_size=32):
-    dataset = tf.data.TFRecordDataset(filenames=files)
-    return dataset.map(self.parse_tf_objects).shuffle(buffer_size=2*batch_size).repeat().batch(batch_size)
+  def filter_sparse_images(self,img,label):
+    return tf.math.count_nonzero(255*img) > self.pixel_threshold
+
+  def get_training_dataset(self,folder,batch_size=32):
+    files = [folder + file for file in os.listdir(folder)]
+    dataset = tf.data.TFRecordDataset(filenames=files)\
+      .map(self.parse_tf_objects)\
+      .filter(self.filter_by_char)\
+      .map(self.process_tf_objects)\
+      .filter(self.filter_sparse_images)\
+      .shuffle(buffer_size=2*batch_size)\
+      .repeat()\
+      .batch(batch_size)
+    return dataset
+
+  def get_evaluation_dataset(self,folder,batch_size=32):
+    files = [folder + file for file in os.listdir(folder)]
+    dataset = tf.data.TFRecordDataset(filenames=files)\
+      .map(self.parse_tf_objects)\
+      .filter(self.filter_by_char)\
+      .map(self.process_tf_objects)\
+      .filter(self.filter_sparse_images)\
+      .batch(batch_size)
+    return dataset
