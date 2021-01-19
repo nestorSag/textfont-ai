@@ -22,7 +22,7 @@ val_data_dir = "./data/val/"
 model_path = "models/model1/model"
 pixel_threshold = 0
 padding=3
-output_dir = "inspect/model1"
+output_dir = "inspect/model2"
 charset = "lowercase"
 
 os.makedirs(output_dir)
@@ -43,15 +43,17 @@ true_labels = np.concatenate([[handler.classes[z] for z in np.argmax(y,axis=1)] 
 
 
 # get confusion matrix
-predmat = confusion_matrix(true_labels,predicted_labels)
+predmat = confusion_matrix(true_labels,predicted_labels,normalize="true")
 predmat = pd.DataFrame(predmat)
 predmat.columns = list(handler.classes)
 predmat.index = list(handler.classes)
 
-plt.figure(figsize = (10,7))
+plt.rcParams.update({'font.size': 8})
+plt.figure(figsize = (20,20))
 sn.heatmap(predmat, annot=True)
-
+plt.savefig(output_dir + "/" + "heatmap.png")
 #predmat.to_csv(output_dir + "/" + "confusion matrix.csv")
+
 
 val_dataset = handler.
 from PIL import Image

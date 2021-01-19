@@ -43,7 +43,7 @@ model = tf.keras.Sequential(
    tf.keras.layers.Conv2D(160,kernel_size=(3,3),activation="relu"),
    tf.keras.layers.MaxPooling2D(pool_size=(3,3)),
    tf.keras.layers.Flatten(),
-   tf.keras.layers.Dropout(0.5),
+   #tf.keras.layers.Dropout(0.5),
    tf.keras.layers.Dense(500,activation="relu"),
    tf.keras.layers.Dense(500,activation="relu"),
    tf.keras.layers.Dense(num_classes,activation="softmax")
@@ -60,6 +60,6 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram
 
 #/etc/modprobe.d/nvidia-kernel-common.conf
 
-model.fit(dataset, steps_per_epoch = int(8000000*len(handler.classes)/62/batch_size), epochs = 5, callbacks=[tensorboard_callback])
+model.fit(dataset, steps_per_epoch = int(8000000*len(handler.classes)/62/batch_size), epochs = 3, callbacks=[tensorboard_callback])
 
 model.save(output_dir)
