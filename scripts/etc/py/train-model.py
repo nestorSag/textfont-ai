@@ -16,9 +16,9 @@ config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 # parameters
 pixel_threshold = 150
 batch_size = 128
-padding=3
+padding=1
 training_data_dir = "./data/train/"
-output_dir = "./models/model1/model"
+output_dir = "./models/model1_lowercase"
 charset = "lowercase"
 
 # training procedure
@@ -35,31 +35,34 @@ with open("tmp/hyperpars.json","r") as f:
 
 model = tf.keras.Sequential(
   [tf.keras.Input(shape = (64+padding,64+padding,1)),
-   tf.keras.layers.Conv2D(32,kernel_size=(7,7),activation="relu",strides=2),
-   tf.keras.layers.Conv2D(64,kernel_size=(4,4),activation="relu"),
+   tf.keras.layers.Conv2D(32,kernel_size=(3,3),activation="relu"),
+   tf.keras.layers.Conv2D(64,kernel_size=(8,8),activation="relu"),
    tf.keras.layers.Conv2D(96,kernel_size=(3,3),activation="relu"),
    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+   tf.keras.layers.Conv2D(96,kernel_size=(3,3),activation="relu"),
    tf.keras.layers.Conv2D(128,kernel_size=(3,3),activation="relu"),
    tf.keras.layers.Conv2D(160,kernel_size=(3,3),activation="relu"),
-   tf.keras.layers.MaxPooling2D(pool_size=(3,3)),
+   tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+   tf.keras.layers.Conv2D(192,kernel_size=(3,3),activation="relu"),
+   tf.keras.layers.Conv2D(224,kernel_size=(3,3),activation="relu"),
+   tf.keras.layers.Conv2D(256,kernel_size=(3,3),activation="relu"),
+   tf.keras.layers.Conv2D(64,kernel_size=(1,1),activation="relu"),
    tf.keras.layers.Flatten(),
    #tf.keras.layers.Dropout(0.5),
-   tf.keras.layers.Dense(500,activation="relu"),
-   tf.keras.layers.Dense(500,activation="relu"),
    tf.keras.layers.Dense(num_classes,activation="softmax")
   ]
 )
 
-
-model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
 model.summary()
 
+model.compile(loss = hyperpar_dict["loss"], optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), metrics = hyperpar_dict["metrics"])
 
-log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+log_dir = "logs/fit/1x1conv"
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 #/etc/modprobe.d/nvidia-kernel-common.conf
 
-model.fit(dataset, steps_per_epoch = int(8000000*len(handler.classes)/62/batch_size), epochs = 3, callbacks=[tensorboard_callback])
+model.fit(dataset, steps_per_epoch = int(1000000*len(handler.classes)/62/batch_size), epochs = 8, callbacks=[tensorboard_callback])
 
 model.save(output_dir)
