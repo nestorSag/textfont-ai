@@ -1,0 +1,69 @@
+{
+	"layers": [
+	{
+		"class":"tf.keras.Input",
+		"kwargs": {"shape":[64,64,1]}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":32,"kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":64,"kernel_size":[8,8],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":96,"kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.MaxPooling2D",
+		"kwargs": {"pool_size":[2,2]}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":96,"kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":128, "kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":160,"kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.MaxPooling2D",
+		"kwargs": {"pool_size":[2,2]}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":192,"kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":224, "kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":256,"kernel_size":[3,3],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Conv2D",
+		"kwargs": {"filters":64,"kernel_size":[1,1],"activation":"relu"}
+	},
+	{
+		"class":"tf.keras.layers.Flatten",
+		"kwargs": {}
+	},
+	{
+		"class":"tf.keras.layers.Dropout",
+		"kwargs": {"rate":0.5}
+	}
+	],
+
+	"loss": "categorical_crossentropy",
+	"optimizer": "adam",
+	"metrics": ["accuracy"]
+
+}

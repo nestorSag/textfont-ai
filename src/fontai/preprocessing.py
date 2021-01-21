@@ -170,7 +170,7 @@ class InputDataHandler(object):
     return tf.reduce_any(self.tf_classes == parsed["char"])
 
   def process_tf_objects(self,parsed):
-    img = tf.image.resize_with_crop_or_pad((tf.image.decode_png(parsed["img"])/255),64+self.padding,64+self.padding)
+    img = tf.image.resize_with_crop_or_pad((tf.image.decode_png(parsed["img"])/255),target_height=64+2*self.padding,target_width=64+2*self.padding)
     y = tf.cast(tf.where(self.tf_classes == parsed["char"]),dtype=tf.int32)
     label = tf.reshape(tf.one_hot(indices=y,depth=self.num_classes),(self.num_classes,))#.reshape((num_classes,))
     return img, label
@@ -179,6 +179,8 @@ class InputDataHandler(object):
     return tf.math.count_nonzero(255*img) > self.pixel_threshold
 
   def get_training_dataset(self,folder,batch_size=32):
+    if folder[-1] != "/":
+      folder = folder + "/"
     files = [folder + file for file in os.listdir(folder)]
     dataset = tf.data.TFRecordDataset(filenames=files)\
       .map(self.parse_tf_objects)\
@@ -191,6 +193,8 @@ class InputDataHandler(object):
     return dataset
 
   def get_evaluation_dataset(self,folder,batch_size=32):
+    if folder[-1] != "/":
+      folder = folder + "/"
     files = [folder + file for file in os.listdir(folder)]
     dataset = tf.data.TFRecordDataset(filenames=files)\
       .map(self.parse_tf_objects)\
