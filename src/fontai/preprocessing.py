@@ -163,28 +163,6 @@ class InputDataHandler(object):
     self.padding = padding
     self.pixel_threshold = pixel_threshold
 
-  # def compute_normalization_constants(self,tfr_files):
-  #   dataset = tf.data.TFRecordDataset(filenames=tfr_files) \
-  #     .map(self.parse_tf_objects)\
-  #     .filter(self.filter_by_char)\
-  #     .map(self.process_tf_objects)\
-  #     .filter(self.filter_sparse_images)
-
-  #   def sum_tuple(x,y):
-  #     return (x[0] + y[0], x[1] + 1)
-
-  #   sum_, count_ = dataset.reduce((tf.zeros(shape=(66,66,1)),0.0),sum_tuple)
-  #   mean = sum_/count_
-
-  #   def sd(x,y):
-  #     return x + (y[0] - sum_)*(y[0] - sum_)/(count_-1)
-
-  #   sdev_ = dataset.reduce(tf.zeros(shape=(66,66,1)),sd)
-
-  #   self.mean = mean
-  #   self.sd = sd
-    #sdev_ = dataset.reduce((tf.zeros(shape=(66,66,1)),sum_,count_),lambda x,y: (x[0] + (y - x[1])**2/(x[2]-1),sum_,count_))
-    
   def parse_tf_objects(self,serialized):
     return tf.io.parse_single_example(serialized,self.record_spec)
 
@@ -202,67 +180,32 @@ class InputDataHandler(object):
   def filter_sparse_images(self,img,label):
     return tf.math.count_nonzero(img) > self.pixel_threshold
 
-  # def standardise(self,img,label):
-  #   return (img - self.mean)/self.sd, label
-
-  # def normalise_img(self,img,label):
-  #   return (img - self.mean)/self.sd, label
-
-  def get_training_dataset(self,folder,batch_size=32,mean_estimation_sample_size=100000):
+  def get_dataset(self,folder):
     if folder[-1] != "/":
       folder = folder + "/"
     files = [folder + file for file in os.listdir(folder)]
+
     dataset = tf.data.TFRecordDataset(filenames=files)\
       .map(self.parse_tf_objects)\
       .filter(self.filter_by_char)\
       .map(self.process_tf_objects)\
-      .filter(self.filter_sparse_images)\
+      .filter(self.filter_sparse_images)
+
+    return dataset
+  def get_training_dataset(self,folder,batch_size=32):
+    dataset = self.get_dataset(folder)
+
+    dataset = dataset\
       .shuffle(buffer_size=2*batch_size)\
       .repeat()\
       .batch(batch_size)
 
     return dataset
 
-    # def sum_tuple(x,y):
-    #   return (x[0] + y[0], x[1] + 1)
-
-    # def sd(x,y):
-    #   y_ = tf.cast(y[0],dtype=tf.float32)
-    #   return x + (y_ - sum_)**2/(count_-1)
-
-    # if folder[-1] != "/":
-    #   folder = folder + "/"
-    # files = [folder + file for file in os.listdir(folder)]
-    # dataset = tf.data.TFRecordDataset(filenames=files)\
-    #   .map(self.parse_tf_objects)\
-    #   .filter(self.filter_by_char)\
-    #   .map(self.process_tf_objects)
-
-    # #estimate empirical mean
-    # print("computing sample mean and variance.")
-    # sum_, count_ = dataset.take(mean_estimation_sample_size).reduce((tf.zeros(shape=(64+2*self.padding,64+2*self.padding,1)),0.0),sum_tuple)
-    # self.mean = sum_/count_
-    # #self.sd = tf.sqrt(dataset.reduce(tf.zeros(shape=(64+2*self.padding,64+2*self.padding,1)),sd))
-    # self.sd = 255.0
-
-    # dataset = dataset.map(self.normalise_img)\
-    #   .filter(self.filter_sparse_images)\
-    #   .shuffle(buffer_size=2*batch_size)\
-    #   .repeat()\
-    #   .batch(batch_size)
-
-    # return dataset
-
-  def get_evaluation_dataset(self,folder,batch_size=32):
-    if folder[-1] != "/":
-      folder = folder + "/"
-    files = [folder + file for file in os.listdir(folder)]
-
-    dataset = tf.data.TFRecordDataset(filenames=files)\
-      .map(self.parse_tf_objects)\
-      .filter(self.filter_by_char)\
-      .map(self.process_tf_objects)\
-      .filter(self.filter_sparse_images)\
-      .batch(batch_size)
-
-    return dataset
+  def get_evaluation_dataset(self,folder,batch_size=None):
+    dataset = self.get_dataset(folder)
+    
+    if batch_size is not None:
+      return dataset.batch(batch_size)
+    else:
+      return dataset

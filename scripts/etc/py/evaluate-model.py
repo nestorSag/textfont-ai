@@ -32,7 +32,7 @@ os.makedirs(output_dir)
 handler = InputDataHandler(padding=padding,pixel_threshold=pixel_threshold,charset=charset)
 model = tf.keras.models.load_model(model_path)
 #### get validation metrics
-val_dataset = handler.get_evaluation_dataset(folder=val_data_dir)
+val_dataset = handler.get_evaluation_dataset(folder=val_data_dir,batch_size=32)
 eval_metric = dict(zip(["loss","accuracy"],model.evaluate(val_dataset)))
 
 #### analyse validation results
