@@ -1,10 +1,6 @@
 {
 	"layers": [
 	{
-		"class":"tf.keras.Input",
-		"kwargs": {"shape":[64,64,1]}
-	},
-	{
 		"class":"tf.keras.layers.Conv2D",
 		"kwargs": {"filters":32,"kernel_size":[3,3],"activation":"relu"}
 	},
@@ -63,7 +59,11 @@
 	],
 
 	"loss": "categorical_crossentropy",
-	"optimizer": "adam",
+	"optimizer": {
+		"class":"tf.keras.optimizers.Adam",
+		"kwargs": {}
+	},
 	"metrics": ["accuracy"]
+
 
 }

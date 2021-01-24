@@ -163,6 +163,28 @@ class InputDataHandler(object):
     self.padding = padding
     self.pixel_threshold = pixel_threshold
 
+  # def compute_normalization_constants(self,tfr_files):
+  #   dataset = tf.data.TFRecordDataset(filenames=tfr_files) \
+  #     .map(self.parse_tf_objects)\
+  #     .filter(self.filter_by_char)\
+  #     .map(self.process_tf_objects)\
+  #     .filter(self.filter_sparse_images)
+
+  #   def sum_tuple(x,y):
+  #     return (x[0] + y[0], x[1] + 1)
+
+  #   sum_, count_ = dataset.reduce((tf.zeros(shape=(66,66,1)),0.0),sum_tuple)
+  #   mean = sum_/count_
+
+  #   def sd(x,y):
+  #     return x + (y[0] - sum_)*(y[0] - sum_)/(count_-1)
+
+  #   sdev_ = dataset.reduce(tf.zeros(shape=(66,66,1)),sd)
+
+  #   self.mean = mean
+  #   self.sd = sd
+    #sdev_ = dataset.reduce((tf.zeros(shape=(66,66,1)),sum_,count_),lambda x,y: (x[0] + (y - x[1])**2/(x[2]-1),sum_,count_))
+    
   def parse_tf_objects(self,serialized):
     return tf.io.parse_single_example(serialized,self.record_spec)
 
@@ -170,15 +192,23 @@ class InputDataHandler(object):
     return tf.reduce_any(self.tf_classes == parsed["char"])
 
   def process_tf_objects(self,parsed):
-    img = tf.image.resize_with_crop_or_pad((tf.image.decode_png(parsed["img"])/255),target_height=64+2*self.padding,target_width=64+2*self.padding)
+    img = tf.image.decode_png(parsed["img"])
+    img = tf.image.resize_with_crop_or_pad(img,target_height=64+2*self.padding,target_width=64+2*self.padding)
+    img = tf.cast(img,dtype=tf.float32)
     y = tf.cast(tf.where(self.tf_classes == parsed["char"]),dtype=tf.int32)
     label = tf.reshape(tf.one_hot(indices=y,depth=self.num_classes),(self.num_classes,))#.reshape((num_classes,))
     return img, label
 
   def filter_sparse_images(self,img,label):
-    return tf.math.count_nonzero(255*img) > self.pixel_threshold
+    return tf.math.count_nonzero(img) > self.pixel_threshold
 
-  def get_training_dataset(self,folder,batch_size=32):
+  # def standardise(self,img,label):
+  #   return (img - self.mean)/self.sd, label
+
+  # def normalise_img(self,img,label):
+  #   return (img - self.mean)/self.sd, label
+
+  def get_training_dataset(self,folder,batch_size=32,mean_estimation_sample_size=100000):
     if folder[-1] != "/":
       folder = folder + "/"
     files = [folder + file for file in os.listdir(folder)]
@@ -190,16 +220,49 @@ class InputDataHandler(object):
       .shuffle(buffer_size=2*batch_size)\
       .repeat()\
       .batch(batch_size)
+
     return dataset
+
+    # def sum_tuple(x,y):
+    #   return (x[0] + y[0], x[1] + 1)
+
+    # def sd(x,y):
+    #   y_ = tf.cast(y[0],dtype=tf.float32)
+    #   return x + (y_ - sum_)**2/(count_-1)
+
+    # if folder[-1] != "/":
+    #   folder = folder + "/"
+    # files = [folder + file for file in os.listdir(folder)]
+    # dataset = tf.data.TFRecordDataset(filenames=files)\
+    #   .map(self.parse_tf_objects)\
+    #   .filter(self.filter_by_char)\
+    #   .map(self.process_tf_objects)
+
+    # #estimate empirical mean
+    # print("computing sample mean and variance.")
+    # sum_, count_ = dataset.take(mean_estimation_sample_size).reduce((tf.zeros(shape=(64+2*self.padding,64+2*self.padding,1)),0.0),sum_tuple)
+    # self.mean = sum_/count_
+    # #self.sd = tf.sqrt(dataset.reduce(tf.zeros(shape=(64+2*self.padding,64+2*self.padding,1)),sd))
+    # self.sd = 255.0
+
+    # dataset = dataset.map(self.normalise_img)\
+    #   .filter(self.filter_sparse_images)\
+    #   .shuffle(buffer_size=2*batch_size)\
+    #   .repeat()\
+    #   .batch(batch_size)
+
+    # return dataset
 
   def get_evaluation_dataset(self,folder,batch_size=32):
     if folder[-1] != "/":
       folder = folder + "/"
     files = [folder + file for file in os.listdir(folder)]
+
     dataset = tf.data.TFRecordDataset(filenames=files)\
       .map(self.parse_tf_objects)\
       .filter(self.filter_by_char)\
       .map(self.process_tf_objects)\
       .filter(self.filter_sparse_images)\
       .batch(batch_size)
+
     return dataset

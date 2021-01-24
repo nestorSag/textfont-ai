@@ -27,7 +27,7 @@ def get_stacked_network(hyperpar_dict):
     layer_list.append(get_layer_instance(layer_spec))
 
   model = tf.keras.Sequential(layer_list)
-  model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
+  #model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
   return model
 
 # class StackedNetwork(tf.keras.Model):

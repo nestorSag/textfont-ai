@@ -2,17 +2,18 @@ import os
 import numpy as np
 import pandas as pd
 from PIL import Image
+from pathlib import Path
 
 
 class ValidationDataExaminer(object):
-  def __init__(self,predicted_labels,true_labels,imgs,output_dir):
+  def __init__(self,predicted_labels,true_labels,predicted_scores,imgs,output_dir):
     self.imgs = imgs
     self.index_df = pd.DataFrame({"predicted":predicted_labels,"true":true_labels,"score":predicted_scores,"index":list(range(len(predicted_scores)))})
     self.output_dir = f"{output_dir}/misclassified"
   #
   def filter_model_results(self,predicted_label=None,true_label=None,ascending_order=True,n=32,misclassified_only=False):
-    call_output_dir = f"{self.output_dir}/true_{true_label}_pred_{predicted_label}_{'asc' if ascending_order else 'desc'}"
-    os.makedirs(call_output_dir)
+    call_output_dir = f"{self.output_dir}/true_{true_label if true_label is not None else 'all'}_pred_{predicted_label if predicted_label is not None else 'all'}_{'asc' if ascending_order else 'desc'}"
+    Path(call_output_dir).mkdir(parents=True, exist_ok=True)
     if predicted_label is None and true_label is None:
       filtered_df = self.index_df
     elif predicted_label is None and true_label is not None:
@@ -32,7 +33,7 @@ class ValidationDataExaminer(object):
       row = filtered_df.iloc[i,:]
       pred = row["predicted"]
       true = row["true"]
-      img = self.imgs[row["index"],:,:,0].reshape((64+2*padding,64+2*padding)).astype(np.uint8)
+      img = self.imgs[row["index"],:,:,0].reshape((self.imgs.shape[1],self.imgs.shape[2])).astype(np.uint8)
       im = Image.fromarray(img)
       im.save(f"{call_output_dir}/{counter}_score_{row['score']}_pred_{pred}_true_{true}.png")
       counter += 1

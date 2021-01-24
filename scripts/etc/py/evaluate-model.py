@@ -55,7 +55,7 @@ plt.savefig(output_dir + "/" + "heatmap.png")
 #predmat.to_csv(output_dir + "/" + "confusion matrix.csv")
 
 # merge results in dataframe
-imgs = np.empty((0,64+padding,64+padding,1))
+imgs = np.empty((0,64+2*padding,64+2*padding,1))
 for img, label in val_dataset:
   imgs = np.concatenate([imgs,(255*img.numpy()).astype(np.uint8)],axis=0)
 

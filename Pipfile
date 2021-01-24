@@ -9,10 +9,10 @@ beautifulsoup4 = "*"
 imageio = "*"
 matplotlib = "*"
 sklearn = "*"
-tensorflow-gpu = "==2.2.0"
 tensorboard-plugin-profile = "*"
 pandas = "*"
 seaborn = "*"
+tensorflow-gpu = "==2.2.0"
 
 [dev-packages]
 
