@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
 
 from typing import Generator
+from pathlib import Path
+
 #https://www.1001freefonts.com/
 #https://www.dafont.com/
 
@@ -25,8 +27,7 @@ class ZipScrapperIngestor:
             fd.write(chunk)
 
   def create_folder(self,folder: str):
-    if not os.path.isdir(folder):
-      os.mkdir(folder)
+    Path(folder).mkdir(parents=True, exist_ok=True)
 
   def scrape(self,input_url: str,output_path: str):
     #self.download_url(input_url,output_path)

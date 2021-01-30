@@ -192,15 +192,17 @@ class InputDataHandler(object):
       .filter(self.filter_sparse_images)
 
     return dataset
-  def get_training_dataset(self,folder,batch_size=32):
-    dataset = self.get_dataset(folder)
 
+  def scramble_dataset(self,dataset,batch_size=32):
     dataset = dataset\
       .shuffle(buffer_size=2*batch_size)\
       .repeat()\
       .batch(batch_size)
 
     return dataset
+
+  def get_training_dataset(self,folder,batch_size=32):
+    return self.scramble_dataset(self.get_dataset(folder),batch_size=batch_size)
 
   def get_evaluation_dataset(self,folder,batch_size=None):
     dataset = self.get_dataset(folder)
@@ -209,3 +211,10 @@ class InputDataHandler(object):
       return dataset.batch(batch_size)
     else:
       return dataset
+
+  def supervised_filter(self,model):
+    def filter_func(img,label):
+      mis = (1,64+2*self.padding,64+2*self.padding,1) # model input shape
+      return tf.math.reduce_all(tf.argmax(model(tf.reshape(img,shape=mis)),axis=0) == tf.argmax(label,axis=0))
+
+    return filter_func

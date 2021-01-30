@@ -30,28 +30,94 @@ def get_stacked_network(hyperpar_dict):
   #model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
   return model
 
-# class StackedNetwork(tf.keras.Model):
-#   """ Network formed by stacking layers
+class AdversarialAutoEncoder(tf.keras.Model):
 
-#   Parameters:
+  def __init__(
+    self,
+    encoder,
+    decoder,
+    discriminator,
+    discriminator_input_dim,
+    encoder_optimizer=tf.keras.optimizers.Adam(),
+    decoder_optimizer=tf.keras.optimizers.Adam(),
+    discriminator_optimizer=tf.keras.optimizers.Adam(),
+    prior_sampler = tf.random.normal,
+    reconstruction_loss_weight=0.5):
 
-#   layers (`dict`): dict with a "layers" key, whose value is a list of dicts with two keys: "class" and "kwargs".
-#   Class is the name of the class from the tf.keras.layers package
+    super(AdversarialAutoEncoder, self).__init__()
 
-#   """
-#   def __init__(self,layers):
-#     super(StackedNetwork,self).__init__()
-#     layer_number = 0
-#     for layer in layers["layers"]:
-#       #layer_class = getattr(tf.keras.layers,layer["class"])
-#       setattr(self,"layer" + str(layer_number),layer_instance(layer))
-#       layer_number += 1
-#     self.n_layers = layer_number
+    self.encoder = encoder
+    self.decoder = decoder
+    self.discriminator = discriminator
+    self.dcl = discriminator_input_dim
+    self.rcw = min(max(reconstruction_loss_weight,0),1)
+    self.prior_sampler = prior_sampler
 
-#   def call(self,x):
-#     for k in range(self.n_layers):
-#       x = getattr(self,"layer" + str(k))(x)
-#     return x
+    self.encoder_optimizer = encoder_optimizer
+    self.decoder_optimizer = decoder_optimizer
+    self.discr_optimizer = discriminator_optimizer
+
+    self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    self.mse_loss = tf.keras.losses.MSE
+    
+    self.mse_metric = tf.keras.metrics.MeanSquaredError(name="mse")
+    self.accuracy_metric = tf.keras.metrics.Accuracy(name="accuracy")
+
+  def decoder_loss(self,original,decoded):
+    return self.mse_loss(original,decoded)
+
+  def discriminator_loss(self,real,fake):
+    real_loss = self.cross_entropy(tf.ones_like(real), real)
+    fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
+    return (real_loss + fake_loss)/(real.shape[0]*2)
+
+  def call(self,inputs):
+    return self.decoder(self.encoder(inputs))
+
+  def train_step(self, inputs):
+
+    x, labels = inputs
+
+    prior_samples = self.prior_sampler(shape=(32,self.dcl))
+    with tf.GradientTape(persistent=True) as tape:
+      code = self.encoder(x, training=True)
+      extended_code = tf.concat([code,labels],axis=1)
+      decoded = self.decoder(extended_code,training=True)  # Forward pass
+      dcdr_loss = self.decoder_loss(x,decoded)
+
+      real = self.discriminator(prior_samples,training=True)
+      fake = self.discriminator(code,training=True)
+      discr_loss = self.discriminator_loss(real,fake)
+
+      encoder_loss = self.rcw*dcdr_loss + (1-self.rcw)*discr_loss
+      # Compute the loss value
+      # (the loss function is configured in `compile()`)
+
+    # Compute gradients
+    discr_gradients = tape.gradient(discr_loss,self.discriminator.trainable_variables)
+    decoder_gradients = tape.gradient(dcdr_loss, self.decoder.trainable_variables)
+    encoder_gradients = tape.gradient(encoder_loss, self.encoder.trainable_variables)
+
+    self.discr_optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
+    self.decoder_optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
+    self.encoder_optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
+
+    self.mse_metric.update_state(x,decoded)
+
+    discr_true = tf.concat([tf.ones_like(real),tf.zeros_like(fake)],axis=0)
+    discr_predicted = tf.round(tf.concat([real,fake],axis=0))
+    self.accuracy_metric.update_state(discr_true,discr_predicted)
+
+    return {"mse": self.mse_metric.result(), "accuracy": self.accuracy_metric.result()}
+
+  @property
+  def metrics(self):
+    # We list our `Metric` objects here so that `reset_states()` can be
+    # called automatically at the start of each epoch
+    # or at the start of `evaluate()`.
+    # If you don't implement this property, you have to call
+    # `reset_states()` yourself at the time of your choosing.
+    return [self.mse_metric, self.accuracy_metric]
 
 class ScatterGatherConvLayer(tf.keras.layers.Layer):
   """ This layer passes its input through multiple separate layers and then concatenate their output in a single tensor

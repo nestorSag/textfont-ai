@@ -30,7 +30,7 @@ num_classes=len(handler.classes)
 dataset = handler.get_training_dataset(folder=training_data_dir,batch_size=batch_size)
 
 
-with open("tmp/classifier-64-3x3-padded-leakyrelu-batchnorm.json","r") as f:
+with open("tmp/aae-encoder.json","r") as f:
 	hyperparameters = json.loads(f.read())
 
 input_size = 64 + 2*padding
