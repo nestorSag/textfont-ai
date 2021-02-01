@@ -27,7 +27,7 @@ handler = InputDataHandler(padding=padding,pixel_threshold=pixel_threshold,chars
 # x,y=handler.find_sample_statistics("data/train/2.tfr")
 num_classes=len(handler.classes)
 
-dataset = handler.get_training_dataset(folder=training_data_dir,batch_size=batch_size)
+dataset = handler.get_training_dataset(folders=training_data_dir,batch_size=batch_size)
 
 
 with open("tmp/aae-encoder.json","r") as f:

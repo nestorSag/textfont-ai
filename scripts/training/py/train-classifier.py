@@ -114,7 +114,7 @@ def fit_model(argv=None):
   handler = InputDataHandler(padding=args.padding,pixel_threshold=args.pixel_threshold,charset=args.charset)
   #num_classes=len(handler.classes)
 
-  dataset = handler.get_training_dataset(folder=args.training_data_dir,batch_size=args.batch_size)
+  dataset = handler.get_training_dataset(folders=args.training_data_dir,batch_size=args.batch_size)
 
   # build model
   with open(args.hyperpars,"r") as f:

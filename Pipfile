@@ -12,7 +12,7 @@ sklearn = "*"
 tensorboard-plugin-profile = "*"
 pandas = "*"
 seaborn = "*"
-tensorflow-gpu = "==2.2.0"
+tensorflow-gpu = "==2.3.0"
 
 [dev-packages]
 

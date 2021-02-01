@@ -17,7 +17,7 @@ config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 pixel_threshold = 150
 batch_size = 32
 padding=0
-training_data_dir = "./data/train/"
+training_data_dir = "./data/supervised-models/train/"
 output_dir = "./models/model1_lowercase"
 charset = "lowercase"
 n_epochs = 2
@@ -31,7 +31,7 @@ filter_model = tf.keras.models.load_model(f"./models/supervised-model-1-{charset
 dataset = handler.get_dataset(folder=training_data_dir)\
   .filter(handler.supervised_filter(filter_model))
 
-dataset = handler.scramble_dataset(dataset)
+dataset = handler.scramble_dataset(dataset).prefetch(batch_size*4)
 
 with open("tmp/aae-encoder.json","r") as f:
   hyperparameters = json.loads(f.read())
@@ -88,4 +88,4 @@ model = AdversarialAutoEncoder(
 
 model.compile(loss = hyperparameters["loss"], optimizer = "adam", metrics = hyperparameters["metrics"])
 
-model.fit(dataset, steps_per_epoch = 200, epochs = n_epochs)
+model.fit(dataset, steps_per_epoch = 50, epochs = n_epochs)

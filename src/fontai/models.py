@@ -4,6 +4,13 @@ import tensorflow as tf
 
 thismodule = sys.modules[__name__]
 
+
+def rescaled_sigmoid_activation(factor):
+  def f(x):
+    return factor * tf.keras.activations.sigmoid(x)
+
+  return f
+
 def get_layer_instance(layer_dict):
   layer_name = layer_dict["class"]
 
@@ -30,26 +37,32 @@ def get_stacked_network(hyperpar_dict):
   #model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
   return model
 
-class AdversarialAutoEncoder(tf.keras.Model):
+class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
   def __init__(
     self,
     encoder,
     decoder,
     discriminator,
-    discriminator_input_dim,
+    code_dim,
     encoder_optimizer=tf.keras.optimizers.Adam(),
     decoder_optimizer=tf.keras.optimizers.Adam(),
     discriminator_optimizer=tf.keras.optimizers.Adam(),
     prior_sampler = tf.random.normal,
-    reconstruction_loss_weight=0.5):
+    reconstruction_loss_weight=0.5,
+    input_shape=(64,64,1),
+    n_classes = 62):
 
-    super(AdversarialAutoEncoder, self).__init__()
+    super(SupervisedAdversarialAutoEncoder, self).__init__()
+
+    encoder.build(input_shape=input_shape)
+    decoder.build(input_shape=(n_classes+code_dim,))
+    discriminator.build(input_shape=(code_dim,))
 
     self.encoder = encoder
     self.decoder = decoder
     self.discriminator = discriminator
-    self.dcl = discriminator_input_dim
+    self.dcl = code_dim
     self.rcw = min(max(reconstruction_loss_weight,0),1)
     self.prior_sampler = prior_sampler
 
@@ -60,8 +73,8 @@ class AdversarialAutoEncoder(tf.keras.Model):
     self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     self.mse_loss = tf.keras.losses.MSE
     
-    self.mse_metric = tf.keras.metrics.MeanSquaredError(name="mse")
-    self.accuracy_metric = tf.keras.metrics.Accuracy(name="accuracy")
+    self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
+    self.accuracy_metric = tf.keras.metrics.Accuracy(name="Adversarial error")
 
   def decoder_loss(self,original,decoded):
     return self.mse_loss(original,decoded)
@@ -69,7 +82,7 @@ class AdversarialAutoEncoder(tf.keras.Model):
   def discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)
     fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
-    return (real_loss + fake_loss)/(real.shape[0]*2)
+    return (real_loss + fake_loss)
 
   def call(self,inputs):
     return self.decoder(self.encoder(inputs))
@@ -83,24 +96,29 @@ class AdversarialAutoEncoder(tf.keras.Model):
       code = self.encoder(x, training=True)
       extended_code = tf.concat([code,labels],axis=1)
       decoded = self.decoder(extended_code,training=True)  # Forward pass
-      dcdr_loss = self.decoder_loss(x,decoded)
+      #dcdr_loss = self.decoder_loss(x,decoded)
 
       real = self.discriminator(prior_samples,training=True)
       fake = self.discriminator(code,training=True)
-      discr_loss = self.discriminator_loss(real,fake)
+      #discr_loss = self.discriminator_loss(real,fake)
 
-      encoder_loss = self.rcw*dcdr_loss + (1-self.rcw)*discr_loss
+      #encoder_loss = self.rcw*dcdr_loss + (1-self.rcw)*discr_loss
+
+      loss = self.rcw*self.decoder_loss(x,decoded) + (1-self.rcw)*self.discriminator_loss(real,fake)
       # Compute the loss value
       # (the loss function is configured in `compile()`)
 
     # Compute gradients
-    discr_gradients = tape.gradient(discr_loss,self.discriminator.trainable_variables)
-    decoder_gradients = tape.gradient(dcdr_loss, self.decoder.trainable_variables)
-    encoder_gradients = tape.gradient(encoder_loss, self.encoder.trainable_variables)
+    grads = tape.gradient(loss,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables)
 
-    self.discr_optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
-    self.decoder_optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
-    self.encoder_optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
+    self.optimizer.apply_gradients(zip(grads,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables))
+    # discr_gradients = tape.gradient(discr_loss,self.discriminator.trainable_variables)
+    # decoder_gradients = tape.gradient(dcdr_loss, self.decoder.trainable_variables)
+    # encoder_gradients = tape.gradient(encoder_loss, self.encoder.trainable_variables)
+
+    # self.discr_optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
+    # self.decoder_optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
+    # self.encoder_optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
 
     self.mse_metric.update_state(x,decoded)
 
@@ -108,7 +126,7 @@ class AdversarialAutoEncoder(tf.keras.Model):
     discr_predicted = tf.round(tf.concat([real,fake],axis=0))
     self.accuracy_metric.update_state(discr_true,discr_predicted)
 
-    return {"mse": self.mse_metric.result(), "accuracy": self.accuracy_metric.result()}
+    return {"Reconstruction error": self.mse_metric.result(), "Adversarial error": self.accuracy_metric.result()}
 
   @property
   def metrics(self):

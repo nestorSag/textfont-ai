@@ -9,6 +9,8 @@ import string
 import zipfile
 import io
 from datetime import datetime
+from pathlib import Path
+
 
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
@@ -316,8 +318,8 @@ def run(argv=None, save_main_session=True):
   #pipeline_options = PipelineOptions()
   #user_options = pipeline_options.view_as(UserOptions)
 
-  if user_options.input_folder[0:5] != "gs://":
-    raise Exception("Input must be a folder in GCS")
+  # if user_options.input_folder[0:5] != "gs://":
+  #   raise Exception("Input must be a folder in GCS")
 
   # We use the save_main_session option because one or more DoFn's in this
   # workflow rely on global context (e.g., a module imported at module level).
@@ -325,8 +327,11 @@ def run(argv=None, save_main_session=True):
   with beam.Pipeline(options=pipeline_options) as p:
 
     # these lines gather subfolder file names and create an in-memory Beam PCollection from it
-    input_files = GcsIO().list_prefix(user_options.input_folder)
-    input_files_list = list(input_files.keys())
+    if user_options.input_folder[0:5] == "gs://":
+      input_files = GcsIO().list_prefix(user_options.input_folder)
+      input_files_list = list(input_files.keys())
+    else:
+      input_files = os.listdir(user_options.input_folder)
     #print("input_file_list: {l}".format(l=input_files_list))
 
     files = p | beam.Create(input_files_list)# ReadFromText(input_file_list_path)
@@ -350,6 +355,8 @@ def run(argv=None, save_main_session=True):
 
     
     output_folder = user_options.output_folder if user_options.output_folder[-1] == "/" else user_options.output_folder + "/"
+    if output_folder[0:5] != "gs://":
+      Path(output_folder).mkdir(parents=True, exist_ok=True)
     
     # sorted_by_hash = (standardised
     #   | 'setHashAsKey' >> beam.Map(lambda x: set_hash_as_key(x))
