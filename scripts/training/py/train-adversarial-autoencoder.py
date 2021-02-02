@@ -121,8 +121,12 @@ def fit_model(argv=None):
   #build model
   if args.reuse:
     print("reusing saved model in output directory..")
-    model = tf.keras.models.load_model(output_dir + "model")
+    model = SupervisedAdversarialAutoEncoder.load(output_dir)
   else:
+
+    # Create output directory
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
     all_hyperpars = {}
 
     #Initialise encoder
@@ -154,12 +158,11 @@ def fit_model(argv=None):
       "kwargs": {"shape":input_size + 62}
     }]
 
-    hyperparameters["layers"][-1]["activation"] = rescaled_sigmoid_activation(255)
+    hyperparameters["layers"][-1]["activation"] = "sigmoid"
 
     decoder = get_stacked_network(hyperparameters)
+    decoder.add(tf.keras.layers.experimental.preprocessing.Rescaling(scale=255.0))
     
-    hyperparameters["layers"][-1]["activation"] = "" #this is so the dict can be saved as JSON
-
     #Initialise discriminator
     with open(args.discr_hyperparameters,"r") as f:
       hyperparameters = json.loads(f.read())
@@ -183,26 +186,29 @@ def fit_model(argv=None):
       decoder=decoder,
       discriminator=discriminator,
       code_dim=args.code_size)
-    model.build(input_shape=(None,64,64,1))
-    
-    # create optimizer
-    if args.optim_dict is None:
-      optimizer = tf.keras.optimizers.Adam()
-    else:
-      with open(args.optim_dict,"r") as f:
-        hyperparameters = json.loads(f.read())
-      all_hyperpars["optim"] = hyperparameters
-      optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
 
-    # Create output directory
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    batch, label = next(iter(dataset))
+    y = model(batch)
+
+    #model.build(input_shape=(None,64,64,1))
+    #model._set_inputs((None,64,64,1))
+    #model.compute_output_shape(input_shape=(None, 64,64,1))
 
     # persist hyperparameters to output dir
     all_hyperpars["command_line_params"] = vars(args)
     with open(output_dir + "all_hyperparameters.json","w") as f:
       json.dump(all_hyperpars,f)
 
-  model.compile(loss = hyperparameters["loss"], optimizer = optimizer, metrics = hyperparameters["metrics"])
+  # create optimizer
+  if args.optim_dict is None:
+    optimizer = tf.keras.optimizers.Adam()
+  else:
+    with open(args.optim_dict,"r") as f:
+      hyperparameters = json.loads(f.read())
+    all_hyperpars["optim"] = hyperparameters
+    optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+  model.compile(loss = "categorical_crossentropy", optimizer = optimizer, metrics = ["accuracy"])
   # set callbacks
   log_dir = output_dir + "tensorbord"
   tb_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -223,16 +229,25 @@ def fit_model(argv=None):
 
   callbacks = [tb_callback,cp_callback,lr_callback]
 
-  # add user defined callbacks
-  if "callbacks" in hyperparameters.keys():
-    for callback in hyperparameters["callbacks"]:
-      cb = getattr(tf.keras.callbacks,callback["class"])(**callback["kwargs"])
-      callbacks.append(cb)
+  # # add user defined callbacks
+  # if "callbacks" in hyperparameters.keys():
+  #   for callback in hyperparameters["callbacks"]:
+  #     cb = getattr(tf.keras.callbacks,callback["class"])(**callback["kwargs"])
+  #     callbacks.append(cb)
 
   #train model
   model.fit(dataset, steps_per_epoch = args.steps_per_epoch, epochs = args.n_epochs, callbacks=callbacks)
+  
+  #set input dimensions in order to save model
 
-  model.save(output_dir + "model")
+  #input = tf.keras.layers.Input(shape=(64,64,1))
+  #out = model(input)
+
+  model.save(output_dir)
+
+
+  #y = model(batch)
+  #model.save(output_dir + "model")
 
   # # compute validation metrics
   # val_dataset = handler.get_evaluation_dataset(folder=args.val_folder,batch_size=32)

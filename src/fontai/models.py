@@ -1,6 +1,7 @@
 import sys
 import re
 import tensorflow as tf
+import json
 
 thismodule = sys.modules[__name__]
 
@@ -45,34 +46,27 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     decoder,
     discriminator,
     code_dim,
-    encoder_optimizer=tf.keras.optimizers.Adam(),
-    decoder_optimizer=tf.keras.optimizers.Adam(),
-    discriminator_optimizer=tf.keras.optimizers.Adam(),
-    prior_sampler = tf.random.normal,
     reconstruction_loss_weight=0.5,
-    input_shape=(64,64,1),
+    input_dim=(64,64,1),
     n_classes = 62):
 
     super(SupervisedAdversarialAutoEncoder, self).__init__()
 
-    encoder.build(input_shape=input_shape)
-    decoder.build(input_shape=(n_classes+code_dim,))
-    discriminator.build(input_shape=(code_dim,))
+    #encoder.build(input_shape=input_dim)
+    #decoder.build(input_shape=(None,n_classes+code_dim))
+    #discriminator.build(input_shape=(None,code_dim))
 
+    self.input_dim = input_dim
+    self.n_classes = n_classes
     self.encoder = encoder
     self.decoder = decoder
     self.discriminator = discriminator
-    self.dcl = code_dim
-    self.rcw = min(max(reconstruction_loss_weight,0),1)
-    self.prior_sampler = prior_sampler
+    self.code_dim = code_dim
+    self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
 
-    self.encoder_optimizer = encoder_optimizer
-    self.decoder_optimizer = decoder_optimizer
-    self.discr_optimizer = discriminator_optimizer
-
+    self.prior_sampler = tf.random.normal
     self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     self.mse_loss = tf.keras.losses.MSE
-    
     self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
     self.accuracy_metric = tf.keras.metrics.Accuracy(name="Adversarial error")
 
@@ -84,14 +78,14 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
     return (real_loss + fake_loss)
 
-  def call(self,inputs):
-    return self.decoder(self.encoder(inputs))
+  def __call__(self, x, training=True, mask=None):
+    return self.encoder(x)
 
   def train_step(self, inputs):
 
     x, labels = inputs
 
-    prior_samples = self.prior_sampler(shape=(32,self.dcl))
+    prior_samples = self.prior_sampler(shape=(32,self.code_dim))
     with tf.GradientTape(persistent=True) as tape:
       code = self.encoder(x, training=True)
       extended_code = tf.concat([code,labels],axis=1)
@@ -102,9 +96,9 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
       fake = self.discriminator(code,training=True)
       #discr_loss = self.discriminator_loss(real,fake)
 
-      #encoder_loss = self.rcw*dcdr_loss + (1-self.rcw)*discr_loss
+      #encoder_loss = self.rec_loss_weight*dcdr_loss + (1-self.rec_loss_weight)*discr_loss
 
-      loss = self.rcw*self.decoder_loss(x,decoded) + (1-self.rcw)*self.discriminator_loss(real,fake)
+      loss = self.rec_loss_weight*self.decoder_loss(x,decoded) + (1-self.rec_loss_weight)*self.discriminator_loss(real,fake)
       # Compute the loss value
       # (the loss function is configured in `compile()`)
 
@@ -137,6 +131,60 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     # `reset_states()` yourself at the time of your choosing.
     return [self.mse_metric, self.accuracy_metric]
 
+  @classmethod
+  def from_config(cls,config):
+
+    encoder = tf.keras.Sequential.from_config(config["encoder"])
+    decoder = tf.keras.Sequential.from_config(config["decoder"])
+    discriminator = tf.keras.Sequential.from_config(config["discriminator"])
+
+    return cls(
+      encoder,
+      decoder,
+      discriminator,
+      config["code_dim"],
+      config["reconstruction_loss_weight"],
+      config["input_dim"],
+      config["n_classes"])
+
+  def get_config(self):
+    d = {}
+    d["encoder"] = self.encoder.get_config()
+    d["decoder"] = self.decoder.get_config()
+    d["discriminator"] = self.discriminator.get_config()
+    d["code_dim"] = self.code_dim
+    d["reconstruction_loss_weight"] = self.rec_loss_weight
+    d["input_dim"] = self.input_dim
+    d["n_classes"] = self.n_classes
+
+    return d
+
+  def save(self,output_dir):
+    self.encoder.save(output_dir + "encoder")
+    self.decoder.save(output_dir + "decoder")
+    self.discriminator.save(output_dir + "discriminator")
+
+    d = {
+      "reconstruction_loss_weight":self.rec_loss_weight,
+      "input_dim": self.input_dim,
+      "n_classes": self.n_classes,
+      "code_dim": self.code_dim
+    }
+
+    with open(output_dir + "aae-params.json","w") as f:
+      json.dump(d,f)
+
+  @classmethod
+  def load(cls,folder):
+    encoder = tf.keras.models.load_model(folder + "encoder")
+    decoder = tf.keras.models.load_model(folder + "decoder")
+    discriminator = tf.keras.models.load_model(folder + "discriminator")
+
+    with open(folder + "aae-params.json","r") as f:
+      d = json.loads(f.read())
+
+    return SupervisedAdversarialAutoEncoder(encoder = encoder,decoder = decoder,discriminator = discriminator,**d)
+
 class ScatterGatherConvLayer(tf.keras.layers.Layer):
   """ This layer passes its input through multiple separate layers and then concatenate their output in a single tensor
       #with same dimensions as input
@@ -158,4 +206,6 @@ class ScatterGatherConvLayer(tf.keras.layers.Layer):
     return tf.concat([getattr(self,"module" + str(i))(inputs) for i in range(self.module_number)], axis=3)
 
 # {"submodules":[{"layers":[...]},{"layers":[...]}]}
+
+
 
