@@ -1,7 +1,9 @@
 import sys
 import re
+import io
 import tensorflow as tf
 import json
+import matplotlib.pyplot as plt
 
 thismodule = sys.modules[__name__]
 
@@ -48,7 +50,8 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     code_dim,
     reconstruction_loss_weight=0.5,
     input_dim=(64,64,1),
-    n_classes = 62):
+    n_classes = 62,
+    prior_batch_size=32):
 
     super(SupervisedAdversarialAutoEncoder, self).__init__()
 
@@ -63,6 +66,7 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     self.discriminator = discriminator
     self.code_dim = code_dim
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
+    self.prior_batch_size = prior_batch_size
 
     self.prior_sampler = tf.random.normal
     self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
@@ -85,7 +89,7 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
     x, labels = inputs
 
-    prior_samples = self.prior_sampler(shape=(32,self.code_dim))
+    prior_samples = self.prior_sampler(shape=(self.prior_batch_size,self.code_dim))
     with tf.GradientTape(persistent=True) as tape:
       code = self.encoder(x, training=True)
       extended_code = tf.concat([code,labels],axis=1)
@@ -120,7 +124,7 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     discr_predicted = tf.round(tf.concat([real,fake],axis=0))
     self.accuracy_metric.update_state(discr_true,discr_predicted)
 
-    return {"Reconstruction error": self.mse_metric.result(), "Adversarial error": self.accuracy_metric.result()}
+    return {"MSE": self.mse_metric.result(), "Accuracy": self.accuracy_metric.result()}
 
   @property
   def metrics(self):
@@ -131,34 +135,6 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     # `reset_states()` yourself at the time of your choosing.
     return [self.mse_metric, self.accuracy_metric]
 
-  @classmethod
-  def from_config(cls,config):
-
-    encoder = tf.keras.Sequential.from_config(config["encoder"])
-    decoder = tf.keras.Sequential.from_config(config["decoder"])
-    discriminator = tf.keras.Sequential.from_config(config["discriminator"])
-
-    return cls(
-      encoder,
-      decoder,
-      discriminator,
-      config["code_dim"],
-      config["reconstruction_loss_weight"],
-      config["input_dim"],
-      config["n_classes"])
-
-  def get_config(self):
-    d = {}
-    d["encoder"] = self.encoder.get_config()
-    d["decoder"] = self.decoder.get_config()
-    d["discriminator"] = self.discriminator.get_config()
-    d["code_dim"] = self.code_dim
-    d["reconstruction_loss_weight"] = self.rec_loss_weight
-    d["input_dim"] = self.input_dim
-    d["n_classes"] = self.n_classes
-
-    return d
-
   def save(self,output_dir):
     self.encoder.save(output_dir + "encoder")
     self.decoder.save(output_dir + "decoder")
@@ -168,7 +144,8 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
       "reconstruction_loss_weight":self.rec_loss_weight,
       "input_dim": self.input_dim,
       "n_classes": self.n_classes,
-      "code_dim": self.code_dim
+      "code_dim": self.code_dim,
+      "prior_batch_size": self.prior_batch_size
     }
 
     with open(output_dir + "aae-params.json","w") as f:
@@ -206,6 +183,67 @@ class ScatterGatherConvLayer(tf.keras.layers.Layer):
     return tf.concat([getattr(self,"module" + str(i))(inputs) for i in range(self.module_number)], axis=3)
 
 # {"submodules":[{"layers":[...]},{"layers":[...]}]}
+
+
+class SAAECallback(tf.keras.callbacks.Callback):
+
+  def __init__(self,output_dir,batch,labels):
+
+    self.output_dir = output_dir + ("/" if output_dir[-1] != "/" else "")
+    self.tb_folder = self.output_dir + "tb"
+    self.batch = batch
+    self.labels = labels
+    self.file_writer = tf.summary.create_file_writer(self.tb_folder)
+
+  def on_epoch_end(self,epoch):
+
+    # produce histogram matrix of first code dimensions
+    encoded = self.model.encoder(self.batch,training=False)
+    hists = self.get_hists(encoded)
+    with self.file_writer.as_default():
+      tf.summary.image("Code histograms", self.plot_to_image(hists), step=0)
+
+    a,b,c,d = self.batch.shape
+    # compare input and output 
+    to_decode = tf.concat([encoded,self.labels],axis=1)
+    decoded = self.model.decoder(to_decode,training=False)
+    with self.file_writer.as_default():
+      for row in range(min(8,decoded.shape[0])):
+        img = tf.concat([self.batch[row],decoded[row]],axis=1)
+        img_shape = img.shape
+        tf.summary.image("Input output comparison", tf.reshape(img,shape=(1,) + img_shape), step=0)
+
+    # save snapshot
+    self.model.save(self.output_dir)
+
+  def get_hists(self,encoded,n=4):
+    figure = plt.figure(figsize=(10,10))
+    for i in range(min(n*n,encoded.shape[1])):
+      # Start next subplot.
+      plt.subplot(n, n, i + 1, title=f"column {i}")
+      plt.xticks([])
+      plt.yticks([])
+      plt.grid(False)
+      #plt.imshow(train_images[i], cmap=plt.cm.binary)
+      plt.hist(encoded[:,i])
+
+    return figure
+
+  def plot_to_image(self,figure):
+    """Converts the matplotlib plot specified by 'figure' to a PNG image and
+    returns it. The supplied figure is closed and inaccessible after this call."""
+    # Save the plot to a PNG in memory.
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    # Closing the figure prevents it from being displayed directly inside
+    # the notebook.
+    plt.close(figure)
+    buf.seek(0)
+    # Convert PNG buffer to TF image
+    image = tf.image.decode_png(buf.getvalue(), channels=4)
+    # Add the batch dimension
+    image = tf.expand_dims(image, 0)
+    return image
 
 
 

@@ -91,7 +91,7 @@ def fit_model(argv=None):
       dest="shrink_factor",
       help='shrink leearning rate by this every epoch; defaults to 1.0 (constant learning rate).')
   parser.add_argument(
-      '--optimizer-dict',
+      '--optimizer-hyperparameters',
       default=None,
       type=str,
       dest="optim_dict",
@@ -156,7 +156,7 @@ def fit_model(argv=None):
     hyperparameters["layers"] = [{
       "class":"tf.keras.Input",
       "kwargs": {"shape":input_size + 62}
-    }]
+    }] + hyperparameters["layers"]
 
     hyperparameters["layers"][-1]["activation"] = "sigmoid"
 
@@ -185,9 +185,10 @@ def fit_model(argv=None):
       encoder=encoder,
       decoder=decoder,
       discriminator=discriminator,
-      code_dim=args.code_size)
+      code_dim=args.code_size,
+      prior_batch_size=args.batch_size)
 
-    batch, label = next(iter(dataset))
+    batch, labels = next(iter(dataset))
     y = model(batch)
 
     #model.build(input_shape=(None,64,64,1))
@@ -203,9 +204,10 @@ def fit_model(argv=None):
   if args.optim_dict is None:
     optimizer = tf.keras.optimizers.Adam()
   else:
+    print(f"Using specified optimizer from {args.optim_dict}")
     with open(args.optim_dict,"r") as f:
       hyperparameters = json.loads(f.read())
-    all_hyperpars["optim"] = hyperparameters
+    #all_hyperpars["optim"] = hyperparameters
     optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
 
   model.compile(loss = "categorical_crossentropy", optimizer = optimizer, metrics = ["accuracy"])
@@ -216,74 +218,20 @@ def fit_model(argv=None):
   checkpoint_path = output_dir + "model"
   #Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
   #checkpoint_dir = os.path.dirname(checkpoint_path)
-  cp_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath=checkpoint_path, 
-    verbose=1, 
-    save_weights_only=False,
-    save_freq="epoch")
 
   def scheduler(epoch,lr):
     return lr*float(args.shrink_factor)**epoch
 
   lr_callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
+  custom_cb = SAAECallback(log_dir,batch,labels)
 
-  callbacks = [tb_callback,cp_callback,lr_callback]
-
-  # # add user defined callbacks
-  # if "callbacks" in hyperparameters.keys():
-  #   for callback in hyperparameters["callbacks"]:
-  #     cb = getattr(tf.keras.callbacks,callback["class"])(**callback["kwargs"])
-  #     callbacks.append(cb)
+  callbacks = [tb_callback,cp_callback,lr_callback,custom_cb]
 
   #train model
   model.fit(dataset, steps_per_epoch = args.steps_per_epoch, epochs = args.n_epochs, callbacks=callbacks)
   
-  #set input dimensions in order to save model
-
-  #input = tf.keras.layers.Input(shape=(64,64,1))
-  #out = model(input)
 
   model.save(output_dir)
-
-
-  #y = model(batch)
-  #model.save(output_dir + "model")
-
-  # # compute validation metrics
-  # val_dataset = handler.get_evaluation_dataset(folder=args.val_folder,batch_size=32)
-  # eval_metrics = dict(zip(["loss","accuracy"],model.evaluate(val_dataset)))
-
-  # with open(output_dir + "validation-metrics.json","w") as f:
-  #   json.dump(eval_metrics,f)
-
-  # #### compute confusion matrix
-  # predicted_raw = model.predict(val_dataset)
-  # predicted_scores = np.max(predicted_raw,axis=1)
-  # predicted_labels = np.array([handler.classes[x] for x in np.argmax(predicted_raw,axis=1)])
-  # true_labels = np.concatenate([[handler.classes[z] for z in np.argmax(y,axis=1)] for x,y in val_dataset])
-
-  # predmat = confusion_matrix(true_labels,predicted_labels,normalize="true")
-  # predmat = pd.DataFrame(predmat)
-  # predmat.columns = list(handler.classes)
-  # predmat.index = list(handler.classes)
-
-  # imgs = np.empty((0,64+2*args.padding,64+2*args.padding,1))
-  # for img, label in val_dataset:
-  #   imgs = np.concatenate([imgs,(img.numpy()).astype(np.uint8)],axis=0)
-
-  # # sample misclassified example in validation set for examination
-  # print("sampling misclassified elemens for inspection..")
-  # inspect_output = output_dir + "inspect"
-  # Path(inspect_output).mkdir(parents=True, exist_ok=True)
-  # examiner = ValidationDataExaminer(predicted_labels,true_labels,predicted_scores,imgs,inspect_output)
-  # examiner.filter_model_results(ascending_order=False,n=100,misclassified_only=True)
-  # examiner.filter_model_results(ascending_order=True,n=100,misclassified_only=False)
-
-  # plt.rcParams.update({'font.size': 8})
-  # plt.figure(figsize = (20,20))
-  # sn.heatmap(predmat, annot=True)
-  # plt.savefig(output_dir + "confusion-matrix.png")
-
 
 if __name__ == "__main__":
   fit_model()
