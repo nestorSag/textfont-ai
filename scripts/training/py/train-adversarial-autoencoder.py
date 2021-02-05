@@ -102,6 +102,12 @@ def fit_model(argv=None):
       type=int,
       dest="code_size",
       help="Size of encoder output and discriminator input")
+  parser.add_argument(
+      '--reconstruction-loss-weight',
+      default=0.5,
+      type=float,
+      dest="rlw",
+      help="Importance of reconstruction loss weight (min 0, max 1)")
 
   args, _ = parser.parse_known_args(argv)
 
@@ -141,10 +147,14 @@ def fit_model(argv=None):
       "kwargs": {"shape":[64,64,1]}
     }] + hyperparameters["layers"] + [{
       "class":"tf.keras.layers.Dense",
-      "kwargs": {"units":output_size}
+      "kwargs": {"units":output_size,"activation":"sigmoid"}
     }]
 
     encoder = get_stacked_network(hyperparameters)
+
+    optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+    encoder.compile(optimizer = optimizer)
 
     # Initialise decoder
     with open(args.decoder_hyperparameters,"r") as f:
@@ -162,6 +172,10 @@ def fit_model(argv=None):
 
     decoder = get_stacked_network(hyperparameters)
     decoder.add(tf.keras.layers.experimental.preprocessing.Rescaling(scale=255.0))
+
+    optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+    decoder.compile(optimizer = optimizer)
     
     #Initialise discriminator
     with open(args.discr_hyperparameters,"r") as f:
@@ -180,16 +194,20 @@ def fit_model(argv=None):
 
     discriminator = get_stacked_network(hyperparameters)
 
+    optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+    discriminator.compile(optimizer = optimizer)
+
     # build model
     model = SupervisedAdversarialAutoEncoder(
       encoder=encoder,
       decoder=decoder,
       discriminator=discriminator,
       code_dim=args.code_size,
-      prior_batch_size=args.batch_size)
+      prior_batch_size=args.batch_size,
+      reconstruction_loss_weight=args.rlw)
 
-    batch, labels = next(iter(dataset))
-    y = model(batch)
+    #y = model(batch)
 
     #model.build(input_shape=(None,64,64,1))
     #model._set_inputs((None,64,64,1))
@@ -210,7 +228,7 @@ def fit_model(argv=None):
     #all_hyperpars["optim"] = hyperparameters
     optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
 
-  model.compile(loss = "categorical_crossentropy", optimizer = optimizer, metrics = ["accuracy"])
+  #model.compile(loss = "categorical_crossentropy", optimizer = optimizer, metrics = ["accuracy"])
   # set callbacks
   log_dir = output_dir + "tensorbord"
   tb_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -223,11 +241,14 @@ def fit_model(argv=None):
     return lr*float(args.shrink_factor)**epoch
 
   lr_callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
+
+  batch, labels = next(iter(dataset))
   custom_cb = SAAECallback(log_dir,batch,labels)
 
-  callbacks = [tb_callback,cp_callback,lr_callback,custom_cb]
+  callbacks = [tb_callback,lr_callback,custom_cb]
 
   #train model
+  model.compile(loss = "categorical_crossentropy", optimizer = optimizer, metrics = ["accuracy"])
   model.fit(dataset, steps_per_epoch = args.steps_per_epoch, epochs = args.n_epochs, callbacks=callbacks)
   
 

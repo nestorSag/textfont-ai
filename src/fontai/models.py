@@ -4,6 +4,7 @@ import io
 import tensorflow as tf
 import json
 import matplotlib.pyplot as plt
+import numpy as np
 
 thismodule = sys.modules[__name__]
 
@@ -67,8 +68,9 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     self.code_dim = code_dim
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
     self.prior_batch_size = prior_batch_size
+    print(f"reconstruction loss weight: {self.rec_loss_weight}")
 
-    self.prior_sampler = tf.random.normal
+    self.prior_sampler = tf.random.uniform
     self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     self.mse_loss = tf.keras.losses.MSE
     self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
@@ -89,8 +91,8 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
     x, labels = inputs
 
-    prior_samples = self.prior_sampler(shape=(self.prior_batch_size,self.code_dim))
-    with tf.GradientTape(persistent=True) as tape:
+    prior_samples = self.prior_sampler(shape=(self.prior_batch_size,self.code_dim),maxval=1.0)
+    with tf.GradientTape() as tape1, tf.GradientTape() as tape2, tf.GradientTape() as tape3:
       code = self.encoder(x, training=True)
       extended_code = tf.concat([code,labels],axis=1)
       decoded = self.decoder(extended_code,training=True)  # Forward pass
@@ -102,21 +104,27 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
       #encoder_loss = self.rec_loss_weight*dcdr_loss + (1-self.rec_loss_weight)*discr_loss
 
-      loss = self.rec_loss_weight*self.decoder_loss(x,decoded) + (1-self.rec_loss_weight)*self.discriminator_loss(real,fake)
+      #loss = self.rec_loss_weight*self.decoder_loss(x,decoded) + (1-self.rec_loss_weight)*self.discriminator_loss(real,fake)
+
+      reconstruction_loss = self.decoder_loss(x,decoded)
+      classification_loss = self.discriminator_loss(real,fake)
+      #mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*self.decoder_loss(x,decoded)
+      mixed_loss = -classification_loss
       # Compute the loss value
       # (the loss function is configured in `compile()`)
 
     # Compute gradients
-    grads = tape.gradient(loss,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables)
+    #grads = tape.gradient(loss,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables)
 
-    self.optimizer.apply_gradients(zip(grads,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables))
-    # discr_gradients = tape.gradient(discr_loss,self.discriminator.trainable_variables)
-    # decoder_gradients = tape.gradient(dcdr_loss, self.decoder.trainable_variables)
-    # encoder_gradients = tape.gradient(encoder_loss, self.encoder.trainable_variables)
+    #self.optimizer.apply_gradients(zip(grads,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables))
+    
+    discr_gradients = tape1.gradient(classification_loss,self.discriminator.trainable_variables)
+    decoder_gradients = tape2.gradient(reconstruction_loss, self.decoder.trainable_variables)
+    encoder_gradients = tape3.gradient(mixed_loss, self.encoder.trainable_variables)
 
-    # self.discr_optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
-    # self.decoder_optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
-    # self.encoder_optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
+    self.discriminator.optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
+    self.decoder.optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
+    self.encoder.optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
 
     self.mse_metric.update_state(x,decoded)
 
@@ -187,32 +195,39 @@ class ScatterGatherConvLayer(tf.keras.layers.Layer):
 
 class SAAECallback(tf.keras.callbacks.Callback):
 
-  def __init__(self,output_dir,batch,labels):
+  def __init__(self,output_dir,batch,labels,seed=1):
 
     self.output_dir = output_dir + ("/" if output_dir[-1] != "/" else "")
     self.tb_folder = self.output_dir + "tb"
     self.batch = batch
     self.labels = labels
     self.file_writer = tf.summary.create_file_writer(self.tb_folder)
+    self.hist_step = 0
+    self.reconstruction_step = 0
+    np.random.seed(seed)
 
-  def on_epoch_end(self,epoch):
+  def on_epoch_end(self,epoch,numpy_logs):
 
     # produce histogram matrix of first code dimensions
     encoded = self.model.encoder(self.batch,training=False)
     hists = self.get_hists(encoded)
     with self.file_writer.as_default():
-      tf.summary.image("Code histograms", self.plot_to_image(hists), step=0)
+      tf.summary.image("Code histograms", self.plot_to_image(hists), step=self.hist_step)
+    self.hist_step += 1
 
     a,b,c,d = self.batch.shape
     # compare input and output 
     to_decode = tf.concat([encoded,self.labels],axis=1)
     decoded = self.model.decoder(to_decode,training=False)
+
+    rand_idx = np.random.randint(size=3,low=0,high=self.batch.shape[0],dtype=np.int64)
+
     with self.file_writer.as_default():
-      for row in range(min(8,decoded.shape[0])):
+      for row in rand_idx:
         img = tf.concat([self.batch[row],decoded[row]],axis=1)
         img_shape = img.shape
-        tf.summary.image("Input output comparison", tf.reshape(img,shape=(1,) + img_shape), step=0)
-
+        tf.summary.image("Input output comparison", tf.reshape(img,shape=(1,) + img_shape), step=self.reconstruction_step)
+        self.reconstruction_step += 1
     # save snapshot
     self.model.save(self.output_dir)
 
@@ -220,12 +235,9 @@ class SAAECallback(tf.keras.callbacks.Callback):
     figure = plt.figure(figsize=(10,10))
     for i in range(min(n*n,encoded.shape[1])):
       # Start next subplot.
-      plt.subplot(n, n, i + 1, title=f"column {i}")
-      plt.xticks([])
-      plt.yticks([])
-      plt.grid(False)
+      plt.subplot(n, n, i + 1, title=f"")
       #plt.imshow(train_images[i], cmap=plt.cm.binary)
-      plt.hist(encoded[:,i])
+      plt.hist(encoded[:,i].numpy())
 
     return figure
 
