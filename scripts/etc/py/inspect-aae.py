@@ -22,7 +22,7 @@ assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 from PIL import Image
-code_size=32
+code_size=16
 chars = list(string.ascii_letters + string.digits)
 
 dataset = tf.data.Dataset.from_tensor_slices(["data/filtered/lowercase","data/filtered/uppercase","data/filtered/numbers"])\
@@ -35,7 +35,7 @@ dataset = tf.data.Dataset.from_tensor_slices(["data/filtered/lowercase","data/fi
 
 a,b,c = next(iter(dataset))
 
-model = SupervisedAdversarialAutoEncoder.load("models/aae-cs-32-dec-1024-4096-enc-2048/")
+model = SupervisedAdversarialAutoEncoder.load("models/aae-16/")
 
 ############
 cb = SAAECallback("inspect",a,b)
@@ -46,10 +46,12 @@ cb.on_epoch_end(1)
 decoder = model.decoder
 encoder = model.encoder
 
-def get_input(char):
+def get_input(char,code=None):
+  if code is None:
+    code = np.random.uniform(size=(code_size,))
   x = np.zeros((62,))
   x[chars.index(char)] = 1
-  x = np.concatenate([np.random.normal(size=(code_size,)),x])
+  x = np.concatenate([code,x])
   return x.reshape((1,62+code_size))
 
 def process_output(out):
@@ -63,13 +65,12 @@ def show_output(out):
   im = Image.fromarray(out)
   im.show(f"inspect/out.png")
 
-def get_output(char):
-  input_ = get_input(char)
+def get_output(char,code=None):
+  input_ = get_input(char,code)
   out = decoder(input_)
   out_ = process_output(out)
   show_output(out_)
 
-get_output(char="k")
 
 encoded = encoder(a,training=False)
 
@@ -80,3 +81,14 @@ to_decode = tf.concat([encoded,b],axis=1)
 decoded = decoder(to_decode)
 
 show_output(process_output(decoded[0]))
+
+
+get_output("k",encoded[0].numpy())
+
+def sum_code(code,dim,x):
+  y = code.numpy()
+  y[0,dim] += x
+  show_output(process_output(decoder(y)))
+
+
+code = tf.reshape(tf.concat([encoded[0],b[0]],axis=0),(1,-1))

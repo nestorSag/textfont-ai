@@ -100,23 +100,12 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
       real = self.discriminator(prior_samples,training=True)
       fake = self.discriminator(code,training=True)
-      #discr_loss = self.discriminator_loss(real,fake)
-
-      #encoder_loss = self.rec_loss_weight*dcdr_loss + (1-self.rec_loss_weight)*discr_loss
-
-      #loss = self.rec_loss_weight*self.decoder_loss(x,decoded) + (1-self.rec_loss_weight)*self.discriminator_loss(real,fake)
 
       reconstruction_loss = self.decoder_loss(x,decoded)
       classification_loss = self.discriminator_loss(real,fake)
-      #mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*self.decoder_loss(x,decoded)
-      mixed_loss = -classification_loss
-      # Compute the loss value
-      # (the loss function is configured in `compile()`)
+      mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*self.decoder_loss(x,decoded)
 
     # Compute gradients
-    #grads = tape.gradient(loss,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables)
-
-    #self.optimizer.apply_gradients(zip(grads,self.encoder.trainable_variables + self.decoder.trainable_variables + self.discriminator.trainable_variables))
     
     discr_gradients = tape1.gradient(classification_loss,self.discriminator.trainable_variables)
     decoder_gradients = tape2.gradient(reconstruction_loss, self.decoder.trainable_variables)

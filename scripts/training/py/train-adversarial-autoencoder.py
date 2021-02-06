@@ -85,6 +85,11 @@ def fit_model(argv=None):
       dest="reuse",
       help='Load model in output directory and use it for training.')
   parser.add_argument(
+      '--restore-optimizer',
+      action="store_true",
+      dest="restart_optimizer",
+      help='Resets optimizers for all models as specified in the corresponding JSON files')
+  parser.add_argument(
       '--lr-shrink-factor',
       default=1.0,
       type=float,
@@ -128,6 +133,24 @@ def fit_model(argv=None):
   if args.reuse:
     print("reusing saved model in output directory..")
     model = SupervisedAdversarialAutoEncoder.load(output_dir)
+
+    if args.restart_optimizer:
+
+      with open(args.encoder_hyperparameters,"r") as f:
+        hyperparameters = json.loads(f.read())
+      optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+      model.encoder.compile(optimizer = optimizer)
+
+      with open(args.decoder_hyperparameters,"r") as f:
+        hyperparameters = json.loads(f.read())
+      optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+      model.decoder.compile(optimizer = optimizer)
+
+      with open(args.discr_hyperparameters,"r") as f:
+        hyperparameters = json.loads(f.read())
+      optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+      model.discriminator.compile(optimizer = optimizer)
   else:
 
     # Create output directory
