@@ -73,12 +73,19 @@ def fit_model(argv=None):
       # for outputting the results.
       help='JSON file with hyperparameter specifications for the decoding model.')
   parser.add_argument(
-      '--discr-hyperparameter-file',
-      dest='discr_hyperparameters',
+      '--code-discr-hyperparameter-file',
+      dest='code_discr_hyperparameters',
       required=True,
       # CHANGE 1/6: The Google Cloud Storage path is required
       # for outputting the results.
-      help='JSON file with hyperparameter specifications for the discriminator model.')
+      help='JSON file with hyperparameter specifications for the code\'s discriminator model.')
+  parser.add_argument(
+      '--img-discr-hyperparameter-file',
+      dest='img_discr_hyperparameters',
+      required=True,
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
+      help='JSON file with hyperparameter specifications for the images\' discriminator model.')
   parser.add_argument(
       '--reuse-model',
       action="store_true",
@@ -146,11 +153,17 @@ def fit_model(argv=None):
       optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
       model.decoder.compile(optimizer = optimizer)
 
-      with open(args.discr_hyperparameters,"r") as f:
+      with open(args.code_discr_hyperparameters,"r") as f:
         hyperparameters = json.loads(f.read())
       optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
 
-      model.discriminator.compile(optimizer = optimizer)
+      model.code_discriminator.compile(optimizer = optimizer)
+
+      with open(args.img_discr_hyperparameters,"r") as f:
+        hyperparameters = json.loads(f.read())
+      optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+      model.img_discriminator.compile(optimizer = optimizer)
   else:
 
     # Create output directory
@@ -201,10 +214,10 @@ def fit_model(argv=None):
     decoder.compile(optimizer = optimizer)
     
     #Initialise discriminator
-    with open(args.discr_hyperparameters,"r") as f:
+    with open(args.code_discr_hyperparameters,"r") as f:
       hyperparameters = json.loads(f.read())
 
-    all_hyperpars["discr"] = hyperparameters
+    all_hyperpars["code_discr"] = hyperparameters
 
     #output_size = len(handler.classes)
     hyperparameters["layers"] = [{
@@ -215,17 +228,40 @@ def fit_model(argv=None):
       "kwargs": {"units":62,"activation":"softmax"}
     }]
 
-    discriminator = get_stacked_network(hyperparameters)
+    code_discriminator = get_stacked_network(hyperparameters)
 
     optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
 
-    discriminator.compile(optimizer = optimizer)
+    code_discriminator.compile(optimizer = optimizer)
+
+
+    #Initialise image discriminator
+    with open(args.img_discr_hyperparameters,"r") as f:
+      hyperparameters = json.loads(f.read())
+
+    all_hyperpars["img_discr"] = hyperparameters
+
+    #output_size = len(handler.classes)
+    hyperparameters["layers"] = [{
+      "class":"tf.keras.Input",
+      "kwargs": {"shape":[64,64,1]}
+    }] + hyperparameters["layers"] + [{
+      "class":"tf.keras.layers.Dense",
+      "kwargs": {"units":1,"activation":"sigmoid"}
+    }]
+
+    img_discriminator = get_stacked_network(hyperparameters)
+
+    optimizer = getattr(tf.keras.optimizers,hyperparameters["optimizer"]["class"])(**hyperparameters["optimizer"]["kwargs"])
+
+    img_discriminator.compile(optimizer = optimizer)
 
     # build model
-    model = SupervisedAdversarialAutoEncoder(
+    model = SupervisedBiAdversarialAutoEncoder(
       encoder=encoder,
       decoder=decoder,
-      discriminator=discriminator,
+      code_discriminator=code_discriminator,
+      img_discriminator=img_discriminator,
       code_dim=args.code_size,
       prior_batch_size=args.batch_size,
       reconstruction_loss_weight=args.rlw)

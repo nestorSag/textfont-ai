@@ -35,7 +35,7 @@ dataset = tf.data.Dataset.from_tensor_slices(["data/filtered/lowercase","data/fi
 
 a,b,c = next(iter(dataset))
 
-model = SupervisedAdversarialAutoEncoder.load("models/aae-16/")
+model = SupervisedAdversarialAutoEncoder.load("models/o-aae-32/")
 
 ############
 cb = SAAECallback("inspect",a,b)
