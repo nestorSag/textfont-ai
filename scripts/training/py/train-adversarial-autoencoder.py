@@ -113,6 +113,12 @@ def fit_model(argv=None):
       type=float,
       dest="rlw",
       help="Importance of reconstruction loss weight (min 0, max 1)")
+  parser.add_argument(
+      '--single-char',
+      default="all",
+      type=str,
+      dest="char",
+      help="Use a single character in training. Defaults to 'all'")
 
   args, _ = parser.parse_known_args(argv)
 
@@ -123,8 +129,9 @@ def fit_model(argv=None):
   #Load dataset
   dataset = tf.data.Dataset.from_tensor_slices(args.input_data)\
     .interleave(map_func=InputDataHandler.read_gen_model_data,cycle_length=8,block_length=16)\
+    .filter(InputDataHandler.filter_by_char(args.char))\
     .map(InputDataHandler.remove_filename)\
-    .prefetch(1000)\
+    .prefetch(100000)\
     .shuffle(buffer_size=2*args.batch_size)\
     .repeat()\
     .batch(args.batch_size)

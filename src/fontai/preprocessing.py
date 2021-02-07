@@ -256,3 +256,15 @@ class InputDataHandler(object):
     elemspec= (tf.TensorSpec(shape=(img_dim[0]+2*padding,img_dim[1]+2*padding,1), dtype=tf.float32, name=None), tf.TensorSpec(shape=(62,), dtype=tf.float32, name=None), tf.TensorSpec(shape=(), dtype=tf.string, name=None))
 
     return tf.data.experimental.load(path,element_spec = elemspec,compression="GZIP")
+
+  @classmethod
+  def filter_by_char(cls,char):
+    idx = list(string.ascii_letters + string.digits).index(char)
+    if char == "all":
+      def f():
+        return True
+    else:
+      def f(img,label,*args):
+        return tf.argmax(label) == idx
+
+    return f
