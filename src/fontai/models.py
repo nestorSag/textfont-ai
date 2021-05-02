@@ -128,7 +128,7 @@ class SAAECallback(tf.keras.callbacks.Callback):
     image = tf.expand_dims(image, 0)
     return image
 
-class SupervisedAdversarialAutoEncoder(tf.keras.Model):
+class OrthogonalSupervisedAdversarialAutoEncoder(tf.keras.Model):
 
   def __init__(
     self,
@@ -141,7 +141,7 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     n_classes = 62,
     prior_batch_size=32):
 
-    super(SupervisedAdversarialAutoEncoder, self).__init__()
+    super(OrthogonalSupervisedAdversarialAutoEncoder, self).__init__()
 
     #encoder.build(input_shape=input_dim)
     #decoder.build(input_shape=(None,n_classes+code_dim))
@@ -400,4 +400,122 @@ class SupervisedBiAdversarialAutoEncoder(tf.keras.Model):
 
     return SupervisedAdversarialAutoEncoder(encoder = encoder,decoder = decoder,code_discriminator = code_discriminator,img_discriminator=img_discriminator,**d)
 
+
+class SupervisedAdversarialAutoEncoder(tf.keras.Model):
+
+  def __init__(
+    self,
+    encoder,
+    decoder,
+    discriminator,
+    code_dim,
+    reconstruction_loss_weight=0.5,
+    input_dim=(64,64,1),
+    n_classes = 62,
+    prior_batch_size=32):
+
+    super(SupervisedAdversarialAutoEncoder, self).__init__()
+
+    #encoder.build(input_shape=input_dim)
+    #decoder.build(input_shape=(None,n_classes+code_dim))
+    #discriminator.build(input_shape=(None,code_dim))
+
+    self.input_dim = input_dim
+    self.n_classes = n_classes
+    self.encoder = encoder
+    self.decoder = decoder
+    self.discriminator = discriminator
+    self.code_dim = code_dim
+    self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
+    self.prior_batch_size = prior_batch_size
+    print(f"reconstruction loss weight: {self.rec_loss_weight}")
+
+    self.prior_sampler = tf.random.uniform
+    self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    self.mse_loss = tf.keras.losses.MSE
+    self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
+    self.accuracy_metric = tf.keras.metrics.Accuracy(name="Adversarial error")
+
+  def decoder_loss(self,original,decoded):
+    return self.mse_loss(original,decoded)
+
+  def discriminator_loss(self,real,fake):
+    real_loss = self.cross_entropy(tf.ones_like(real), real)
+    fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
+    return (real_loss + fake_loss)
+
+  def __call__(self, x, training=True, mask=None):
+    return self.encoder(x)
+
+  def train_step(self, inputs):
+
+    x, labels = inputs
+
+    prior_samples = self.prior_sampler(shape=(self.prior_batch_size,self.code_dim),maxval=1.0)
+    with tf.GradientTape() as tape1, tf.GradientTape() as tape2, tf.GradientTape() as tape3:
+      code = self.encoder(x, training=True)
+      extended_code = tf.concat([code,labels],axis=1)
+      decoded = self.decoder(extended_code,training=True)  # Forward pass
+      #dcdr_loss = self.decoder_loss(x,decoded)
+
+      real = self.discriminator(prior_samples,training=True)
+      fake = self.discriminator(code,training=True)
+
+      reconstruction_loss = self.decoder_loss(x,decoded)
+      classification_loss = self.discriminator_loss(real,fake)
+      mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*self.decoder_loss(x,decoded)
+
+    # Compute gradients
+    
+    discr_gradients = tape1.gradient(classification_loss,self.discriminator.trainable_variables)
+    decoder_gradients = tape2.gradient(reconstruction_loss, self.decoder.trainable_variables)
+    encoder_gradients = tape3.gradient(mixed_loss, self.encoder.trainable_variables)
+
+    self.discriminator.optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
+    self.decoder.optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
+    self.encoder.optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
+
+    self.mse_metric.update_state(x,decoded)
+
+    discr_true = tf.concat([tf.ones_like(real),tf.zeros_like(fake)],axis=0)
+    discr_predicted = tf.round(tf.concat([real,fake],axis=0))
+    self.accuracy_metric.update_state(discr_true,discr_predicted)
+
+    return {"MSE": self.mse_metric.result(), "Accuracy": self.accuracy_metric.result()}
+
+  @property
+  def metrics(self):
+    # We list our `Metric` objects here so that `reset_states()` can be
+    # called automatically at the start of each epoch
+    # or at the start of `evaluate()`.
+    # If you don't implement this property, you have to call
+    # `reset_states()` yourself at the time of your choosing.
+    return [self.mse_metric, self.accuracy_metric]
+
+  def save(self,output_dir):
+    self.encoder.save(output_dir + "encoder")
+    self.decoder.save(output_dir + "decoder")
+    self.discriminator.save(output_dir + "discriminator")
+
+    d = {
+      "reconstruction_loss_weight":self.rec_loss_weight,
+      "input_dim": self.input_dim,
+      "n_classes": self.n_classes,
+      "code_dim": self.code_dim,
+      "prior_batch_size": self.prior_batch_size
+    }
+
+    with open(output_dir + "aae-params.json","w") as f:
+      json.dump(d,f)
+
+  @classmethod
+  def load(cls,folder):
+    encoder = tf.keras.models.load_model(folder + "encoder")
+    decoder = tf.keras.models.load_model(folder + "decoder")
+    discriminator = tf.keras.models.load_model(folder + "discriminator")
+
+    with open(folder + "aae-params.json","r") as f:
+      d = json.loads(f.read())
+
+    return SupervisedAdversarialAutoEncoder(encoder = encoder,decoder = decoder,discriminator = discriminator,**d)
 

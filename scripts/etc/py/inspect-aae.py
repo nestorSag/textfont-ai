@@ -22,7 +22,7 @@ assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 from PIL import Image
-code_size=16
+code_size=32
 chars = list(string.ascii_letters + string.digits)
 
 dataset = tf.data.Dataset.from_tensor_slices(["data/filtered/lowercase","data/filtered/uppercase","data/filtered/numbers"])\
@@ -35,7 +35,7 @@ dataset = tf.data.Dataset.from_tensor_slices(["data/filtered/lowercase","data/fi
 
 a,b,c = next(iter(dataset))
 
-model = SupervisedAdversarialAutoEncoder.load("models/o-aae-32/")
+model = SupervisedAdversarialAutoEncoder.load("models/aae-32-4/")
 
 ############
 cb = SAAECallback("inspect",a,b)

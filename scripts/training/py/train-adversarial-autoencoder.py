@@ -229,7 +229,7 @@ def fit_model(argv=None):
     discriminator.compile(optimizer = optimizer)
 
     # build model
-    model = SupervisedAdversarialAutoEncoder(
+    model = OriginalSupervisedAdversarialAutoEncoder(
       encoder=encoder,
       decoder=decoder,
       discriminator=discriminator,
