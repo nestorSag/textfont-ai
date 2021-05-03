@@ -36,7 +36,7 @@ class StreamRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_urls(self,**kwargs) -> Generator[str,None,None]:
+  def get_urls(self) -> Generator[str,None,None]:
     """
     Generator method that yields urls for all scrappable fonts in the current website
     """
@@ -54,13 +54,13 @@ class StreamRetriever(ABC):
       bf.write(chunk)
     return bf.getvalue()
 
-  def get_all_streams(self,**kwargs) -> Generator[bytes, None, None]:
+  def get_all_streams(self) -> Generator[bytes, None, None]:
     """
     Generator method that yields all the scrappable streams from a website
 
     kwargs: args to be passed to the get_urls() method
     """
-    for url in self.get_urls(**kwargs):
+    for url in self.get_urls():
       for stream in self.get_stream_from_url(url):
         yield stream
 
@@ -72,8 +72,8 @@ class StreamRetriever(ABC):
 
     """
 
-    def get_fontname(str,ext=".ttf"):
-    return str.split("/")[-1].lower().replace(ext,"")
+    def get_fontname(string,ext=".ttf"):
+    return Path(string).name.lower().replace(ext,"")
 
     def choose_ext(lst):
       ttfs = len([x for x in lst if ".ttf" in x.lower()])
@@ -83,16 +83,17 @@ class StreamRetriever(ABC):
       else:
         return ".otf"
 
-    #we assume the stream constitutes a zip file
+    #we assume the stream is a zip file's contents
+    bf = io.BytesIO().write(stream)
     try:
-      zipped = zipfile.ZipFile(stream)
+      zipped = zipfile.ZipFile(bf)
       files_in_zip = zipped.namelist()
       # choose whether to proces TTFs or OTFs, but not both
       ext = choose_ext(files_in_zip)
       valid_files = sorted([filename for filename in files_in_zip if ext in filename.lower()])
       
       for file in valid_files:
-        filename = file.split("/")[-1]
+        filename = Path(file).name
         yield InMemoryFile(filename=filename, content = zipped.read(file))
 
     except Exception e:
@@ -100,14 +101,14 @@ class StreamRetriever(ABC):
       # add logging
       return 
 
-  def get_all_files(self,**kwargs) -> Generator[InMemoryFile,None,None]:
+  def get_all_files(self) -> Generator[InMemoryFile,None,None]:
     """
     Generator method that yields all scrappable font files (either .ttf or .otf) from the source website
 
     kwargs: args to be passed to the get_all_streams() method
 
     """
-    for stream in self.get_all_streams(**kwargs):
+    for stream in self.get_all_streams():
       for file in self.unpack_files_from_stream(stream):
         yield file
 
@@ -203,19 +204,19 @@ class LocalStreamRetriever(StreamRetriever):
 
   """
   def __init__(self,folder):
-    folder[-1] = "" if folder[-1] == "/" else folder[-1]
-    self.folder = folder
+
+    self.folder = Path(folder)
 
   def get_source_string(self):
 
-    return f"local@{self.folder}"
+    return f"local@{self.folder.name}"
 
   def get_urls(self):
 
     root, subdirs, files in os.walk(rootdir)
     for file in files:
-      yield self.folder + "/" + file
+      yield str(self.folder / file)
 
-  def get_stream_from_url(self,url: str) -> bytes:
+  def get_stream_from_url(self,url: Path) -> bytes:
 
-    return zipfile.Path.read_bytes(url) 
+    return url.read_bytes()
