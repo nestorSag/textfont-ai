@@ -108,18 +108,13 @@ class Ingestor(object):
   """
   Ingestion pipeline, takes as arguments a configuration object that defines its execution
 
-  config: Either a Config object, a Path to the YAML file, or a string with the contents of the YAML configuration file
+  config: A Config instance
 
   """
 
-  def __init__(self,config: typing.Union[Config, Path, str]) -> None:
+  def __init__(self,config: Config) -> None:
 
-    if isinstance(config, str):
-      self.config = ConfigHandler.parse_config(config)
-    elif isinstance(config,Path):
-      self.config = ConfigHandler.parse_config(Path(config).read_text())
-    else:
-      self.config = config
+    self.config = config
 
   def run(self):
 

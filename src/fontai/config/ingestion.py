@@ -50,15 +50,27 @@ class ConfigHandler(object):
   """
 
   @classmethod
-  def parse_config(cls, config: str) -> Config:
+  def from_string(cls, config: str) -> Config:
     """
     Processes a YAML file and maps it to an Config instance
 
-    file: configuration file path
+    file: contents of YAML configuration file
 
     """
 
     conf_yaml = yml.load(config, CONFIG_SCHEMA)
+    return ConfigHandler.instantiate_config(conf_yaml)
+
+  @classmethod
+  def from_file(cls, config: Path) -> Config:
+    """
+    Processes a YAML file and maps it to an Config instance
+
+    file: Path object pointing to configuration YAML file
+
+    """
+
+    conf_yaml = yml.load(config.read_text(), CONFIG_SCHEMA)
     return ConfigHandler.instantiate_config(conf_yaml)
 
   @classmethod

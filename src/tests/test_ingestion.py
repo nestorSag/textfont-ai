@@ -18,7 +18,7 @@ scrappers: #list of FileScrapper instances that will be used to produce scrappab
     folder: src/tests/data/ingestion/input
 """
 
-test_config_object = ConfigHandler.parse_config(TEST_INGESTION_CONFIG)
+test_config_object = ConfigHandler.from_string(TEST_INGESTION_CONFIG)
 
 def is_fontfile(content: bytes) -> bool:
 

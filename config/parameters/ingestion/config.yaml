@@ -1,0 +1,12 @@
+output_folder: data/ingested
+max_zip_size: 128 #max size in MB 
+scrappers: #list of StreamRetriever instances that will be used to produce scrappable URLs
+- class: LocalFileScrapper
+  kwargs: 
+    folder: data/font-zipfiles/google
+- class: LocalFileScrapper
+  kwargs: 
+    folder: data/font-zipfiles/dafont
+- class: LocalFileScrapper
+  kwargs: 
+    folder: data/font-zipfiles/1001fonts
