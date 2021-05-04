@@ -22,11 +22,11 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 class InMemoryFile(BaseModel):
-  # class that holds the bytestreams of unzipped in-memory ttf/otf files
+  # wrapper that holds the bytestreams of unzipped in-memory ttf/otf files
   filename: str
   content: bytes
 
-class FileRetriever(ABC):
+class FileScrapper(ABC):
   """
      Interface implemented by specialised web-scrapping subclasses to retrieve zipped font files.
   """
@@ -114,10 +114,10 @@ class FileRetriever(ABC):
       for file in self.unpack_files_from_stream(stream):
         yield file
 
-# FileRetriever sublcasses 
+# FileScrapper sublcasses 
 
 
-class GoogleFontsFileRetriever(FileRetriever):
+class GoogleFontsFileScrapper(FileScrapper):
 
   def get_source_string(self):
     return "www.github.com@google@fonts@archive"
@@ -125,9 +125,9 @@ class GoogleFontsFileRetriever(FileRetriever):
   def get_sources(self,**kwargs) -> t.Generator[str,None,None]:
     yield "https://github.com/google/fonts/archive/main.zip"
 
-class FreeFontsFileRetriever(FileRetriever):
+class FreeFontsFileScrapper(FileScrapper):
   """
-  Font retriever for https://www.1001freefonts.com
+  Font scrapper for https://www.1001freefonts.com
 
   min_id: minimum font id to attempt to retrieve
 
@@ -153,9 +153,9 @@ class FreeFontsFileRetriever(FileRetriever):
 
 
 
-class DafontsFileRetriever(FileRetriever):
+class DafontsFileScrapper(FileScrapper):
   """
-    Font retriever for https://www.dafont.com/
+    Font scrapper for https://www.dafont.com/
 
   """
   def get_source_string(self):
@@ -200,9 +200,9 @@ class DafontsFileRetriever(FileRetriever):
 
 
 
-class LocalFileRetriever(FileRetriever):
+class LocalFileScrapper(FileScrapper):
   """
-  Emulates the Retriever class logic for zip files already in local storage. This class is useful for processing again font files that had been downloaded before with a previous code version; scrapping urls have changed since, and some retrievers' urls can't be used to crawl the web sources anymore.
+  Emulates the Scrapper class logic for zip files already in local storage. This class is useful for processing again font files that had been downloaded before with a previous code version; source urls have changed since, and some can't be used to crawl the web sources anymore.
 
   """
   def __init__(self,folder):

@@ -7,7 +7,7 @@ import sys
 from PIL import ImageFont
 
 from fontai.config.ingestion import *
-from fontai.ingestion.retrievers import InMemoryFile, FileRetriever
+from fontai.ingestion.scrappers import InMemoryFile, FileScrapper
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class ChunkWriter(object):
 
   size_limit: presize limit in MB
 
-  kwargs: arguments passed to get_all_files() method from retriever
+  kwargs: arguments passed to get_all_files() method from scrapper
   """
 
   def __init__(self, folder: Path, size_limit: float = 128):
@@ -80,18 +80,18 @@ class FontDownloader(object):
 
     self.writer = ChunkWriter(output_folder, chunk_size)
 
-  def download_and_compress(self, retriever: FileRetriever) -> None:
+  def download_and_compress(self, scrapper: FileScrapper) -> None:
     """
     Download all font files (ttf or otf) and compress them into zip files
 
-    retriever: Object of class FontRetriever that fetches urls and download the corresponding files
+    scrapper: Object of class FontScrapper that fetches urls and download the corresponding files
 
     chunk_size: precompression size in MB of each chunk
 
     """
 
     with self.writer as writer:
-      for file in retriever.get_all_files():
+      for file in scrapper.get_all_files():
         if self.is_fontfile(file):
           writer.add_file(file)
 
@@ -129,9 +129,9 @@ class Ingestor(object):
     """
 
     downloader = FontDownloader(self.config.output_folder, self.config.max_zip_size)
-    for retriever in self.config.retrievers:
-      logger.info(f"Processing retriever of type {retriever.__class__.__name__}")
-      downloader.download_and_compress(retriever = retriever)
+    for scrapper in self.config.scrappers:
+      logger.info(f"Processing scrapper of type {scrapper.__class__.__name__}")
+      downloader.download_and_compress(scrapper = scrapper)
 
 
 

@@ -6,14 +6,14 @@ import inspect
 from pydantic import BaseModel
 import strictyaml as yml
 
-import fontai.ingestion.retrievers as retrievers
+import fontai.ingestion.scrappers as scrappers
 
 logger = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = yml.Map({
   "output_folder": yml.Str(), 
   "max_zip_size": yml.Float(), 
-  "retrievers": yml.Seq( #retrievers: list of dictionaries with 2 keys: class name and kwargs to be passed
+  "scrappers": yml.Seq( #scrappers: list of dictionaries with 2 keys: class name and kwargs to be passed
     yml.Map({
       "class":yml.Str(),
       yml.Optional("kwargs"):yml.MapPattern(
@@ -31,12 +31,12 @@ class Config(BaseModel):
 
   max_zip_size: maximum pre-compression size of zipped output files
 
-  retrievers: list of FileRetriever instances from which scrapped files will be processed.
+  scrappers: list of FileScrapper instances from which scrapped files will be processed.
 
   """
   output_folder: Path
   max_zip_size: float
-  retrievers: t.List[retrievers.FileRetriever]
+  scrappers: t.List[scrappers.FileScrapper]
   yaml: yml.YAML
 
   # internal BaseModel configuration class
@@ -69,7 +69,7 @@ class ConfigHandler(object):
     config: YAML object from the strictyaml library
 
     """
-    output_folder, max_zip_size, sources = Path(config.data["output_folder"]), config.data["max_zip_size"], config.data["retrievers"]
+    output_folder, max_zip_size, sources = Path(config.data["output_folder"]), config.data["max_zip_size"], config.data["scrappers"]
 
     #valid_folder = output_folder.exists()
     valid_size = max_zip_size > 0
@@ -85,11 +85,11 @@ class ConfigHandler(object):
     for source in sources:
       kwargs = {} if "kwargs" not in source else source["kwargs"]
       try:
-        source_list.append(getattr(retrievers,source["class"])(**kwargs))
+        source_list.append(getattr(scrappers,source["class"])(**kwargs))
       except Exception as e:
-        logger.exception(f"Error instantiating FileRetriever object of type {source['class']}")
+        logger.exception(f"Error instantiating FileScrapper object of type {source['class']}")
     return Config(
       output_folder = output_folder, 
       max_zip_size = max_zip_size,
-      retrievers = source_list,
+      scrappers = source_list,
       yaml = config)

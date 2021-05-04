@@ -3,7 +3,7 @@ import zipfile
 import io
 from pathlib import Path
 
-from fontai.ingestion import downloader, retrievers
+from fontai.ingestion import downloader, scrappers
 from fontai.config.ingestion import *
 
 from PIL import ImageFont
@@ -12,8 +12,8 @@ import numpy as np
 TEST_INGESTION_CONFIG = """
 output_folder: src/tests/data/ingestion/output
 max_zip_size: 0.2 #max size in MB 
-retrievers: #list of FileRetriever instances that will be used to produce scrappable URLs
-- class: LocalFileRetriever
+scrappers: #list of FileScrapper instances that will be used to produce scrappable URLs
+- class: LocalFileScrapper
   kwargs: 
     folder: src/tests/data/ingestion/input
 """
@@ -38,18 +38,18 @@ def is_zipfile(content: bytes) -> bool:
   except Exception as e:
     return False
 
-def test_retrievers():
+def test_scrappers():
 
-  retriever = test_config_object.retrievers[0]
+  scrapper = test_config_object.scrappers[0]
 
   #verify urls
-  assert list(retriever.get_sources()) == [
-    retriever.folder / "afe_jen",
-    retriever.folder / "after_fall",
-    retriever.folder / "afterglow"]
+  assert list(scrapper.get_sources()) == [
+    scrapper.folder / "afe_jen",
+    scrapper.folder / "after_fall",
+    scrapper.folder / "afterglow"]
 
   #verify unpacked files
-  files = list(retriever.get_all_files())
+  files = list(scrapper.get_all_files())
 
   expected_filenames = [
     "AFE_Jen.ttf",
