@@ -31,7 +31,9 @@ class ChunkWriter(object):
     self.n_files = 0
     self.chunk_id = 0
 
-    self.buffer = zipfile.ZipFile(self.folder / str(self.chunk_id), "w")
+    self.buffer_is_closed = True #this flag is needed to process multiple scrappers as a single sequence of zip file chunks
+
+    self._open_new_buffer()
 
   def add_file(self, file: InMemoryFile)-> None:
 
@@ -41,10 +43,13 @@ class ChunkWriter(object):
     file: InMemoryFile object
 
     """
+    if self.buffer_is_closed:
+      self._open_new_buffer()
+
     file_size = sys.getsizeof(file.content)
     if self.chunk_size + file_size > 1e6 * self.chunk_size_limit:
       self._close_buffer()
-      self.buffer = zipfile.ZipFile(self.folder / str(self.chunk_id), "w")
+      self._open_new_buffer()
 
     self.buffer.writestr(str(self.n_files) + file.filename, file.content)
     self.n_files += 1
@@ -54,16 +59,22 @@ class ChunkWriter(object):
     logger.info(f"Persisting zip file: size = {self.chunk_size/1e6} MB, no. files = {self.n_files}, chunk number = {self.chunk_id}")
 
     self.buffer.close()
+    self.buffer_is_closed = True
 
     self.chunk_size = 0
     self.n_files = 0
     self.chunk_id += 1
+
+  def _open_new_buffer(self):
+    self.buffer = zipfile.ZipFile(self.folder / str(self.chunk_id), "w")
+    self.buffer_is_closed = False
 
   def __enter__(self):
     return self
 
   def __exit__(self, exc_type, exc_val, exc_tb):
     self._close_buffer()
+    self.buffer_is_closed = True
 
 
 
@@ -91,7 +102,7 @@ class FontDownloader(object):
     """
 
     with self.writer as writer:
-      for file in scrapper.get_all_files():
+      for file in scrapper.get_files():
         if self.is_fontfile(file):
           writer.add_file(file)
 

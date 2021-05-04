@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 from fontai.ingestion.downloader import Ingestor
+from fontai.config.ingestion import ConfigHandler
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +28,12 @@ def ingest_data(args):
       retrievers: list[{'class': 'className', 'kwargs': {...}}] -> list of FontScrapper subclasses and their kwargs that will be used as sources.
       -----
       """)
-  # parser.add_argument(
-  #   '--logging-output',
-  #   dest='logging_output',
-  #   required=True,
-  #   help='Logging output file inside logs/ dir')
 
   logging.basicConfig(filename=Path("logs") / "ingestion.log", level=logging.DEBUG)
 
   args, _ = parser.parse_known_args(args)
   
-  ingestor = Ingestor(ConfigHandler.from_path(Path(args.config)))
+  ingestor = Ingestor(ConfigHandler.from_file(Path(args.config)))
   ingestor.run()
 
 if __name__ == "__main__":

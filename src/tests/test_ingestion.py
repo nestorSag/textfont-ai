@@ -49,7 +49,7 @@ def test_scrappers():
     scrapper.folder / "afterglow"]
 
   #verify unpacked files
-  files = list(scrapper.get_all_files())
+  files = list(scrapper.get_files())
 
   expected_filenames = [
     "AFE_Jen.ttf",

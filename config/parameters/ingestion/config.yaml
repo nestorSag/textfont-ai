@@ -9,4 +9,4 @@ scrappers: #list of StreamRetriever instances that will be used to produce scrap
     folder: data/font-zipfiles/dafont
 - class: LocalFileScrapper
   kwargs: 
-    folder: data/font-zipfiles/1001fonts
+    folder: data/font-zipfiles/1001free
