@@ -1,12 +1,15 @@
 import os
 import time
+import io
 import requests 
 import zipfile
 import re
 from shutil import copyfile
-from typing import Generator
+import typing as t
 from abc import ABC, abstractmethod
 import urllib.request
+import logging
+from pathlib import Path
 
 
 import numpy as np
@@ -23,9 +26,9 @@ class InMemoryFile(BaseModel):
   filename: str
   content: bytes
 
-class StreamRetriever(ABC):
+class FileRetriever(ABC):
   """
-     Interface implemented by specialised web-scrapping subclasses to retrieve zip file bytestreams.
+     Interface implemented by specialised web-scrapping subclasses to retrieve zipped font files.
   """
 
   @abstractmethod
@@ -36,13 +39,13 @@ class StreamRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_urls(self) -> Generator[str,None,None]:
+  def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
     """
     Generator method that yields urls for all scrappable fonts in the current website
     """
     pass
 
-  def get_stream_from_url(self,url: str) -> bytes:
+  def get_stream_from_source(self,url: t.Union[str,Path]) -> bytes:
     """
     Generator method that retrieves streams from each scrapped url; this default implementation assumes a single stream per url.
     """
@@ -54,26 +57,22 @@ class StreamRetriever(ABC):
       bf.write(chunk)
     return bf.getvalue()
 
-  def get_all_streams(self) -> Generator[bytes, None, None]:
+  def get_all_streams(self) -> t.Generator[bytes, None, None]:
     """
     Generator method that yields all the scrappable streams from a website
 
-    kwargs: args to be passed to the get_urls() method
+    kwargs: args to be passed to the get_sources() method
     """
-    for url in self.get_urls():
-      for stream in self.get_stream_from_url(url):
-        yield stream
+    for url in self.get_sources():
+      yield self.get_stream_from_source(url)
 
-  def unpack_files_from_stream(self, stream: bytes) -> Generator[InMemoryFile,None,None]:
+  def unpack_files_from_stream(self, stream: bytes) -> t.Generator[InMemoryFile,None,None]:
     """
     Generator method that yields all font files from a zip bytestream
 
     Returns tuples of the form (file bytestream, zip filename)
 
     """
-
-    def get_fontname(string,ext=".ttf"):
-    return Path(string).name.lower().replace(ext,"")
 
     def choose_ext(lst):
       ttfs = len([x for x in lst if ".ttf" in x.lower()])
@@ -84,7 +83,8 @@ class StreamRetriever(ABC):
         return ".otf"
 
     #we assume the stream is a zip file's contents
-    bf = io.BytesIO().write(stream)
+    bf = io.BytesIO()
+    bf.write(stream)
     try:
       zipped = zipfile.ZipFile(bf)
       files_in_zip = zipped.namelist()
@@ -96,12 +96,14 @@ class StreamRetriever(ABC):
         filename = Path(file).name
         yield InMemoryFile(filename=filename, content = zipped.read(file))
 
-    except Exception e:
+    except Exception as e:
       logger.exception(f"Error while extracting zipped files")
       # add logging
       return 
+    finally:
+      bf.close()
 
-  def get_all_files(self) -> Generator[InMemoryFile,None,None]:
+  def get_all_files(self) -> t.Generator[InMemoryFile,None,None]:
     """
     Generator method that yields all scrappable font files (either .ttf or .otf) from the source website
 
@@ -112,18 +114,18 @@ class StreamRetriever(ABC):
       for file in self.unpack_files_from_stream(stream):
         yield file
 
-# StreamRetriever sublcasses 
+# FileRetriever sublcasses 
 
 
-class GoogleFontsStreamRetriever(StreamRetriever):
+class GoogleFontsFileRetriever(FileRetriever):
 
   def get_source_string(self):
     return "www.github.com@google@fonts@archive"
 
-  def get_urls(self,**kwargs) -> Generator[str,None,None]:
+  def get_sources(self,**kwargs) -> t.Generator[str,None,None]:
     yield "https://github.com/google/fonts/archive/main.zip"
 
-class FreeFontsStreamRetriever(StreamRetriever):
+class FreeFontsFileRetriever(FileRetriever):
   """
   Font retriever for https://www.1001freefonts.com
 
@@ -141,7 +143,7 @@ class FreeFontsStreamRetriever(StreamRetriever):
   def get_source_string(self):
     return "www.1001freefonts.com"
 
-  def get_urls(self):
+  def get_sources(self):
     
     for font_id in range(self.min_id,self.max_id):
       fid = str(font_id)
@@ -151,7 +153,7 @@ class FreeFontsStreamRetriever(StreamRetriever):
 
 
 
-class DafontsStreamRetriever(StreamRetriever):
+class DafontsFileRetriever(FileRetriever):
   """
     Font retriever for https://www.dafont.com/
 
@@ -159,7 +161,7 @@ class DafontsStreamRetriever(StreamRetriever):
   def get_source_string(self):
     return "www.dafont.com"
 
-  def get_urls(self):
+  def get_sources(self):
     my_ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
     for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
       # parse html of first letter page
@@ -198,7 +200,7 @@ class DafontsStreamRetriever(StreamRetriever):
 
 
 
-class LocalStreamRetriever(StreamRetriever):
+class LocalFileRetriever(FileRetriever):
   """
   Emulates the Retriever class logic for zip files already in local storage. This class is useful for processing again font files that had been downloaded before with a previous code version; scrapping urls have changed since, and some retrievers' urls can't be used to crawl the web sources anymore.
 
@@ -211,12 +213,11 @@ class LocalStreamRetriever(StreamRetriever):
 
     return f"local@{self.folder.name}"
 
-  def get_urls(self):
+  def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
+    for path in self.folder.iterdir():
+      if path.is_file():
+        yield path
 
-    root, subdirs, files in os.walk(rootdir)
-    for file in files:
-      yield str(self.folder / file)
+  def get_stream_from_source(self,path: t.Union[str,Path]) -> bytes:
 
-  def get_stream_from_url(self,url: Path) -> bytes:
-
-    return url.read_bytes()
+    return path.read_bytes()

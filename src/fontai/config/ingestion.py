@@ -1,16 +1,16 @@
-import logging
 from pathlib import Path
-
+import logging
 import typing as t
+import inspect
+
 from pydantic import BaseModel
-#from strictyaml import load, Map, Str, Int, Seq, YAMLError
 import strictyaml as yml
 
 import fontai.ingestion.retrievers as retrievers
 
-logger = Logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-CONFIG_SCHEMA = strictyaml.Map({
+CONFIG_SCHEMA = yml.Map({
   "output_folder": yml.Str(), 
   "max_zip_size": yml.Float(), 
   "retrievers": yml.Seq( #retrievers: list of dictionaries with 2 keys: class name and kwargs to be passed
@@ -31,12 +31,17 @@ class Config(BaseModel):
 
   max_zip_size: maximum pre-compression size of zipped output files
 
-  retrievers: list of StreamRetriever instances from which scrapped files will be processed.
+  retrievers: list of FileRetriever instances from which scrapped files will be processed.
 
   """
   output_folder: Path
   max_zip_size: float
-  retrievers: t.List[StreamRetriever]
+  retrievers: t.List[retrievers.FileRetriever]
+  yaml: yml.YAML
+
+  # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True
 
 class ConfigHandler(object):
   """
@@ -45,7 +50,7 @@ class ConfigHandler(object):
   """
 
   @classmethod
-  def parse_config(config: str) -> Config:
+  def parse_config(cls, config: str) -> Config:
     """
     Processes a YAML file and maps it to an Config instance
 
@@ -53,11 +58,11 @@ class ConfigHandler(object):
 
     """
 
-    conf_yaml = strictyaml.load(config, CONFIG_SCHEMA)
-    return ConfigHandler.instantiate_config(conf_yaml):
+    conf_yaml = yml.load(config, CONFIG_SCHEMA)
+    return ConfigHandler.instantiate_config(conf_yaml)
 
   @classmethod
-  def instantiate_config(config: YAML) -> Config:
+  def instantiate_config(cls, config: yml.YAML) -> Config:
     """
     Processes a YAML instance to produce an Config instance.
 
@@ -66,27 +71,25 @@ class ConfigHandler(object):
     """
     output_folder, max_zip_size, sources = Path(config.data["output_folder"]), config.data["max_zip_size"], config.data["retrievers"]
 
-    valid_folder = output_folder.exists():
+    #valid_folder = output_folder.exists()
     valid_size = max_zip_size > 0
 
-    if not valid_folder:
-      raise Exception(f"output_folder ({output_folder}) does not exist.")
+    # if not valid_folder:
+    #   raise Exception(f"output_folder ({output_folder}) does not exist.")
     if not valid_size:
       raise Exception(f"max_zip_size parameter value ({max_zip_size}) is invalid.")
 
-    instance_list = []
-    for instance in instances:
-      if instance["class"] in inspect.getmembers(retrievers):
-        kwargs = {} if "kwargs" not in instance else instance["kwargs"]
-        try:
-          instance_list.append(getattr(retrievers,instance["class"])(**kwargs))
-        except Exception e:
-          logger.exception(f"Invalid keyword arguments for retriever of type {instance["class"]}")
-      else:
-        #logger.error(f"Retriever of type {retriever_type} doesn't exist in fontai.ingestion.retrievers")
-        raise Exception(f" {instance["class"]} is not a subclass of StreamRetriever")
+    Path(output_folder).mkdir(parents=True, exist_ok=True)
 
+    source_list = []
+    for source in sources:
+      kwargs = {} if "kwargs" not in source else source["kwargs"]
+      try:
+        source_list.append(getattr(retrievers,source["class"])(**kwargs))
+      except Exception as e:
+        logger.exception(f"Error instantiating FileRetriever object of type {source['class']}")
     return Config(
       output_folder = output_folder, 
       max_zip_size = max_zip_size,
-      retrievers = instance_list)
+      retrievers = source_list,
+      yaml = config)

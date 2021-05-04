@@ -1,5 +1,7 @@
 import pytest
 import zipfile
+import io
+from pathlib import Path
 
 from fontai.ingestion import downloader, retrievers
 from fontai.config.ingestion import *
@@ -9,35 +11,31 @@ import numpy as np
 
 TEST_INGESTION_CONFIG = """
 output_folder: src/tests/data/ingestion/output
-max_zip_size: 0.05 #max size in MB 
-retrievers: #list of StreamRetriever instances that will be used to produce scrappable URLs
-- class: LocalStreamRetriever
+max_zip_size: 0.2 #max size in MB 
+retrievers: #list of FileRetriever instances that will be used to produce scrappable URLs
+- class: LocalFileRetriever
   kwargs: 
     folder: src/tests/data/ingestion/input
 """
 
-test_config_object = ConfigHandler.parse_config_file(TEST_INGESTION_CONFIG)
+test_config_object = ConfigHandler.parse_config(TEST_INGESTION_CONFIG)
 
 def is_fontfile(content: bytes) -> bool:
 
-  bf = io.BytesIO(),write(content)
+  #bf = io.BytesIO()
+  #bf.write(content)
   try:
-    ImageFont.truetype(content,50)
-    bf.close()
+    ImageFont.truetype(io.BytesIO(content),50)
     return True
-  except Exception e:
-    bf.close()
+  except Exception as e:
     return False
 
 def is_zipfile(content: bytes) -> bool:
 
-  bf = io.BytesIO(),write(content)
   try:
-    zipfile.ZipFile(content)
-    bf.close()
+    zipfile.ZipFile(io.BytesIO(content))
     return True
-  except Exception e:
-    bf.close()
+  except Exception as e:
     return False
 
 def test_retrievers():
@@ -45,10 +43,10 @@ def test_retrievers():
   retriever = test_config_object.retrievers[0]
 
   #verify urls
-  assert list(retriever.get_all_urls()) == [
-    str(test_config_object.output_folder / "afe_jen"),
-    str(test_config_object.output_folder / "after_all"),
-    str(test_config_object.output_folder / "afterglow")]
+  assert list(retriever.get_sources()) == [
+    retriever.folder / "afe_jen",
+    retriever.folder / "after_fall",
+    retriever.folder / "afterglow"]
 
   #verify unpacked files
   files = list(retriever.get_all_files())
@@ -70,11 +68,11 @@ def test_retrievers():
 
 def test_ingestor():
 
-  ingestor = Ingestor(test_config_object)
+  ingestor = downloader.Ingestor(test_config_object)
   ingestor.run()
 
   output_folder = test_config_object.output_folder
-  for output_file in output_folder.iter_dir():
-    assert output_file.stat().st_size <= test_config_object * 1e6
+  for output_file in output_folder.iterdir():
+    assert output_file.stat().st_size <= test_config_object.max_zip_size * 1e6
     assert is_zipfile(output_file.read_bytes())
 

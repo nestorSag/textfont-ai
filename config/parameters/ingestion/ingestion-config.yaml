@@ -1,0 +1,12 @@
+output_folder: data/raw/google
+max_zip_size: 128 #max size in MB 
+retrievers: #list of StreamRetriever instances that will be used to produce scrappable URLs
+- class: LocalStreamRetriever
+  kwargs: 
+    folder: data/font-zipfiles/google
+- class: LocalStreamRetriever
+  kwargs: 
+    folder: data/font-zipfiles/dafont
+- class: LocalStreamRetriever
+  kwargs: 
+    folder: data/font-zipfiles/1001fonts

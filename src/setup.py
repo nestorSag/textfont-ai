@@ -21,10 +21,12 @@ setuptools.setup(
 
      install_requires=[
         'numpy',
-        'tensorflow',
+        'tensorflow-gpu==2.3.0',
         'pillow',
         'beautifulsoup4',
-        'imageio'
+        'imageio',
+        'strictyaml',
+        'pydantic'
 
     ],
 

@@ -1,10 +1,13 @@
 import typing
 from pathlib import Path
+import zipfile
+import io
+import sys
 
 from PIL import ImageFont
 
 from fontai.config.ingestion import *
-from fontai.ingestion.retrievers import InMemoryFile, FontRetriever
+from fontai.ingestion.retrievers import InMemoryFile, FileRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +22,7 @@ class ChunkWriter(object):
   kwargs: arguments passed to get_all_files() method from retriever
   """
 
-  def __init__(self, folder: Path, size_limit = 128: float):
+  def __init__(self, folder: Path, size_limit: float = 128):
 
     self.chunk_size_limit = size_limit
     self.folder = folder
@@ -67,13 +70,17 @@ class ChunkWriter(object):
 class FontDownloader(object):
   """
   Download all font files and grups them into zip files
+
+  output_folder: folder where results will be saved
+
+  chunk_size: maximum allowed pre-compression size for resulting zip chunks
   """
 
-  def __init__(self, output_folder: Path):
+  def __init__(self, output_folder: Path, chunk_size: float = 128):
 
-    self.output_folder = output_folder
+    self.writer = ChunkWriter(output_folder, chunk_size)
 
-  def download_and_compress(self, retriver: FontRetriever, chunk_size = 128, **kwargs) -> None:
+  def download_and_compress(self, retriever: FileRetriever) -> None:
     """
     Download all font files (ttf or otf) and compress them into zip files
 
@@ -81,48 +88,36 @@ class FontDownloader(object):
 
     chunk_size: precompression size in MB of each chunk
 
-    kwargs: arguments passed to get_all_files() method from retriever
     """
 
-    subfolder = retriever.get_source_string()
-    full_output_path = self.output_folder / subfolder
-    Path(full_output_path).mkdir(parents=True, exist_ok=True)
-
-    file_counter = 0
-    chunk_counter = 0
-    chunk_size = 0
-
-    with ChunkWriter(full_output_path, chunk_size) as writer:
-      for file in retriever.get_all_files(**kwargs):
+    with self.writer as writer:
+      for file in retriever.get_all_files():
         if self.is_fontfile(file):
           writer.add_file(file)
 
-  def is_fontfile(file: InMemoryFile) -> bool:
+  def is_fontfile(self, file: InMemoryFile) -> bool:
 
-    bf = io.BytesIO().write(file.content)
     try:
-      ImageFont.truetype(bf,50)
-      bf.close()
+      ImageFont.truetype(io.BytesIO(file.content),50)
       return True
-    except Exception e:
-      bf.close()
+    except Exception as e:
       logger.exception("Error while parsing font file")
       return False
 
 class Ingestor(object):
   """
-  Ingestion pipeline, takes as arguments a configuration file that defines the execution
+  Ingestion pipeline, takes as arguments a configuration object that defines its execution
 
-  config: Either a Config, Path or str pointing to the YAML configuration file
+  config: Either a Config object, a Path to the YAML file, or a string with the contents of the YAML configuration file
 
   """
 
   def __init__(self,config: typing.Union[Config, Path, str]) -> None:
 
     if isinstance(config, str):
-      self.config = ConfigHandler.parse_config_file(Path(config).read_text())
+      self.config = ConfigHandler.parse_config(config)
     elif isinstance(config,Path):
-      self.config = ConfigHandler.parse_config_file(config.read_text())
+      self.config = ConfigHandler.parse_config(Path(config).read_text())
     else:
       self.config = config
 
@@ -133,10 +128,10 @@ class Ingestor(object):
 
     """
 
-    downloader = FontDownloader(self.config.output_folder)
+    downloader = FontDownloader(self.config.output_folder, self.config.max_zip_size)
     for retriever in self.config.retrievers:
-      logger.info(f"Processing retriever of type {retriever.__name__}")
-      downloader.download_and_compress(retriever = retriever, chunk_size = self.config.max_zip_size)
+      logger.info(f"Processing retriever of type {retriever.__class__.__name__}")
+      downloader.download_and_compress(retriever = retriever)
 
 
 
