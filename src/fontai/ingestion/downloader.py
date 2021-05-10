@@ -123,7 +123,7 @@ class Ingestor(object):
 
   """
 
-  def __init__(self,config: Config) -> None:
+  def __init__(self,config: Config):
 
     self.config = config
 

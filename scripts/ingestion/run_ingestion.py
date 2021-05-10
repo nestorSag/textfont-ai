@@ -22,11 +22,9 @@ def ingest_data(args):
       """
       path to YAML file that defines the execution of the ingestion pipeline.
       config schema:
-      -----
-      output_folder: str
-      max_zip_size: float (positive) -> max pre-compression size of resulting zip chunk files
+      output_folder: str;
+      max_zip_size: float (positive) -> max pre-compression size of resulting zip chunk files;
       retrievers: list[{'class': 'className', 'kwargs': {...}}] -> list of FontScrapper subclasses and their kwargs that will be used as sources.
-      -----
       """)
 
   logging.basicConfig(filename=Path("logs") / "ingestion.log", level=logging.DEBUG)
