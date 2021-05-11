@@ -25,7 +25,7 @@ CONFIG_SCHEMA = yml.Map({
 
 class Config(BaseModel):
   """
-  Wrapper class for the configuration of the Ingestor class
+  Wrapper class for the configuration of the ImageExtractor class
 
   output_folder: folder in which scrapped and zipped ttf/otf files will be saved
 

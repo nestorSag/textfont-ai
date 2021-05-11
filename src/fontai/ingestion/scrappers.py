@@ -18,13 +18,9 @@ from bs4 import BeautifulSoup
 
 from pydantic import BaseModel
 
+from fontai.core import InMemoryFile
 
 logger = logging.getLogger(__name__)
-
-class InMemoryFile(BaseModel):
-  # wrapper that holds the bytestreams of unzipped in-memory ttf/otf files
-  filename: str
-  content: bytes
 
 class FileScrapper(ABC):
   """
