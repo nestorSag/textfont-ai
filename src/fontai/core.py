@@ -27,7 +27,7 @@ class TfrHandler(object):
   @classmethod
   def as_tfr(cls,png: bytes, label: str, metadata: str) -> TFExample:
     """
-      Wraps the arguments into a TensorFlow Example instance.
+      Wraps the arguments into a TensorFlow Example instance
     """
     def bytes_feature(value):
       return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -40,7 +40,10 @@ class TfrHandler(object):
         "metadata":bytes_feature(bytes(metadata))}))
 
   def from_tfr(csl, serialised):
-    return parse_single_example(serialized,self.record_spec)
+    """
+      unpacks a serialised tf record
+    """
+    return parse_single_example(serialised,self.SCHEMA)
 
 class InMemoryFile(BaseModel):
   # wrapper that holds the bytestream and name of a file
@@ -180,6 +183,12 @@ class FileHandlerFactory(object):
 
 
 class DataPath(object):
+  """
+    Data reader/writer class that abstracts away the underlying storage location. Supports local and GCS storage
+
+    source_str: path or url pointing to the data, or to where it will be saved
+
+  """
 
   def __init__(self, source_str: str):
     self.string = str(source_str)
@@ -188,12 +197,27 @@ class DataPath(object):
     self.filename = self.get_filename()
 
   def read_bytes(self) -> bytes:
+    """
+      Read the bystream from the path
+
+      Returns the file's bytestream
+    """
     return self.handler.read(self.string)
 
   def write_bytes(self,content: bytes) -> None:
+    """
+      Writes a bytestream to the path
+    """
+
     self.handler.write(self.string)
 
   def list_files(self) -> t.List[DataPath]:
+    """
+      List files (but not dirs) in the folder given by source_str
+
+      Returns a list of DataPath objects
+    """
+
     return [DataPath(elem) for elem in self.handler.list_files(self.string)]
 
   def __truediv__(self, path: str) -> DataPath:

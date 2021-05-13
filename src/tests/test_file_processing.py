@@ -2,7 +2,7 @@ import pytest
 from libpath import Path
 
 import numpy as np
-from fontai.core import DataPath, InMemoryFile, LabeledExample, KeyValuePair
+from fontai.core import DataPath, InMemoryFile, LabeledExample, KeyValuePair, TfrHandler
 from fontai.preprocessing.file_processing import *
 
 
@@ -54,6 +54,11 @@ def test_stages():
 
   transformer = TfrRecordWriter(OUTPUT_PATH)
   transformer.map(test_object)
+  records = tf.data.TFRecordDataset(filenames=str(OUTPUT_PATH))
+    .map(TfrHandler.from_tfr)
+  record = iter(records).next()
+  assert record["label"] == bytes("a".encode("utf-8"))
+
   #assert test_object.key == "0"
   #assert test_object.value.y == "a"
   #assert test_object.value.x.shape == (64,64)

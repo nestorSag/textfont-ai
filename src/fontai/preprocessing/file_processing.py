@@ -20,6 +20,7 @@ from apache_beam.io.gcp.gcsio import GcsIO
 from fontai.config.preprocessing import Config
 from fontai.core import InMemoryFile, DataPath, TfrHandler
 
+logger = logging.getLogger(__name___)
 
 class ObjectMapper(ABC):
   """
@@ -94,10 +95,19 @@ class ZipToFontFiles(KeyValueMapper):
 
   def _map(self,pair: KeyValuePair)-> t.Generator[InMemoryFile]:
     key, file = pair
+    logger.info(f"Extracting font files from zip file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
-      zipped = zipfile.ZipFile(bf)
+      try:
+        zipped = zipfile.ZipFile(bf)
+      except Exception as e:
+        logger.exception(f"Error while reading zip file '{file.filename}'")
+        return
       for zipped_file in zipped.namelist():
-        yield key, InMemoryFile(filename = zipped_file, content = zipped.read(zipped_file))
+        try:
+          yield key, InMemoryFile(filename = zipped_file, content = zipped.read(zipped_file))
+        except Exception as e:
+          logger.exception(f"Error while unzipping file '{zipped_file}' from zip file '{file.filename}'")
+
 
 
 
@@ -132,19 +142,26 @@ class FontFileToCharArrays(KeyValueMapper):
 
   def _map(self,pair: KeyValuePair)-> t.Generator[np.ndarray]:
     key,file = pair
+    logger.info(f"exctracting arrays from file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
-      font = ImageFont.truetype(bf,self.font_size)
+      try:
+        font = ImageFont.truetype(bf,self.font_size)
+      except Exception as e:
+        logger.exception(f"Error while reading font file '{file.filename}'")
+        return
       for char in self.charset:
         img = Image.new("RGB",(self.canvas_size,self.canvas_size))
         draw = ImageDraw.Draw(img)
-        draw.text((offset,offset),letter,font=font)
+        try:
+          draw.text((offset,offset),letter,font=font)
+          with io.BytesIO() as bf2:
+            img.save(bf2,format="png")
+            array = imageio.imread(bf2.getvalue(),format="png")
 
-        with io.BytesIO() as bf2:
-          img.save(bf2,format="png")
-          array = imageio.imread(bf2.getvalue(),format="png")
-
-        array = np.mean(array, dim = -1).astype(np.uint8)
-        yield key, LabeledExample(x=array,y=char,metadata=file.filename)
+          array = np.mean(array, dim = -1).astype(np.uint8)
+          yield key, LabeledExample(x=array,y=char,metadata=file.filename)
+        except Exception as e:
+          logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'")
 
 class ArrayCropper(KeyValueMapper):
 
@@ -157,7 +174,9 @@ class ArrayCropper(KeyValueMapper):
     key,example = pair
     nonzero = np.where(example.x > 0)
     if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
-      yield key, LabeledExample(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)
+      logger.info("Empty image found. ignoring.")
+      return
+      #yield key, LabeledExample(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)
     else:
       h_bound, w_bound = [(np.min(axis),np.max(axis)) for axis in nonzero]
       h = h_bound[1] - h_bound[0] + 1
@@ -188,12 +207,12 @@ class ArrayResizer(KeyValueMapper):
     output = np.zeros((self.output_size,self.output_size),dtype=np.uint8)
     # resize img to fit into output dimensions
     try:
-      img_h, img_w = example.x.shape
-      if img_h > 0 and img_w > 0:
-        if img_h >= img_w:
-          resize_dim = (self.output_size,int(img_w*self.output_size/img_h))
+      height, width = example.x.shape
+      if height > 0 and width > 0:
+        if height >= width:
+          resize_dim = (self.output_size,int(width*self.output_size/height))
         else:
-          resize_dim = (int(img_h*self.output_size/img_w),self.output_size)
+          resize_dim = (int(height*self.output_size/width),self.output_size)
         #try:
         resized = np.array(Image.fromarray(np.uint8(array)).resize(size=tuple(reversed(resize_dim))))
         # embed into squared image
@@ -203,6 +222,7 @@ class ArrayResizer(KeyValueMapper):
         # make the image binary
         yield key, LabeledExample(x=output.astype(np.uint8), y=y,metadata=metadata)
     except Exception as e:
+      logger.exception(f"Error while resizing array: {e}")
       return
 
 
@@ -264,7 +284,7 @@ class BeamCompatibleWrapper(beam.DoFn):
 
 
 
-class ImageExtractor(object):
+class FileProcessor(object):
   """
   File preprocessing pipeline; takes a Config object that defines its execution.
 

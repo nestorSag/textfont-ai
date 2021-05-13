@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 Path("logs").mkdir(parents=True, exist_ok=True)
 
 def ingest_data(args):
-  # Run ingestion pipeline as defiend by the passed configuration YAML file
+  # Run ingestion pipeline as defined by the passed configuration YAML file
   
   parser = argparse.ArgumentParser(description = "Scraps free text font files from a configured source.")
   parser.add_argument(
@@ -21,10 +21,6 @@ def ingest_data(args):
       help=
       """
       path to YAML file that defines the execution of the ingestion pipeline.
-      config schema:
-      output_folder: str;
-      max_zip_size: float (positive) -> max pre-compression size of resulting zip chunk files;
-      retrievers: list[{'class': 'className', 'kwargs': {...}}] -> list of FontScrapper subclasses and their kwargs that will be used as sources.
       """)
 
   logging.basicConfig(filename=Path("logs") / "ingestion.log", level=logging.DEBUG)
