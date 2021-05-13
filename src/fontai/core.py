@@ -7,7 +7,40 @@ import typing as t
 from pydantic import BaseModel
 from apache_beam.io.gcp.gcsio import GcsIO
 
+import tensorflow.string as tf_str
+import tensorflow.train.Example as TFExample
+import tf.train.Features
+import tf.train.BytesList
+from tensorflow.io import FixedLenFeature, parse_single_example
 
+
+class TfrHandler(object):
+  """
+    Class to handle tensorflow records in preprocessing stages
+  """
+  self.SCHEMA = {
+  'label': FixedLenFeature([], tf.string),
+  'metadata': FixedLenFeature([], tf.string),
+  'image': FixedLenFeature([], tf.string),
+  }
+
+  @classmethod
+  def as_tfr(cls,png: bytes, label: str, metadata: str) -> TFExample:
+    """
+      Wraps the arguments into a TensorFlow Example instance.
+    """
+    def bytes_feature(value):
+      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+    return TFExample(
+      features=tf.train.Features(
+        feature={
+        "png": bytes_feature(png),
+        "label":bytes_feature(bytes(label)),
+        "metadata":bytes_feature(bytes(metadata))}))
+
+  def from_tfr(csl, serialised):
+    return parse_single_example(serialized,self.record_spec)
 
 class InMemoryFile(BaseModel):
   # wrapper that holds the bytestream and name of a file
@@ -25,7 +58,8 @@ class LabeledExample(BaseModel):
   def __iter__(self):
     return(iter(x,y,metadata))
 
-
+  def __eq__(self,other):
+    return self.x == other.x and self.y == other.y and self.metadata == other.metadata
 
 class KeyValuePair(BaseModel):
   # wrapper that holds a key value pair with key of type str
@@ -34,6 +68,9 @@ class KeyValuePair(BaseModel):
 
   def __iter__(self):
     return(iter(key,value))
+
+  def __eq__(self,other):
+    return self.key == other.key and self.value == other.value
 
 class InMemoryZipFile(object):
 

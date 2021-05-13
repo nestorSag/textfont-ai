@@ -18,7 +18,7 @@ import apache_beam as beam
 from apache_beam.io.gcp.gcsio import GcsIO
 
 from fontai.config.preprocessing import Config
-from fontai.core import InMemoryFile, DataPath
+from fontai.core import InMemoryFile, DataPath, TfrHandler
 
 
 class ObjectMapper(ABC):
@@ -81,7 +81,7 @@ class DataPathReader(KeyValueMapper):
   """
 
   def _map(self, path: DataPath):
-    yield path.filename, InMemoryFile(name = path.filename, content = path.read_bytes())
+    yield path.filename, InMemoryFile(filename = path.filename, content = path.read_bytes())
 
 
 
@@ -144,7 +144,7 @@ class FontFileToCharArrays(KeyValueMapper):
           array = imageio.imread(bf2.getvalue(),format="png")
 
         array = np.mean(array, dim = -1).astype(np.uint8)
-        yield key, LabeledExample(x=array,y=char,metadata=file.name)
+        yield key, LabeledExample(x=array,y=char,metadata=file.filename)
 
 class ArrayCropper(KeyValueMapper):
 
@@ -224,6 +224,9 @@ class TfrRecordWriter(ObjectMapper):
       val = bf.getvalue()
       bf.close()
       return val
+
+    def bytes_feature(value):
+      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
     #
     full_output_path = str(self.output_path / (src + ".tfr"))
     try:
@@ -232,12 +235,7 @@ class TfrRecordWriter(ObjectMapper):
           png = img_to_png_bytes(example.x)
           label = str.encode(example.y)
           metadata = str.encode(example.metadata)
-          tf_example = tf.train.Example(
-            features=tf.train.Features(
-              feature={
-              "png": _bytes_feature(img),
-              "label":_bytes_feature(bytes(char)),
-              "metadata":_bytes_feature(bytes(filename))}))
+          tf_example = TfrHandler.as_tfr(png,label,metadata)
           writer.write(tf_example.SerializeToString())
 
     except Exception as e:
