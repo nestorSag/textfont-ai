@@ -1,0 +1,6 @@
+input_path: data/ingested
+output_path: data/preprocessed
+output_array_size: 64
+font_extraction_size: 100
+font_canvas_size: 500
+font_canvas_paddint: 100

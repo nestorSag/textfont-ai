@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 
 from pydantic import BaseModel
 
-from fontai.core import InMemoryFile
+from fontai.core import InMemoryFile, SourcePath
 
 logger = logging.getLogger(__name__)
 

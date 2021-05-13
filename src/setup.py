@@ -26,7 +26,8 @@ setuptools.setup(
         'beautifulsoup4',
         'imageio',
         'strictyaml',
-        'pydantic'
+        'pydantic',
+        'apache-beam[gcp]'
 
     ],
 

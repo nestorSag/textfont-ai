@@ -1,4 +1,4 @@
-output_folder: data/ingested
+output_path: data/ingested
 max_zip_size: 128 #max size in MB 
 scrappers: #list of StreamRetriever instances that will be used to produce scrappable URLs
 - class: LocalFileScrapper
