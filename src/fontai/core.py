@@ -1,16 +1,16 @@
+from __future__ import annotations
 from pathlib import Path
 import io
 import zipfile
 import sys
 import typing as t
+from abc import ABC
 
 from pydantic import BaseModel
 from apache_beam.io.gcp.gcsio import GcsIO
 
-import tensorflow.string as tf_str
-import tensorflow.train.Example as TFExample
-import tf.train.Features
-import tf.train.BytesList
+from tensorflow import string as tf_str
+from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
 from tensorflow.io import FixedLenFeature, parse_single_example
 
 
@@ -18,11 +18,12 @@ class TfrHandler(object):
   """
     Class to handle tensorflow records in preprocessing stages
   """
-  self.SCHEMA = {
-  'label': FixedLenFeature([], tf.string),
-  'metadata': FixedLenFeature([], tf.string),
-  'image': FixedLenFeature([], tf.string),
-  }
+  def __init__(self):
+    self.SCHEMA = {
+    'label': FixedLenFeature([], tf_str),
+    'metadata': FixedLenFeature([], tf_str),
+    'image': FixedLenFeature([], tf_str),
+    }
 
   @classmethod
   def as_tfr(cls,png: bytes, label: str, metadata: str) -> TFExample:
@@ -30,10 +31,10 @@ class TfrHandler(object):
       Wraps the arguments into a TensorFlow Example instance
     """
     def bytes_feature(value):
-      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+      return TFFeature(bytes_list=TFBytesList(value=[value]))
 
     return TFExample(
-      features=tf.train.Features(
+      features=tf.train.TFFeatures(
         feature={
         "png": bytes_feature(png),
         "label":bytes_feature(bytes(label)),
@@ -44,6 +45,8 @@ class TfrHandler(object):
       unpacks a serialised tf record
     """
     return parse_single_example(serialised,self.SCHEMA)
+
+
 
 class InMemoryFile(BaseModel):
   # wrapper that holds the bytestream and name of a file
@@ -62,7 +65,13 @@ class LabeledExample(BaseModel):
     return(iter(x,y,metadata))
 
   def __eq__(self,other):
-    return self.x == other.x and self.y == other.y and self.metadata == other.metadata
+    return isinstance(other, LabeledExaple) and self.x == other.x and self.y == other.y and self.metadata == other.metadata
+
+  # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True
+
+
 
 class KeyValuePair(BaseModel):
   # wrapper that holds a key value pair with key of type str
@@ -73,7 +82,13 @@ class KeyValuePair(BaseModel):
     return(iter(key,value))
 
   def __eq__(self,other):
-    return self.key == other.key and self.value == other.value
+    return isinstance(other, KeyValuePair) and self.key == other.key and self.value == other.value
+
+  # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True
+
+
 
 class InMemoryZipFile(object):
 
@@ -117,7 +132,8 @@ class FileHandler(ABC):
     pass
 
   @classmethod
-  def list_files(self, path: str) -> t.List[str]
+  def list_files(self, path: str) -> t.List[str]:
+    pass
 
 
 
@@ -157,9 +173,12 @@ class GcsFileHandler(FileHandler):
   def read(self, url: str):
     #url = self.as_str(url)
     #return InMemoryFile(content=io.BytesIO(GcsIO().open(url,mode="r").read()),name=Path(url).name)
-    return io.BytesIO(GcsIO().open(url,mode="r").read())
+    gcs_file = GcsIO().open(url,mode="r")
+    content = gcs_file.read()
+    gcs_file.close()
+    return content
 
-  def write(self, url: str, file: bytes):
+  def write(self, url: str, content: bytes):
     #url = self.as_str(url)
     gcs_file = GcsIO().open(url,mode="w")
     gcs_file.write(content)
@@ -169,7 +188,7 @@ class GcsFileHandler(FileHandler):
     #url = self.as_str(url) 
     raw_list = list(GcsIO().list_prefix(url).keys())
 
-    return [elem for elem in list if elem != url]
+    return [elem for elem in raw_list if Path(elem.replace("gs://","")) != Path(url.replace("gs://",""))]
 
 
 class FileHandlerFactory(object):
@@ -177,7 +196,7 @@ class FileHandlerFactory(object):
   @classmethod
   def create(cls, path: str):
     if "gs://" in path:
-      return GCSFileHandler()
+      return GcsFileHandler()
     else:
       return LocalFileHandler()
 
@@ -209,7 +228,7 @@ class DataPath(object):
       Writes a bytestream to the path
     """
 
-    self.handler.write(self.string)
+    self.handler.write(self.string, content)
 
   def list_files(self) -> t.List[DataPath]:
     """
@@ -224,8 +243,7 @@ class DataPath(object):
     if not isinstance(path, str):
       raise TypeError("path must be a string")
     elif self.is_gcs:
-      path[0] = "" if path[0] == "/" else path[0]
-      return DataPath("gs://" + (self.string.replace("gs://","") + "/" + (path)).replace("//","/"))
+      return DataPath("gs://" + str(Path(self.string.replace("gs://","")) / path))
     else:
       return DataPath(str(Path(self.string) / path))
 
@@ -234,7 +252,7 @@ class DataPath(object):
 
   def get_filename(self):
     if self.is_gcs:
-      filename = self.string.splot("/")[-1]
+      filename = self.string.split("/")[-1]
     else:
       filename = Path(self.string).name
 
