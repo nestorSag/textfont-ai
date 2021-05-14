@@ -23,7 +23,7 @@ def process_files(args):
       path to YAML file that defines the execution of the file processing pipeline.
       """)
 
-  logging.basicConfig(filename=Path("logs") / "file-processing.log", level=logging.DEBUG)
+  logging.basicConfig(filename=Path("logs") / "file-processing.log", level=logging.DEBUG, filemode = "w")
 
   args, _ = parser.parse_known_args(args)
   

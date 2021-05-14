@@ -215,7 +215,7 @@ class LocalFileScrapper(FileScrapper):
 
   def get_source_string(self):
 
-    return f"local@{self.path.name}"
+    return f"local@{str(self.path)}"
 
   def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
     for path in self.path.iterdir():

@@ -56,6 +56,7 @@ class FileBundler(object):
     """
     self.bundle.compress()
     if self.bundle.n_files > 0:
+      logger.info(f"Persisting {self.bundle.n_files} files in zip file with id {self.chunk_id} ({self.bundle.size/1e6} MB)")
       bytestream = self.bundle.get_bytes()
       (self.output_path / str(self.chunk_id)).write_bytes(bytestream)
     self.bundle.close()
@@ -88,7 +89,7 @@ class Ingestor(object):
       ImageFont.truetype(io.BytesIO(file.content),50)
       return True
     except Exception as e:
-      logger.exception(f"Error while parsing font file {file.name}")
+      logger.exception(f"Error while parsing font file {file.filename}")
       return False
 
   def run(self):
@@ -100,7 +101,7 @@ class Ingestor(object):
 
     with FileBundler(output_path = self.config.output_path, size_limit = self.config.max_zip_size) as bundler:
       for scrapper in self.config.scrappers:
-        logger.info(f"Processing scrapper of type {scrapper.__class__.__name__}")
+        logger.info(f"Processing scrapper of type {scrapper.__class__.__name__} with source {scrapper.get_source_string()}")
         for file in scrapper.get_files():
           if self.is_fontfile(file):
             bundler.add_file(file)
