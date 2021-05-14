@@ -16,6 +16,8 @@ import imageio
 import tensorflow as tf
 
 import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.io.gcp.gcsio import GcsIO
 
 from fontai.config.preprocessing import Config
@@ -297,13 +299,15 @@ class FileProcessor(object):
   def __init__(self, config: Config):
     self.config = config
 
-  def run():
+  def run(self):
 
     """
       Runs Beam preprocessing pipeline as defined in the config object.
     
     """
-    with beam.pipelines(options=self.config.beam_parameters) as p:
+    pipeline_options = PipelineOptions(self.config.beam_parameters)
+    pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
+    with beam.Pipeline(options=pipeline_options) as p:
 
       # if output is local, create parent folders
       if not self.config_output_path.is_gcs:

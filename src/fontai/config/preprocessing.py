@@ -65,11 +65,11 @@ class ConfigHandler(BaseConfigHandler):
     
     self.CONFIG_SCHEMA = yml.Map({
       "output_path": yml.Str(), 
-      "input_path": yml.str(), 
-      "output_array_size": yml.int(), 
-      "font_extraction_size": yml.int(), 
-      "font_canvas_size": yml.int(), 
-      "font_canvas_padding": yml.int(), 
+      "input_path": yml.Str(), 
+      "output_array_size": yml.Int(), 
+      "font_extraction_size": yml.Int(), 
+      "font_canvas_size": yml.Int(), 
+      "font_canvas_padding": yml.Int(), 
       yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
       yml.Optional("beam_parameters", default = {"runner": "direct"}): yml.MapPattern(
             yml.Str(),
@@ -83,13 +83,11 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path, input_path, output_array_size, font_extraction_size, font_canvas_size, font_canvas_padding, beam_parameters = DataPath(config.data["output_path"]), config.data["max_zip_size"], config.data["scrappers"]
-
     output_path = DataPath(config.data["output_path"])
     input_path = DataPath(config.data["input_path"])
     output_array_size = config.data["output_array_size"]
     font_extraction_size = config.data["font_extraction_size"]
-    charset = "".join(set(config.data["charset"]))
+    charset = config.data["charset"]
     font_canvas_size = config.data["font_canvas_size"]
     font_canvas_padding = config.data["font_canvas_padding"]
     beam_parameters = Namespace(**config.data["beam_parameters"])
@@ -97,9 +95,9 @@ class ConfigHandler(BaseConfigHandler):
 
     f2a_config = FontToArrayConfig(
       charset = charset,
-      font_size = font_size,
-      canvas_size = canvas_size,
-      canvas_padding = canvas_padding
+      font_size = font_extraction_size,
+      canvas_size = font_canvas_size,
+      canvas_padding = font_canvas_padding
       )
 
 

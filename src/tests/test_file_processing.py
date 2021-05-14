@@ -4,13 +4,29 @@ from pathlib import Path
 import numpy as np
 from fontai.core import DataPath, InMemoryFile, LabeledExample, KeyValuePair, TfrHandler
 from fontai.preprocessing.file_processing import *
+from fontai.config.preprocessing import ConfigHandler
 
 from tensorflow.data import TFRecordDataset
+from  tensorflow.python.data.ops.dataset_ops import MapDataset
 
 INPUT_PATH = DataPath("src/tests/data/ingestion/output/0")
 OUTPUT_PATH = DataPath("src/tests/data/preprocessing/output")
 
+TEST_PROCESSING_CONFIG = """
+output_path: src/tests/data/preprocessing/output
+input_path: src/tests/data/ingestion/output
+output_array_size: 64
+font_extraction_size: 100
+font_canvas_size: 500
+font_canvas_padding: 100
+beam_parameters:
+  runner: direct
+"""
+
 Path(str(OUTPUT_PATH)).mkdir(parents=True, exist_ok=True)
+
+test_config_object = ConfigHandler().from_string(TEST_PROCESSING_CONFIG)
+
 
 def test_stages():
 
@@ -63,9 +79,15 @@ def test_stages():
   record = iter(records).next()
   assert record["label"] == bytes("a".encode("utf-8"))
 
-  #assert test_object.key == "0"
-  #assert test_object.value.y == "a"
-  #assert test_object.value.x.shape == (64,64)
+def test_beam_pipeline():
+
+  processor = FileProcessor(test_config_object)
+  processor.run()
+
+  output_path = test_config_object.output_path
+  for output_file in output_path.list_files():
+    record = TFRecordDataset(filenames=str(output_file)).map(TfrHandler().from_tfr)
+    assert isinstance(record, MapDataset)
 
 
 
