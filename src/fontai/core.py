@@ -103,7 +103,7 @@ class InMemoryZipFile(object):
     self.buffer = io.BytesIO()
     self.zip_file = zipfile.ZipFile(self.buffer,"w")
 
-  def add_file(self,file):
+  def add_file(self,file: InMemoryFile):
     file_size = sys.getsizeof(file.content)
     self.zip_file.writestr(str(self.n_files) + file.filename, file.content)
     self.n_files += 1
@@ -162,13 +162,6 @@ class LocalFileHandler(FileHandler):
 
 class GcsFileHandler(FileHandler):
   # Class handler for files in Google Cloud Storage
-  
-
-  # def as_str(self, path):
-  #   if not isinstance(path, str):
-  #     return str(path)
-  #   else:
-  #     return path
 
   def read(self, url: str):
     #url = self.as_str(url)
@@ -234,7 +227,7 @@ class DataPath(object):
     """
       List files (but not dirs) in the folder given by source_str
 
-      Returns a list of DataPath objects
+      Returns a list of DataPath objects corresponding to the full path of each file.
     """
 
     return [DataPath(elem) for elem in self.handler.list_files(self.string)]

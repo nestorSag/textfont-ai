@@ -9,7 +9,7 @@ import strictyaml as yml
 import fontai.ingestion.scrappers as scrappers
 
 from fontai.core import DataPath
-from fontai.cnfig.core import BaseConfigHandler
+from fontai.config.core import BaseConfigHandler
 
 logger = logging.getLogger(__name__)
 
@@ -40,20 +40,22 @@ class ConfigHandler(BaseConfigHandler):
   Wrapper for ingestion's configuration processing logic.
 
   """
-  self.CONFIG_SCHEMA = yml.Map({
-    "output_path": yml.Str(), 
-    "max_zip_size": yml.Float(), 
-    "scrappers": yml.Seq( #scrappers: list of dictionaries with 2 keys: class name and kwargs to be passed
-      yml.Map({
-        "class":yml.Str(),
-        yml.Optional("kwargs"):yml.MapPattern(
-          yml.Str(),
-          yml.Int() | yml.Float() | yml.Str() | yml.Bool())
-      })
-    )
-  })
+  def __init__(self):
+    
+    self.CONFIG_SCHEMA = yml.Map({
+      "output_path": yml.Str(), 
+      "max_zip_size": yml.Float(), 
+      "scrappers": yml.Seq( #scrappers: list of dictionaries with 2 keys: class name and kwargs to be passed
+        yml.Map({
+          "class":yml.Str(),
+          yml.Optional("kwargs"):yml.MapPattern(
+            yml.Str(),
+            yml.Int() | yml.Float() | yml.Str() | yml.Bool())
+        })
+      )
+    })
 
-  def instantiate_config(cls, config: yml.YAML) -> Config:
+  def instantiate_config(self, config: yml.YAML) -> Config:
     """
     Processes a YAML instance to produce an Config instance.
 

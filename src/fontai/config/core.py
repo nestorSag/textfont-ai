@@ -1,17 +1,19 @@
-from abc import ABC
+import typing as t
+from abc import ABC, abstractmethod
 import strictyaml as yml
 from pathlib import Path
 
+from pydantic import BaseModel
+
 class BaseConfigHandler(ABC):
   """
-  Wrapper for each stage's configuration processing logic.
+  Interface for creating ML pipeline stages' execution configuration objects
 
   """
+  def __init__(self):
+    self.CONFIG_SCHEMA: t.Optional[yml.Map] = None
 
-  self.CONFIG_SCHEMA = None
-
-  @classmethod
-  def from_string(cls, config: str) -> Config:
+  def from_string(self, config: str) -> BaseModel:
     """
     Processes a YAML file and maps it to an Config instance
 
@@ -22,8 +24,7 @@ class BaseConfigHandler(ABC):
     conf_yaml = yml.load(config, self.CONFIG_SCHEMA)
     return self.instantiate_config(conf_yaml)
 
-  @classmethod
-  def from_file(cls, config: Path) -> Config:
+  def from_file(self, config: Path) -> BaseModel:
     """
     Processes a YAML file and maps it to an Config instance
 
@@ -35,7 +36,7 @@ class BaseConfigHandler(ABC):
     return self.instantiate_config(conf_yaml)
 
   @abstractmethod
-  def instantiate_config(self, config: yml.YAML) -> Config:
+  def instantiate_config(self, config: yml.YAML) -> BaseModel:
     """
     Processes a YAML instance to produce an Config instance.
 

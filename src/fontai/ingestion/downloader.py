@@ -3,6 +3,7 @@ from pathlib import Path
 import zipfile
 import io
 import sys
+import logging
 
 from PIL import ImageFont
 
@@ -25,11 +26,10 @@ class FileBundler(object):
   """
 
 
-  def __init__(self, output_path: DataPath, size_limit: float = 128):
+  def __init__(self, output_path: DataPath, size_limit: float = 128.0):
 
     self.chunk_size_limit = size_limit
     self.output_path = output_path
-    self.writer = writer
 
     self.chunk_id = 0
 
@@ -57,7 +57,7 @@ class FileBundler(object):
     self.bundle.compress()
     if self.bundle.n_files > 0:
       bytestream = self.bundle.get_bytes()
-      (self.output_path / str(chunk_id)).write_bytes(bytestream)
+      (self.output_path / str(self.chunk_id)).write_bytes(bytestream)
     self.bundle.close()
     self.chunk_id += 1
     self.bundle = InMemoryZipFile()
@@ -98,11 +98,11 @@ class Ingestor(object):
 
     """
 
-    with FileBundler(output_path = self.config.output_path, chunk_size = self.config.max_zip_size) as bundler:
+    with FileBundler(output_path = self.config.output_path, size_limit = self.config.max_zip_size) as bundler:
       for scrapper in self.config.scrappers:
         logger.info(f"Processing scrapper of type {scrapper.__class__.__name__}")
         for file in scrapper.get_files():
           if self.is_fontfile(file):
-            bundler.add_file()
+            bundler.add_file(file)
 
 

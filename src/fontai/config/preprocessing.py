@@ -14,7 +14,6 @@ from fontai.cnfig.core import BaseConfigHandler
 
 logger = logging.getLogger(__name__)
 
-
 class Config(BaseModel):
   """
   Wrapper class for the configuration of the ImageExtractor class
@@ -62,20 +61,22 @@ class ConfigHandler(object):
 
   """
 
-  self.CONFIG_SCHEMA = yml.Map({
-    "output_path": yml.Str(), 
-    "input_path": yml.str(), 
-    "output_array_size": yml.int(), 
-    "font_extraction_size": yml.int(), 
-    "font_canvas_size": yml.int(), 
-    "font_canvas_padding": yml.int(), 
-    yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
-    yml.Optional("beam_parameters", default = {"runner": "direct"}): yml.MapPattern(
-          yml.Str(),
-          yml.Int() | yml.Float() | yml.Str() | yml.Bool())
-     })
+  def __init__(self):
+    
+    self.CONFIG_SCHEMA = yml.Map({
+      "output_path": yml.Str(), 
+      "input_path": yml.str(), 
+      "output_array_size": yml.int(), 
+      "font_extraction_size": yml.int(), 
+      "font_canvas_size": yml.int(), 
+      "font_canvas_padding": yml.int(), 
+      yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
+      yml.Optional("beam_parameters", default = {"runner": "direct"}): yml.MapPattern(
+            yml.Str(),
+            yml.Int() | yml.Float() | yml.Str() | yml.Bool())
+       })
 
-  def instantiate_config(cls, config: yml.YAML) -> Config:
+  def instantiate_config(self, config: yml.YAML) -> Config:
     """
     Processes a YAML instance to produce an Config instance.
 

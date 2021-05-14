@@ -27,7 +27,7 @@ def ingest_data(args):
 
   args, _ = parser.parse_known_args(args)
   
-  ingestor = Ingestor(ConfigHandler.from_file(Path(args.config)))
+  ingestor = Ingestor(ConfigHandler().from_file(Path(args.config)))
   ingestor.run()
 
 if __name__ == "__main__":

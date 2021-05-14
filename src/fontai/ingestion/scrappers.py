@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 
 from pydantic import BaseModel
 
-from fontai.core import InMemoryFile, SourcePath
+from fontai.core import InMemoryFile
 
 logger = logging.getLogger(__name__)
 
@@ -204,20 +204,21 @@ class DafontsFileScrapper(FileScrapper):
 class LocalFileScrapper(FileScrapper):
   """
   Emulates the Scrapper class logic for zip files already in local storage. This class is useful for processing again font files that had been downloaded before with a previous code version; source urls have changed since, and some can't be used to crawl the web sources anymore.
-
+  
+  path: folder path from which files will be consumed
   """
-  def __init__(self,folder):
+  def __init__(self,path: str):
 
-    self.folder = Path(folder)
-    if not self.folder.is_dir() or len(list(self.folder.iterdir())) == 0:
-      raise Exception(f"Folder to be scrapped ({self.folder}) does not exist or is empty.")
+    self.path = Path(path)
+    if not self.path.is_dir() or len(list(self.path.iterdir())) == 0:
+      raise Exception(f"path to be scrapped ({self.path}) does not exist or is empty.")
 
   def get_source_string(self):
 
-    return f"local@{self.folder.name}"
+    return f"local@{self.path.name}"
 
   def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
-    for path in self.folder.iterdir():
+    for path in self.path.iterdir():
       if path.is_file():
         yield path
 
