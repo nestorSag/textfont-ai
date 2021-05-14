@@ -1,20 +1,23 @@
 import pytest
-from libpath import Path
+from pathlib import Path
 
 import numpy as np
 from fontai.core import DataPath, InMemoryFile, LabeledExample, KeyValuePair, TfrHandler
 from fontai.preprocessing.file_processing import *
 
+from tensorflow.data import TFRecordDataset
 
 INPUT_PATH = DataPath("src/tests/data/ingestion/output/0")
 OUTPUT_PATH = DataPath("src/tests/data/preprocessing/output")
+
+Path(str(OUTPUT_PATH)).mkdir(parents=True, exist_ok=True)
 
 def test_stages():
 
   transformer = DataPathReader()
   test_object = list(transformer.map(INPUT_PATH))[0]
   zip_bytes = Path(str(INPUT_PATH)).read_bytes()
-  assert test_object == KeyValuePair(key="0",value=zip_bytes)
+  assert test_object == KeyValuePair(key="0",value=InMemoryFile(filename="0",content=zip_bytes))
 
 
   transformer = ZipToFontFiles()
@@ -25,7 +28,7 @@ def test_stages():
   assert  test_object == KeyValuePair(key="0", value = InMemoryFile(filename=file_name,content=file_bytes))
 
 
-  transformer = FontFileToCharArrays(charset = "a", canvas_size = 100, canvas_padding = 20, font_Size = 20)
+  transformer = FontFileToCharArrays(charset = "a", canvas_size = 100, canvas_padding = 20, font_size = 20)
   test_object = list(transformer.map(test_object))[0]
   overall_nonzero = np.sum(test_object.value.x > 0)
   assert test_object.key == "0"
@@ -33,7 +36,7 @@ def test_stages():
   assert isinstance(test_object.value.x, np.ndarray)
   assert test_object.value.x.shape == (100,100)
   assert np.any(test_object.value.x > 0)
-  assert test_object.value.x.dtype = np.uint8
+  assert test_object.value.x.dtype == np.uint8
 
 
   transformer = ArrayCropper()
@@ -53,9 +56,10 @@ def test_stages():
 
 
   transformer = TfrRecordWriter(OUTPUT_PATH)
-  transformer.map(test_object)
-  records = tf.data.TFRecordDataset(filenames=str(OUTPUT_PATH))
-    .map(TfrHandler.from_tfr)
+  key, val = test_object
+  test_object = (key, [val])
+  transformer.process(test_object)
+  records = TFRecordDataset(filenames=str(OUTPUT_PATH/ "0.tfr")).map(TfrHandler().from_tfr)
   record = iter(records).next()
   assert record["label"] == bytes("a".encode("utf-8"))
 

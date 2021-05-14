@@ -9,10 +9,28 @@ from pydantic import BaseModel, PositiveInt
 import strictyaml as yml
 
 from fontai.core import DataPath
-from fontai.cnfig.core import BaseConfigHandler
+from fontai.config.core import BaseConfigHandler
 
 
 logger = logging.getLogger(__name__)
+
+
+class FontToArrayConfig(BaseModel):
+
+  charset: str
+  font_size: PositiveInt
+  canvas_size: PositiveInt
+  canvas_padding: PositiveInt
+
+  def to_dict(self):
+
+    return {
+      "charset": charset,
+      "font_size": font_size,
+      "canvas_size": canvas_size,
+      "canvas_padding": canvas_padding
+    }
+
 
 class Config(BaseModel):
   """
@@ -36,26 +54,8 @@ class Config(BaseModel):
   class Config:
     arbitrary_types_allowed = True
 
-
-
-class FontToArrayConfig(BaseModel):
-
-  charset: str
-  font_size: PositiveInt
-  canvas_size: PositiveInt
-  canvas_padding: PositiveInt
-
-  def to_dict(self):
-
-    return {
-      "charset": charset,
-      "font_size": font_size
-      "canvas_size": canvas_size,
-      "canvas_padding": canvas_padding
-    }
-
-
-class ConfigHandler(object):
+    
+class ConfigHandler(BaseConfigHandler):
   """
   Wrapper for ingestion's configuration processing logic.
 

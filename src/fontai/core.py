@@ -4,7 +4,7 @@ import io
 import zipfile
 import sys
 import typing as t
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 from apache_beam.io.gcp.gcsio import GcsIO
@@ -22,11 +22,10 @@ class TfrHandler(object):
     self.SCHEMA = {
     'label': FixedLenFeature([], tf_str),
     'metadata': FixedLenFeature([], tf_str),
-    'image': FixedLenFeature([], tf_str),
+    'png': FixedLenFeature([], tf_str),
     }
 
-  @classmethod
-  def as_tfr(cls,png: bytes, label: str, metadata: str) -> TFExample:
+  def as_tfr(self, png: bytes, label: str, metadata: str) -> TFExample:
     """
       Wraps the arguments into a TensorFlow Example instance
     """
@@ -34,13 +33,13 @@ class TfrHandler(object):
       return TFFeature(bytes_list=TFBytesList(value=[value]))
 
     return TFExample(
-      features=tf.train.TFFeatures(
+      features=TFFeatures(
         feature={
         "png": bytes_feature(png),
         "label":bytes_feature(bytes(label)),
         "metadata":bytes_feature(bytes(metadata))}))
 
-  def from_tfr(csl, serialised):
+  def from_tfr(self, serialised):
     """
       unpacks a serialised tf record
     """
@@ -53,7 +52,8 @@ class InMemoryFile(BaseModel):
   filename: str
   content: bytes
 
-
+  def __eq__(self,other):
+    return isinstance(other, InMemoryFile) and self.filename == other.filename and self.content == other.content 
 
 class LabeledExample(BaseModel):
   # wrapper that holds a labeled ML example, with asociated metadata
@@ -62,7 +62,7 @@ class LabeledExample(BaseModel):
   metadata: str
 
   def __iter__(self):
-    return(iter(x,y,metadata))
+    return iter((self.x,self.y,self.metadata))
 
   def __eq__(self,other):
     return isinstance(other, LabeledExaple) and self.x == other.x and self.y == other.y and self.metadata == other.metadata
@@ -79,7 +79,7 @@ class KeyValuePair(BaseModel):
   value: object
 
   def __iter__(self):
-    return(iter(key,value))
+    return iter((self.key,self.value))
 
   def __eq__(self,other):
     return isinstance(other, KeyValuePair) and self.key == other.key and self.value == other.value
@@ -123,18 +123,17 @@ class InMemoryZipFile(object):
 
 class FileHandler(ABC):
   # Interface definition for file handlers
-  @classmethod
+  @abstractmethod
   def read(self, path: str) -> bytes:
     pass
 
-  @classmethod
+  @abstractmethod
   def write(self, path: str, content: bytes) -> None:
     pass
 
-  @classmethod
+  @abstractmethod
   def list_files(self, path: str) -> t.List[str]:
     pass
-
 
 
 class LocalFileHandler(FileHandler):
@@ -157,7 +156,6 @@ class LocalFileHandler(FileHandler):
     contents = path.iterdir()
     files = [str(content) for content in contents if content.is_file()]
     return files
-
 
 
 class GcsFileHandler(FileHandler):

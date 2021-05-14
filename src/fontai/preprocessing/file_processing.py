@@ -7,7 +7,8 @@ import zipfile
 import io
 from datetime import datetime
 import typing as t
-from abc import ABC
+import types
+from abc import ABC, abstractmethod
 
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
@@ -18,9 +19,9 @@ import apache_beam as beam
 from apache_beam.io.gcp.gcsio import GcsIO
 
 from fontai.config.preprocessing import Config
-from fontai.core import InMemoryFile, DataPath, TfrHandler
+from fontai.core import InMemoryFile, DataPath, TfrHandler, KeyValuePair, LabeledExample
 
-logger = logging.getLogger(__name___)
+logger = logging.getLogger(__name__)
 
 class ObjectMapper(ABC):
   """
@@ -32,7 +33,7 @@ class ObjectMapper(ABC):
   def _map(self,data):
     pass
 
-  def map(self,data) -> t.Generator[object]:
+  def map(self,data) -> t.Generator[object, None, None]:
 
     """
     Processes a single data instance.
@@ -41,7 +42,7 @@ class ObjectMapper(ABC):
 
     """
     output = self._map(data)
-    if not isinstance(output, t.GeneratorType):
+    if not isinstance(output, types.GeneratorType):
       raise TypeError("Output of transform() must be a generator")
     return output
 
@@ -57,7 +58,7 @@ class KeyValueMapper(ObjectMapper):
   def _map(self,data):
     pass
 
-  def map(self,data) -> t.Generator[KeyValuePair]:
+  def map(self,data) -> t.Generator[KeyValuePair, None, None]:
 
     """
     Processes a single data instance.
@@ -68,7 +69,7 @@ class KeyValueMapper(ObjectMapper):
     generator = super().map(data)
     return self.wrap_output(generator)
 
-  def wrap_output(self, generator) -> t.Generator[KeyValuePair]:
+  def wrap_output(self, generator) -> t.Generator[KeyValuePair, None, None]:
     for pair in generator:
       key,value = pair
       yield KeyValuePair(key=key,value=value)
@@ -93,7 +94,7 @@ class ZipToFontFiles(KeyValueMapper):
 
   """
 
-  def _map(self,pair: KeyValuePair)-> t.Generator[InMemoryFile]:
+  def _map(self,pair: KeyValuePair)-> t.Generator[InMemoryFile, None, None]:
     key, file = pair
     logger.info(f"Extracting font files from zip file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
@@ -131,7 +132,7 @@ class FontFileToCharArrays(KeyValueMapper):
     canvas_size = 500, 
     canvas_padding = 100):
 
-    if canvas_padding >= image_size/2:
+    if canvas_padding >= canvas_size/2:
       raise ValueError(f"Canvas padding value ({canvas_padding}) is too large for canvas size ({canvas_size})")
 
     self.font_size = font_size
@@ -140,7 +141,7 @@ class FontFileToCharArrays(KeyValueMapper):
     self.canvas_size = canvas_size
     self.charset = charset
 
-  def _map(self,pair: KeyValuePair)-> t.Generator[np.ndarray]:
+  def _map(self,pair: KeyValuePair)-> t.Generator[np.ndarray, None, None]:
     key,file = pair
     logger.info(f"exctracting arrays from file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
@@ -153,12 +154,12 @@ class FontFileToCharArrays(KeyValueMapper):
         img = Image.new("RGB",(self.canvas_size,self.canvas_size))
         draw = ImageDraw.Draw(img)
         try:
-          draw.text((offset,offset),letter,font=font)
+          draw.text((self.canvas_padding,self.canvas_padding),char,font=font)
           with io.BytesIO() as bf2:
             img.save(bf2,format="png")
             array = imageio.imread(bf2.getvalue(),format="png")
 
-          array = np.mean(array, dim = -1).astype(np.uint8)
+          array = np.mean(array, axis = -1).astype(np.uint8)
           yield key, LabeledExample(x=array,y=char,metadata=file.filename)
         except Exception as e:
           logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'")
@@ -227,35 +228,36 @@ class ArrayResizer(KeyValueMapper):
 
 
 
-class TfrRecordWriter(ObjectMapper):
+class TfrRecordWriter(beam.DoFn):
   """
     Takes a group of LabeledExamples and converts them to TF records of TF examples.
 
   """
   def __init__(self, output_path: DataPath):
     self.output_path = output_path
+    self.tfr_handler = TfrHandler()
 
-  def process(self,pair: t.Tuple[str,t.List[LabeledExample]]) -> None:
+  def img_to_png_bytes(self, img):
+    bf = io.BytesIO()
+    imageio.imwrite(bf,img,"png")
+    val = bf.getvalue()
+    bf.close()
+    return val
+
+  def format_contents(self, example: LabeledExample) -> t.Tuple[bytes,bytes,bytes]:
+    png = self.img_to_png_bytes(example.x)
+    label = str.encode(example.y)
+    metadata = str.encode(example.metadata)
+
+    return png, label, metadata
+
+  def process(self,pair: t.Tuple[str, t.List[LabeledExample]]) -> None:
     src, examples = pair
-
-    def img_to_png_bytes(img):
-      bf = io.BytesIO()
-      imageio.imwrite(bf,img,"png")
-      val = bf.getvalue()
-      bf.close()
-      return val
-
-    def bytes_feature(value):
-      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
-    #
-    full_output_path = str(self.output_path / (src + ".tfr"))
+    full_output_path = self.output_path / (src + ".tfr")
     try:
-      with tf.io.TFRecordWriter(full_output_path) as writer:
+      with tf.io.TFRecordWriter(str(full_output_path)) as writer:
         for example in examples:
-          png = img_to_png_bytes(example.x)
-          label = str.encode(example.y)
-          metadata = str.encode(example.metadata)
-          tf_example = TfrHandler.as_tfr(png,label,metadata)
+          tf_example = self.tfr_handler.as_tfr(*self.format_contents(example))
           writer.write(tf_example.SerializeToString())
 
     except Exception as e:
@@ -286,7 +288,7 @@ class BeamCompatibleWrapper(beam.DoFn):
 
 class FileProcessor(object):
   """
-  File preprocessing pipeline; takes a Config object that defines its execution.
+  File preprocessing pipeline that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
 
   config: A Config instance
 
@@ -303,6 +305,10 @@ class FileProcessor(object):
     """
     with beam.pipelines(options=self.config.beam_parameters) as p:
 
+      # if output is local, create parent folders
+      if not self.config_output_path.is_gcs:
+        Path(str(self.config_output_path)).mkdir(parents=True, exist_ok=True)
+
       input_objs_list = self.config.input_path.list_files()
 
       objs = p | beam.Create(input_objs_list)# ReadFromText(input_file_list_path)
@@ -310,21 +316,19 @@ class FileProcessor(object):
       arrays = (objs 
       | 'Load file' >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = DataPathReader())
+          mapper = DataPathReader()))
       | 'extract font files' >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = ZipToFontFiles())
+          mapper = ZipToFontFiles()))
       | "extract arrays from font files" >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = FontFileToCharArrays(**self.config.font_to_array_config.as_dict()))
+          mapper = FontFileToCharArrays(**self.config.font_to_array_config.as_dict())))
       | "crop arrays" >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = ArrayCropper())
+          mapper = ArrayCropper()))
       | "resize arrays" >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = ArrayResizer(output_size = self.config.img_output_size))
+          mapper = ArrayResizer(output_size = self.config.img_output_size)))
       | "convert to key value tuple" >> beam.Map(lambda pair: (pair.key,pair.value))
       | "group by key (source file)" >> beam.GroupByKey()
-      | "write to disk" >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = self.TfrRecordWriter(self.config.output_path))
+      | "write to disk" >> beam.ParDo(self.TfrRecordWriter(self.config.output_path)))
