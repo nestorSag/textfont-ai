@@ -13,10 +13,11 @@ from tensorflow import string as tf_str
 from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
 from tensorflow.io import FixedLenFeature, parse_single_example
 
+from numpy import ndarray
 
 class TfrHandler(object):
   """
-    Class to handle tensorflow records in preprocessing stages
+    Class to handle tensorflow records at preprocessing stages
   """
   def __init__(self):
     self.SCHEMA = {
@@ -57,7 +58,7 @@ class InMemoryFile(BaseModel):
 
 class LabeledExample(BaseModel):
   # wrapper that holds a labeled ML example, with asociated metadata
-  x: object
+  x: ndarray
   y: str
   metadata: str
 
@@ -65,7 +66,7 @@ class LabeledExample(BaseModel):
     return iter((self.x,self.y,self.metadata))
 
   def __eq__(self,other):
-    return isinstance(other, LabeledExaple) and self.x == other.x and self.y == other.y and self.metadata == other.metadata
+    return isinstance(other, LabeledExample) and self.x == other.x and self.y == other.y and self.metadata == other.metadata
 
   # internal BaseModel configuration class
   class Config:
@@ -76,7 +77,7 @@ class LabeledExample(BaseModel):
 class KeyValuePair(BaseModel):
   # wrapper that holds a key value pair with key of type str
   key: str
-  value: object
+  value: t.Union[InMemoryFile, LabeledExample]
 
   def __iter__(self):
     return iter((self.key,self.value))

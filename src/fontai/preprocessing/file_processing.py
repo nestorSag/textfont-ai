@@ -5,10 +5,10 @@ import logging
 import string
 import zipfile
 import io
-from datetime import datetime
 import typing as t
 import types
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
@@ -32,10 +32,10 @@ class ObjectMapper(ABC):
   """
 
   @abstractmethod
-  def _map(self,data):
+  def _map(self,data: t.Any) -> t.Generator[t.Any, None, None]:
     pass
 
-  def map(self,data) -> t.Generator[object, None, None]:
+  def map(self,data: t.Any) -> t.Generator[t.Any, None, None]:
 
     """
     Processes a single data instance.
@@ -57,10 +57,10 @@ class KeyValueMapper(ObjectMapper):
   """
 
   @abstractmethod
-  def _map(self,data):
+  def _map(self,data: t.Any) -> t.Generator[t.Tuple[str,t.Union[InMemoryFile,LabeledExample]], None, None]:
     pass
 
-  def map(self,data) -> t.Generator[KeyValuePair, None, None]:
+  def map(self,data: t.Any) -> t.Generator[KeyValuePair, None, None]:
 
     """
     Processes a single data instance.
@@ -71,7 +71,7 @@ class KeyValueMapper(ObjectMapper):
     generator = super().map(data)
     return self.wrap_output(generator)
 
-  def wrap_output(self, generator) -> t.Generator[KeyValuePair, None, None]:
+  def wrap_output(self, generator: t.Generator[t.Tuple[str,t.Union[InMemoryFile,LabeledExample]], None, None]) -> t.Generator[KeyValuePair, None, None]:
     for pair in generator:
       key,value = pair
       yield KeyValuePair(key=key,value=value)
@@ -84,7 +84,7 @@ class DataPathReader(KeyValueMapper):
 
   """
 
-  def _map(self, path: DataPath):
+  def _map(self, path: DataPath) -> t.Generator[t.Tuple[str, InMemoryFile], None, None]:
     yield path.filename, InMemoryFile(filename = path.filename, content = path.read_bytes())
 
 
@@ -96,7 +96,7 @@ class ZipToFontFiles(KeyValueMapper):
 
   """
 
-  def _map(self,pair: KeyValuePair)-> t.Generator[InMemoryFile, None, None]:
+  def _map(self,pair: KeyValuePair)-> t.Generator[t.Tuple[str, InMemoryFile], None, None]:
     key, file = pair
     logger.info(f"Extracting font files from zip file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
@@ -143,7 +143,7 @@ class FontFileToCharArrays(KeyValueMapper):
     self.canvas_size = canvas_size
     self.charset = charset
 
-  def _map(self,pair: KeyValuePair)-> t.Generator[np.ndarray, None, None]:
+  def _map(self,pair: KeyValuePair)-> t.Generator[t.Tuple[str, LabeledExample], None, None]:
     key,file = pair
     logger.info(f"exctracting arrays from file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
@@ -173,7 +173,7 @@ class ArrayCropper(KeyValueMapper):
 
   """
 
-  def _map(self, pair: KeyValuePair) -> np.ndarray:
+  def _map(self, pair: KeyValuePair) -> t.Generator[t.Tuple[str, LabeledExample], None, None]:
     key,example = pair
     nonzero = np.where(example.x > 0)
     if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
@@ -200,7 +200,7 @@ class ArrayResizer(KeyValueMapper):
   def __init__(self, output_size = 64):
     self.output_size = 64
 
-  def _map(self, pair: KeyValuePair):
+  def _map(self, pair: KeyValuePair) -> t.Generator[t.Tuple[str, LabeledExample], None, None]:
     """
     resize given image to a squared output image
     """
@@ -253,7 +253,7 @@ class TfrRecordWriter(beam.DoFn):
 
     return png, label, metadata
 
-  def process(self,pair: t.Tuple[str, t.List[LabeledExample]]) -> None:
+  def process(self,pair: t.Tuple[t.Any, t.Iterable[t.Any]]) -> None:
     src, examples = pair
     full_output_path = self.output_path / (src + ".tfr")
     try:
@@ -278,7 +278,7 @@ class BeamCompatibleWrapper(beam.DoFn):
 
   def __init__(self, mapper: ObjectMapper):
 
-    if not isinstance(obj, ObjectMapper):
+    if not isinstance(mapper, ObjectMapper):
       raise TypeError("mapper needs to be a subclass of ObjectMapper")
     self.mapper = mapper
 
@@ -305,13 +305,13 @@ class FileProcessor(object):
       Runs Beam preprocessing pipeline as defined in the config object.
     
     """
-    pipeline_options = PipelineOptions(self.config.beam_parameters)
-    pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
+    pipeline_options = PipelineOptions(self.config.beam_cmd_line_args)
+    pipeline_options.view_as(SetupOptions).save_main_session = True
     with beam.Pipeline(options=pipeline_options) as p:
 
       # if output is local, create parent folders
-      if not self.config_output_path.is_gcs:
-        Path(str(self.config_output_path)).mkdir(parents=True, exist_ok=True)
+      if not self.config.output_path.is_gcs:
+        Path(str(self.config.output_path)).mkdir(parents=True, exist_ok=True)
 
       input_objs_list = self.config.input_path.list_files()
 
@@ -326,13 +326,13 @@ class FileProcessor(object):
           mapper = ZipToFontFiles()))
       | "extract arrays from font files" >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = FontFileToCharArrays(**self.config.font_to_array_config.as_dict())))
+          mapper = FontFileToCharArrays(**self.config.font_to_array_config.to_dict())))
       | "crop arrays" >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = ArrayCropper()))
       | "resize arrays" >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = ArrayResizer(output_size = self.config.img_output_size)))
+          mapper = ArrayResizer(output_size = self.config.output_array_size)))
       | "convert to key value tuple" >> beam.Map(lambda pair: (pair.key,pair.value))
       | "group by key (source file)" >> beam.GroupByKey()
-      | "write to disk" >> beam.ParDo(self.TfrRecordWriter(self.config.output_path)))
+      | "write to disk" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))

@@ -25,10 +25,10 @@ class FontToArrayConfig(BaseModel):
   def to_dict(self):
 
     return {
-      "charset": charset,
-      "font_size": font_size,
-      "canvas_size": canvas_size,
-      "canvas_padding": canvas_padding
+      "charset": self.charset,
+      "font_size": self.font_size,
+      "canvas_size": self.canvas_size,
+      "canvas_padding": self.canvas_padding
     }
 
 
@@ -47,7 +47,7 @@ class Config(BaseModel):
   output_path: DataPath
   output_array_size: int
   font_to_array_config: FontToArrayConfig
-  beam_parameters: Namespace
+  beam_cmd_line_args: t.List[str]
   yaml: yml.YAML
 
   # internal BaseModel configuration class
@@ -71,9 +71,7 @@ class ConfigHandler(BaseConfigHandler):
       "font_canvas_size": yml.Int(), 
       "font_canvas_padding": yml.Int(), 
       yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
-      yml.Optional("beam_parameters", default = {"runner": "direct"}): yml.MapPattern(
-            yml.Str(),
-            yml.Int() | yml.Float() | yml.Str() | yml.Bool())
+      yml.Optional("beam_cmd_line_args", default = ["--runner", "DirectRunner"]): yml.Seq(yml.Str())
        })
 
   def instantiate_config(self, config: yml.YAML) -> Config:
@@ -90,7 +88,7 @@ class ConfigHandler(BaseConfigHandler):
     charset = config.data["charset"]
     font_canvas_size = config.data["font_canvas_size"]
     font_canvas_padding = config.data["font_canvas_padding"]
-    beam_parameters = Namespace(**config.data["beam_parameters"])
+    beam_cmd_line_args = config.data["beam_cmd_line_args"]
 
 
     f2a_config = FontToArrayConfig(
@@ -109,5 +107,5 @@ class ConfigHandler(BaseConfigHandler):
       input_path = input_path, 
       output_array_size = output_array_size,
       font_to_array_config = f2a_config,
-      beam_parameters = beam_parameters,
+      beam_cmd_line_args = beam_cmd_line_args,
       yaml = config)

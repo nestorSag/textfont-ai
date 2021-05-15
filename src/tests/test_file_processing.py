@@ -19,8 +19,9 @@ output_array_size: 64
 font_extraction_size: 100
 font_canvas_size: 500
 font_canvas_padding: 100
-beam_parameters:
-  runner: direct
+beam_cmd_line_args:
+-  --runner
+-  DirectRunner
 """
 
 Path(str(OUTPUT_PATH)).mkdir(parents=True, exist_ok=True)

@@ -5,4 +5,5 @@ font_extraction_size: 100
 font_canvas_size: 500
 font_canvas_paddint: 100
 beam_parameters:
-  runner: direct
+-  --runner
+-  DirectRunner
