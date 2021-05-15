@@ -3,7 +3,7 @@ import argparse
 import logging
 from pathlib import Path
 
-from fontai.preprocessing.file_preprocessing import FileProcessor
+from fontai.preprocessing.file_processing import FileProcessor
 from fontai.config.preprocessing import ConfigHandler
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ def process_files(args):
       path to YAML file that defines the execution of the file processing pipeline.
       """)
 
-  logging.basicConfig(filename=Path("logs") / "file-processing.log", level=logging.DEBUG, filemode = "w")
+  logging.basicConfig(filename=Path("logs") / "file-preprocessing.log", level=logging.INFO, filemode = "w")
 
   args, _ = parser.parse_known_args(args)
   
@@ -34,4 +34,4 @@ if __name__ == "__main__":
 
   process_files(sys.argv)
 
-# example run: python scripts/ingestion/run_ingestion.py --config config/parameters/ingestion/config.yaml
+# example run: python scripts/preprocessing/run_file_processing.py --config-file config/parameters/preprocessing/config.yaml

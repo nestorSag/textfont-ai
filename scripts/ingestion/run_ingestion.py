@@ -34,4 +34,4 @@ if __name__ == "__main__":
 
   ingest_data(sys.argv)
 
-# example run: python scripts/ingestion/run_ingestion.py --config config/parameters/ingestion/config.yaml
+# example run: python scripts/ingestion/run_ingestion.py --config-file config/parameters/ingestion/config.yaml

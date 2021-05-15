@@ -73,9 +73,8 @@ def test_stages():
 
 
   transformer = TfrRecordWriter(OUTPUT_PATH)
-  key, val = test_object
-  test_object = (key, [val])
   transformer.process(test_object)
+  transformer.close()
   records = TFRecordDataset(filenames=str(OUTPUT_PATH/ "0.tfr")).map(TfrHandler().from_tfr)
   record = iter(records).next()
   assert record["label"] == bytes("a".encode("utf-8"))

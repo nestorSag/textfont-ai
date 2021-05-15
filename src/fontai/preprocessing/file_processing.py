@@ -145,12 +145,12 @@ class FontFileToCharArrays(KeyValueMapper):
 
   def _map(self,pair: KeyValuePair)-> t.Generator[t.Tuple[str, LabeledExample], None, None]:
     key,file = pair
-    logger.info(f"exctracting arrays from file '{file.filename}'")
+    logger.info(f"exctracting arrays from file '{file.filename}', source file '{key}'")
     with io.BytesIO(file.content) as bf:
       try:
         font = ImageFont.truetype(bf,self.font_size)
       except Exception as e:
-        logger.exception(f"Error while reading font file '{file.filename}'")
+        logger.exception(f"Error while reading font file '{file.filename}', source file '{key}'")
         return
       for char in self.charset:
         img = Image.new("RGB",(self.canvas_size,self.canvas_size))
@@ -164,7 +164,7 @@ class FontFileToCharArrays(KeyValueMapper):
           array = np.mean(array, axis = -1).astype(np.uint8)
           yield key, LabeledExample(x=array,y=char,metadata=file.filename)
         except Exception as e:
-          logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'")
+          logger.exception(f"Error while reading char '{char}' from font file '{file.filename}', source file '{key}'")
 
 class ArrayCropper(KeyValueMapper):
 
@@ -232,12 +232,15 @@ class ArrayResizer(KeyValueMapper):
 
 class TfrRecordWriter(beam.DoFn):
   """
-    Takes a group of LabeledExamples and converts them to TF records of TF examples.
+    Takes instances of LabeledExamples and writes them to a tensorflow record file.
 
   """
   def __init__(self, output_path: DataPath):
     self.output_path = output_path
     self.tfr_handler = TfrHandler()
+    self.filename = None
+    self.writer = None
+    self.written_files = []
 
   def img_to_png_bytes(self, img):
     bf = io.BytesIO()
@@ -246,26 +249,43 @@ class TfrRecordWriter(beam.DoFn):
     bf.close()
     return val
 
-  def format_contents(self, example: LabeledExample) -> t.Tuple[bytes,bytes,bytes]:
+  def format_tfr_contents(self, example: LabeledExample) -> t.Tuple[bytes,bytes,bytes]:
     png = self.img_to_png_bytes(example.x)
     label = str.encode(example.y)
     metadata = str.encode(example.metadata)
 
     return png, label, metadata
 
-  def process(self,pair: t.Tuple[t.Any, t.Iterable[t.Any]]) -> None:
-    src, examples = pair
-    full_output_path = self.output_path / (src + ".tfr")
+  def process(self,pair: KeyValuePair) -> None:
+    src, example = pair
+
+    if self.filename is None:
+      self.open_writer(src)
+    elif self.filename != src:
+      self.close()
+      self.open_writer(src)
+      #raise ValueError(f"key ({src}) does not match output file name {self.filename}.tfr")
     try:
-      with tf.io.TFRecordWriter(str(full_output_path)) as writer:
-        for example in examples:
-          tf_example = self.tfr_handler.as_tfr(*self.format_contents(example))
-          writer.write(tf_example.SerializeToString())
+      tf_example = self.tfr_handler.as_tfr(*self.format_tfr_contents(example))
+      self.writer.write(tf_example.SerializeToString())
 
     except Exception as e:
-      logging.exception(f"error writing TF record: {e}")
+      logging.exception(f"error writing TF record for key {src}: {e}")
 
-      
+  def open_writer(self, filename):
+    if filename in self.written_files:
+      raise ValueError(f"filename ({filename}) has already been used. Data would be lost by overwriting it.")
+    self.filename = filename
+    self.full_output_path = self.output_path / (self.filename + ".tfr")
+    self.writer = tf.io.TFRecordWriter(str(self.full_output_path))
+
+  def close(self):
+    if self.writer is not None:
+      self.writer.close()
+      self.written_files.append(self.filename)
+
+  def teardown(self):
+    self.writer.close()
 
 class BeamCompatibleWrapper(beam.DoFn):
 
@@ -305,19 +325,22 @@ class FileProcessor(object):
       Runs Beam preprocessing pipeline as defined in the config object.
     
     """
+
+    # if output is local, create parent folders
+    if not self.config.output_path.is_gcs:
+      Path(str(self.config.output_path)).mkdir(parents=True, exist_ok=True)
+
     pipeline_options = PipelineOptions(self.config.beam_cmd_line_args)
     pipeline_options.view_as(SetupOptions).save_main_session = True
-    with beam.Pipeline(options=pipeline_options) as p:
 
-      # if output is local, create parent folders
-      if not self.config.output_path.is_gcs:
-        Path(str(self.config.output_path)).mkdir(parents=True, exist_ok=True)
+    with beam.Pipeline(options=pipeline_options) as p:
 
       input_objs_list = self.config.input_path.list_files()
 
-      objs = p | beam.Create(input_objs_list)# ReadFromText(input_file_list_path)
+      source_stream = p | beam.Create(input_objs_list)# ReadFromText(input_file_list_path)
 
-      arrays = (objs 
+      # execute pipeline
+      (source_stream 
       | 'Load file' >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = DataPathReader()))
@@ -333,6 +356,10 @@ class FileProcessor(object):
       | "resize arrays" >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = ArrayResizer(output_size = self.config.output_array_size)))
-      | "convert to key value tuple" >> beam.Map(lambda pair: (pair.key,pair.value))
-      | "group by key (source file)" >> beam.GroupByKey()
       | "write to disk" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))
+
+      #output_writer.close()
+
+      # | "convert to key value tuple" >> beam.Map(lambda pair: (pair.key,pair.value))
+      # | "group by key (source file)" >> beam.GroupByKey()
+      # | "write to disk" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))
