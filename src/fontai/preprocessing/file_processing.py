@@ -116,7 +116,7 @@ class ZipToFontFiles(KeyValueMapper):
 
 class FontFileToCharArrays(KeyValueMapper):
   """
-    Processes ttf files and outputs labeled examples consisting of a label (character) and a numpy array corresponding to individual character images
+    Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to individual character images and a metadata string indicating the original filename
 
     charset: string with all the characters to be extracted from the file
 
@@ -169,7 +169,7 @@ class FontFileToCharArrays(KeyValueMapper):
 class ArrayCropper(KeyValueMapper):
 
   """
-    Crops an array and returns an array corresponding to the bounding box containing all non-zero value.
+    Crops an array and returns an array corresponding to the smallest bounding box containing all non-zero value.
 
   """
 
@@ -290,9 +290,9 @@ class TfrRecordWriter(beam.DoFn):
 class BeamCompatibleWrapper(beam.DoFn):
 
   """
-    Wrapper that allows subclasses of ObjectWrapper to be used in Beam pipeline stages
+    Wrapper that allows subclasses of ObjectMapper to be used in Beam pipeline stages
 
-    mapper: Instance of an ObjectWrapper's subclass
+    mapper: Instance of an ObjectMapper's subclass
 
   """
 
@@ -326,7 +326,7 @@ class FileProcessor(object):
     
     """
 
-    # if output is local, create parent folders
+    # if output is locally persisted, create parent folders
     if not self.config.output_path.is_gcs:
       Path(str(self.config.output_path)).mkdir(parents=True, exist_ok=True)
 

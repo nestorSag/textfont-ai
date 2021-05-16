@@ -45,13 +45,7 @@ class ConfigHandler(BaseConfigHandler):
     self.CONFIG_SCHEMA = yml.Map({
       "output_path": yml.Str(), 
       "max_zip_size": yml.Float(), 
-      "scrappers": yml.Seq( #scrappers: list of dictionaries with 2 keys: class name and kwargs to be passed
-        yml.Map({
-          "class":yml.Str(),
-          yml.Optional("kwargs"):yml.MapPattern(
-            yml.Str(),
-            yml.Int() | yml.Float() | yml.Str() | yml.Bool())
-        })
+      "scrappers": yml.Seq(self.PY_INSTANCE_FROM_YAML_SCHEMA
       )
     })
 

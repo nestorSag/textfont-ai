@@ -11,6 +11,15 @@ class BaseConfigHandler(ABC):
 
   """
   def __init__(self):
+
+    self.ANY_PRIMITIVES = yml.Int() | yml.Float() | yml.Str() | yml.Bool()
+
+    self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA = yml.Map(
+          {"class": yml.Str(), 
+          Optional("kwargs"): yml.MapPattern(
+            yml.Str(),
+            self.ANY_PRIMITIVES)})
+
     self.CONFIG_SCHEMA: t.Optional[yml.Map] = None
 
   def from_string(self, config: str) -> BaseModel:
