@@ -15,38 +15,46 @@ from fontai.config.core import BaseConfigHandler
 logger = logging.getLogger(__name__)
 
 
-class FontToArrayConfig(BaseModel):
+class FontExtractionConfig(BaseModel):
 
   charset: str
-  font_size: PositiveInt
+  font_extraction_size: PositiveInt
   canvas_size: PositiveInt
   canvas_padding: PositiveInt
 
-  def to_dict(self):
+  def as_dict(self):
 
     return {
       "charset": self.charset,
-      "font_size": self.font_size,
+      "font_extraction_size": self.font_extraction_size,
       "canvas_size": self.canvas_size,
       "canvas_padding": self.canvas_padding
     }
 
+  @classmethod
+  def from_yaml(cls, yaml: yml.YAML):
+    return FontExtractionConfig(**yaml.data)
+
 
 class Config(BaseModel):
   """
-  Wrapper class for the configuration of the ImageExtractor class
+  Configuration class for the image extraction pipeline stage
 
-  output_path: folder in which scrapped and zipped ttf/otf files will be saved
+  input_path: folder from which zipped ttf/otf files will be fetched
 
-  max_zip_size: maximum pre-compression size of zipped output files
+  output_path: Folder in which Tensorflow record files will be persisted
 
-  scrappers: list of FileScrapper instances from which scrapped files will be processed.
+  output_array_size: size of the final grayscale image corresponding to each font's characters
+
+  beam_cmd_line_args: List of command line arguments passed to the Beam pipeline
+
+  yaml: original YAML object built from the configuration file contents
 
   """
   input_path: DataPath
   output_path: DataPath
-  output_array_size: int
-  font_to_array_config: FontToArrayConfig
+  output_array_size: PositiveInt
+  font_to_array_config: FontExtractionConfig
   beam_cmd_line_args: t.List[str]
   yaml: yml.YAML
 
@@ -57,22 +65,26 @@ class Config(BaseModel):
     
 class ConfigHandler(BaseConfigHandler):
   """
-  Wrapper for ingestion's configuration processing logic.
+  Wrapper for image processing stage's configuration handling logic
 
   """
 
-  def __init__(self):
+  def get_config_schema(self):
     
-    self.CONFIG_SCHEMA = yml.Map({
+    schema = yml.Map({
       "output_path": yml.Str(), 
-      "input_path": yml.Str(), 
-      "output_array_size": yml.Int(), 
-      "font_extraction_size": yml.Int(), 
-      "font_canvas_size": yml.Int(), 
-      "font_canvas_padding": yml.Int(), 
-      yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
+      "input_path": yml.Str(),
+      "output_array_size": yml.Int(),
+      "font_extraction_config": yml.Map({
+        "font_extraction_size": yml.Int(), 
+        "canvas_size": yml.Int(), 
+        "canvas_padding": yml.Int(),
+        yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str()
+        })
       yml.Optional("beam_cmd_line_args", default = ["--runner", "DirectRunner"]): yml.Seq(yml.Str())
        })
+
+    return schema
 
   def instantiate_config(self, config: yml.YAML) -> Config:
     """
@@ -81,25 +93,14 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path = DataPath(config.data["output_path"])
-    input_path = DataPath(config.data["input_path"])
-    output_array_size = config.data["output_array_size"]
-    font_extraction_size = config.data["font_extraction_size"]
-    charset = config.data["charset"]
-    font_canvas_size = config.data["font_canvas_size"]
-    font_canvas_padding = config.data["font_canvas_padding"]
+    output_path = DataPath(config.get("output_path").data)
+    input_path = DataPath(config.get("input_path").data)
     beam_cmd_line_args = config.data["beam_cmd_line_args"]
+    output_array_size = config.get("output_array_size").data
+    f2a_config = FontExtractionConfig.from_yaml(**config.get("font_extraction_config").data)
 
 
-    f2a_config = FontToArrayConfig(
-      charset = charset,
-      font_size = font_extraction_size,
-      canvas_size = font_canvas_size,
-      canvas_padding = font_canvas_padding
-      )
-
-
-    if f2a_config.canvas_padding >=  f2a_config.canvas_size:
+    if f2a_config.canvas_padding >=  f2a_config.canvas_size/2:
       raise ValueError(f"canvas padding value ({f2a_config.canvas_padding}) is too large for canvas size ({f2a_config.canvas_size})")
 
     return Config(

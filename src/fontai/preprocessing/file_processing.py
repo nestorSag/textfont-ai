@@ -120,7 +120,7 @@ class FontFileToCharArrays(KeyValueMapper):
 
     charset: string with all the characters to be extracted from the file
 
-    font_size: font size used when converting them to character images
+    font_extraction_size: font size used when converting them to character images
 
     canvas_size: image canvas size in which fonts are converted to images
 
@@ -130,14 +130,14 @@ class FontFileToCharArrays(KeyValueMapper):
   def __init__(
     self, 
     charset = string.ascii_letters + string.digits, 
-    font_size = 100, 
+    font_extraction_size = 100, 
     canvas_size = 500, 
     canvas_padding = 100):
 
     if canvas_padding >= canvas_size/2:
       raise ValueError(f"Canvas padding value ({canvas_padding}) is too large for canvas size ({canvas_size})")
 
-    self.font_size = font_size
+    self.font_extraction_size = font_extraction_size
     self.canvas_size = canvas_size
     self.canvas_padding = canvas_padding
     self.canvas_size = canvas_size
@@ -148,7 +148,7 @@ class FontFileToCharArrays(KeyValueMapper):
     logger.info(f"exctracting arrays from file '{file.filename}', source file '{key}'")
     with io.BytesIO(file.content) as bf:
       try:
-        font = ImageFont.truetype(bf,self.font_size)
+        font = ImageFont.truetype(bf,self.font_extraction_size)
       except Exception as e:
         logger.exception(f"Error while reading font file '{file.filename}', source file '{key}'")
         return
@@ -349,7 +349,7 @@ class FileProcessor(object):
           mapper = ZipToFontFiles()))
       | "extract arrays from font files" >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = FontFileToCharArrays(**self.config.font_to_array_config.to_dict())))
+          mapper = FontFileToCharArrays(**self.config.font_to_array_config.as_dict())))
       | "crop arrays" >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = ArrayCropper()))

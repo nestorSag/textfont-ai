@@ -40,14 +40,17 @@ class ConfigHandler(BaseConfigHandler):
   Wrapper for ingestion's configuration processing logic.
 
   """
-  def __init__(self):
+  
+  def get_config_schema(self):
     
-    self.CONFIG_SCHEMA = yml.Map({
+    schema = yml.Map({
       "output_path": yml.Str(), 
       "max_zip_size": yml.Float(), 
-      "scrappers": yml.Seq(self.PY_INSTANCE_FROM_YAML_SCHEMA
+      "scrappers": yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA
       )
     })
+
+    return schema
 
   def instantiate_config(self, config: yml.YAML) -> Config:
     """
@@ -56,7 +59,7 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path, max_zip_size, sources = DataPath(config.data["output_path"]), config.data["max_zip_size"], config.data["scrappers"]
+    output_path, max_zip_size, scrappers = DataPath(config.data["output_path"]), config.data["max_zip_size"], config.get("scrappers")
 
     #valid_folder = output_path.exists()
     valid_size = max_zip_size > 0
@@ -67,12 +70,16 @@ class ConfigHandler(BaseConfigHandler):
       raise ValueError(f"max_zip_size parameter value ({max_zip_size}) is invalid.")
 
     source_list = []
-    for source in sources:
-      kwargs = {} if "kwargs" not in source else source["kwargs"]
+    for scrapper in scrappers:
       try:
-        source_list.append(getattr(scrappers,source["class"])(**kwargs))
+        instance = self.yaml_to_obj.get_instance(scrapper)
+        source_list.append(instance)
       except Exception as e:
         logger.exception(f"Error instantiating FileScrapper object of type {source['class']}")
+
+    if len(source_list) == 0:
+      raise ValueError("List of scrappers is empty. There are no sources to process.")
+
     return Config(
       output_path = output_path, 
       max_zip_size = max_zip_size,

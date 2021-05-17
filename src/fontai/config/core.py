@@ -1,14 +1,16 @@
 import typing as t
 from abc import ABC, abstractmethod
-import strictyaml as yml
 from pathlib import Path
+import logging
 
+import strictyaml as yml
 from pydantic import BaseModel
 
-class BaseConfigHandler(ABC):
-  """
-  Interface for creating ML pipeline stages' execution configuration objects
+logger = logging.getLogger(__name__)
 
+class SimpleClassInstantiator(object):
+  """
+    Wrapper for some useful schema definitions and simple class instantiations.
   """
   def __init__(self):
 
@@ -16,11 +18,36 @@ class BaseConfigHandler(ABC):
 
     self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA = yml.Map(
           {"class": yml.Str(), 
-          Optional("kwargs"): yml.MapPattern(
+          yml.Optional("kwargs", default = {}): yml.MapPattern(
             yml.Str(),
-            self.ANY_PRIMITIVES)})
+            self.ANY_PRIMITIVES) | yml.EmptyDict()})
 
-    self.CONFIG_SCHEMA: t.Optional[yml.Map] = None
+  def get_instance(csl, yaml: yml.YAML) -> object:
+    """
+      This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.
+
+      yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute
+    """
+    try:
+      yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
+      return globals()[yaml.get("class").text](**yaml.get("kwargs").data)
+    except Exception as e:
+      logger.exception(f"Cannot instantiate class {yaml.get("class").text} from global namespace: {e}")
+
+
+
+class BaseConfigHandler(ABC):
+  """
+  Interface for creating execution configuration objects for ML pipeline stages
+
+  """
+  def __init__(self):
+
+    self.yaml_to_obj = SimpleClassInstantiator()
+
+    self.CONFIG_SCHEMA: t.Optional[yml.Map] = self.get_config_schema()
+
+    self.other_setup()
 
   def from_string(self, config: str) -> BaseModel:
     """
@@ -52,4 +79,11 @@ class BaseConfigHandler(ABC):
     config: YAML object from the strictyaml library
 
     """
+    pass
+
+  def get_config_schema(self):
+
+    return None
+
+  def setup(self):
     pass

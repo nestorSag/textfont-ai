@@ -125,20 +125,28 @@ class InputPreprocessor(object):
 
 
 
+# class SupervisedFilter(object):
+
+#   def __init__(self, model_path):
+#     self.model = Model.load(model_path)
+
+#   def get_filter(self):
+
+#     def filter(imgs,labels,metadata):
+#       # filters a batch using a trained model
+#       pred = self.model(imgs)
+#       condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1)
+#       return imgs[condition], labels[condition], filenames[condition]
+
+#     return filter_func
 
 
+class ModelFitter(object):
 
-class SupervisedFilter(object):
+  def __init__(self, config: Config):
 
-  def __init__(self, model_path):
-    self.model = Model.load(model_path)
+    self.config = config
 
-  def get_filter(self):
+  def fit(self):
 
-    def filter(imgs,labels,metadata):
-      # filters a batch using a trained model
-      pred = self.model(imgs)
-      condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1)
-      return imgs[condition], labels[condition], filenames[condition]
-
-    return filter_func
+    model = self.config.

@@ -9,6 +9,16 @@ import numpy as np
 thismodule = sys.modules[__name__]
 
 
+class Model(object):
+
+  def __init__(self, model: tf.keras.Model):
+    self.model = model
+
+  @classmethod
+  def from_path(self, path: DataPath):
+    
+
+
 def rescaled_sigmoid_activation(factor):
   def f(x):
     return factor * tf.keras.activations.sigmoid(x)
