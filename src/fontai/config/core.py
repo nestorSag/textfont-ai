@@ -45,9 +45,10 @@ class BaseConfigHandler(ABC):
 
     self.yaml_to_obj = SimpleClassInstantiator()
 
+    self.other_setup()
+
     self.CONFIG_SCHEMA: t.Optional[yml.Map] = self.get_config_schema()
 
-    self.other_setup()
 
   def from_string(self, config: str) -> BaseModel:
     """

@@ -88,7 +88,7 @@ class ModelFactory(object):
       self.MULTI_SEQUENTIAL_MODEL_SCHEMA: ("MULTI SEQUENTIAL", self.from_multi_sequential)
     }
 
-    self.MODEL_CONFIG_SCHEMA = reduce(lambda schema1, schema2: schema1 | schema2, self.schema_constructors.keys())
+    self.MODEL_CONFIG_SCHEMA = reduce(lambda schema1, schema2: schema1 | schema2, list(self.schema_constructors.keys()))
 
   def from_yaml(self, model_yaml: yml.YAML):
     """

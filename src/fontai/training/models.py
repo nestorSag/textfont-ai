@@ -25,54 +25,6 @@ def rescaled_sigmoid_activation(factor):
 
   return f
 
-def get_layer_instance(layer_dict):
-  layer_name = layer_dict["class"]
-
-  ## returns the layer class based on its name; looks in the tf and local modules
-  try:
-    if re.match("tf.keras.layers",layer_name):
-      layer = getattr(tf.keras.layers,layer_name.replace("tf.keras.layers.",""))
-    elif re.match("tf.keras",layer_name):
-      layer = getattr(tf.keras,layer_name.replace("tf.keras.",""))
-    else:
-      layer = getattr(thismodule,layer_name)
-    #print(f"layer: {layer}")
-    return layer(**layer_dict["kwargs"])
-  except Exception as e:
-    raise Exception(f"an error occured instantiating a layer: {e}")
-
-def get_stacked_network(hyperpar_dict):
-  layers_dict = hyperpar_dict["layers"]
-  layer_list = []
-  for layer_spec in layers_dict:
-    layer_list.append(get_layer_instance(layer_spec))
-
-  model = tf.keras.Sequential(layer_list)
-  #model.compile(loss = hyperpar_dict["loss"], optimizer = hyperpar_dict["optimizer"], metrics = hyperpar_dict["metrics"])
-  return model
-
-class ScatterGatherConvLayer(tf.keras.layers.Layer):
-  """ This layer passes its input through multiple separate layers and then concatenate their output in a single tensor
-      #with same dimensions as input
-  Parameters:
-
-  layers_info (`dict`): dict with a "submodules" key, whose value is a list of dicts that are inputs for `StackedNetwork` instances
-  """
-
-  def __init__(self,layers):
-    super(ScatterGatherConvLayer,self).__init__()
-    module_number = 0
-    for module in layers["submodules"]:
-      #layer_class = getattr(tf.keras.layers,layer["class"])
-      setattr(self,"module" + str(module_number),StackedNetwork(module))
-      module_number += 1
-    self.module_number = module_number
-
-  def call(self,inputs):
-    return tf.concat([getattr(self,"module" + str(i))(inputs) for i in range(self.module_number)], axis=3)
-
-# {"submodules":[{"layers":[...]},{"layers":[...]}]}
-
 
 class SAAECallback(tf.keras.callbacks.Callback):
 
@@ -144,14 +96,14 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
   def __init__(
     self,
-    encoder,
-    decoder,
-    discriminator,
-    code_dim,
-    reconstruction_loss_weight=0.5,
+    encoder: Model,
+    decoder: Model,
+    discriminator: Model,
+    code_dim: int,
+    reconstruction_loss_weight:float=0.5,
     input_dim=(64,64,1),
-    n_classes = 62,
-    prior_batch_size=32):
+    n_classes:int = 62,
+    prior_batch_size:int=32):
 
     super(SupervisedAdversarialAutoEncoder, self).__init__()
 
@@ -167,7 +119,6 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
     self.code_dim = code_dim
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
     self.prior_batch_size = prior_batch_size
-    print(f"reconstruction loss weight: {self.rec_loss_weight}")
 
     self.prior_sampler = tf.random.uniform
     self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)

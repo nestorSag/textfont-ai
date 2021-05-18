@@ -58,7 +58,7 @@ class InputPreprocessor(object):
     self.charset_encoding = tf.convert_to_tensor(list(self.charset))
 
 
-  def process_tfr_files(self, input_files: t.List[DataPath]):
+  def fetch_tfr_files(self, input_files: t.List[DataPath]):
     """
       Fetches a list of input Tensorflow record files and prepares them for training
 
@@ -124,29 +124,22 @@ class InputPreprocessor(object):
     return img, label
 
 
+class Filter(object):
 
-# class SupervisedFilter(object):
+  def get_filter(self) -> t.Callable:
+    pass
 
-#   def __init__(self, model_path):
-#     self.model = Model.load(model_path)
+class SupervisedFilter(object):
 
-#   def get_filter(self):
+  def __init__(self, model_path):
+    self.model = Model.load(model_path)
 
-#     def filter(imgs,labels,metadata):
-#       # filters a batch using a trained model
-#       pred = self.model(imgs)
-#       condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1)
-#       return imgs[condition], labels[condition], filenames[condition]
+  def get_filter(self):
 
-#     return filter_func
+    def filter(imgs,labels,metadata):
+      # filters a batch using a trained model
+      pred = self.model(imgs)
+      condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1)
+      return imgs[condition], labels[condition], filenames[condition]
 
-
-class ModelFitter(object):
-
-  def __init__(self, config: Config):
-
-    self.config = config
-
-  def fit(self):
-
-    model = self.config.
+    return filter_func

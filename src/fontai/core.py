@@ -3,6 +3,7 @@ from pathlib import Path
 import io
 import zipfile
 import sys
+import re
 import typing as t
 from abc import ABC, abstractmethod
 
@@ -183,29 +184,75 @@ class GcsFileHandler(FileHandler):
     return [elem for elem in raw_list if Path(elem.replace("gs://","")) != Path(url.replace("gs://",""))]
 
 
+class UrlFileHandler(FileHandler):
+  # Class handler for downloadable urls 
+
+  def read(self, url: str):
+    r = requests.get(url, stream=True)
+    bf = io.BytesIO()
+    with io.BytesIO() as bf:
+      for chunk in r.iter_content(chunk_size=chunk_size):
+        bf.write(chunk)
+      content = bf.getvalue()
+    return content
+
+  def write(self, url: str, content: bytes):
+    raise NotImplementedError("Files cannot be written to a url address")
+
+  def list_files(self,url: str) -> t.List[str]:
+    raise NotImplementedError("Files cannot be listed from a url address")
+
+
 class FileHandlerFactory(object):
   # Factory method that determines the appropriate file handler class based on the output string path
   @classmethod
   def create(cls, path: str):
     if "gs://" in path:
       return GcsFileHandler()
+    elif "https://" in path or "http://" in path:
+      return UrlFileHandler()
     else:
       return LocalFileHandler()
 
 
 class DataPath(object):
   """
-    Data reader/writer class that abstracts away the underlying storage location. Supports local and GCS storage
+    Data reader/writer class that abstracts away the underlying storage location. Supports local and GCS storage and downloadable urls
 
     source_str: path or url pointing to the data, or to where it will be saved
 
   """
 
   def __init__(self, source_str: str):
+
     self.string = str(source_str)
+
+    #extensions
     self.is_gcs = "gs://" in self.string
+    self.is_http = "http://" in self.string
+    self.is_https = "https://" in self.string
+
     self.handler = FileHandlerFactory.create(self.string)
     self.filename = self.get_filename()
+
+  def is_url(self):
+    return self.is_gcs or self.is_http or self.is_https
+
+  def extend_url_path(self, suffix):
+
+    def extend(preffix, string, suffix):
+      suffixed = string.replace(preffix,"") + "/" + suffix
+      suffixed = re.sub("/+","/",suffixed)
+      return DataPath(preffix + suffixed)
+
+    if self.is_gcs:
+      return extend("gs://", self.string, suffix)
+    elif self.is_http:
+      return extend("http://", self.string, suffix)
+    elif self.is_https:
+      return extend("https://", self.string, suffix)
+    else:
+      raise ValueError("url does not match any valid preffix.")
 
   def read_bytes(self) -> bytes:
     """
@@ -234,8 +281,8 @@ class DataPath(object):
   def __truediv__(self, path: str) -> DataPath:
     if not isinstance(path, str):
       raise TypeError("path must be a string")
-    elif self.is_gcs:
-      return DataPath("gs://" + str(Path(self.string.replace("gs://","")) / path))
+    elif self.is_url():
+      return self.extend_url_path(path)
     else:
       return DataPath(str(Path(self.string) / path))
 
@@ -243,11 +290,60 @@ class DataPath(object):
     return self.string
 
   def get_filename(self):
-    if self.is_gcs:
+    if self.is_url():
       filename = self.string.split("/")[-1]
     else:
       filename = Path(self.string).name
-
     if filename == "":
       raise ValueError("Path does not point to a file")
     return filename
+
+
+class MLPipelineStage(ABC):
+  """
+    Interface implemented by runnable ML stage objects. They are initialised by passing an execution configuration object and can perform batch processing according to it; they can also do stream processing using the `process` method.
+
+    config: Execution configuration object
+  """
+
+  def __init__(self, config: BaseConfigHandler):
+
+    self.config = config
+
+  @abstractmethod
+  def run_from_config(self):
+    """
+    Run batch processing according to the passed execution configuration object.
+
+    """
+    pass
+
+  def save(self, output_path: DataPath):
+    """
+    Persists pickled instance
+
+    output_path: path to persisted picke file
+
+    """
+    logger.info(f"{self.__class__.__name__} object persisted at {output_path}")
+    output_path.write_bytes(pickle.dumps(self))
+
+  @classmethod
+  def load(self, input_path: DataPath):
+    """
+    Loads from picked file
+
+    input_path: Path to picked file
+
+    """
+    logger.info(f"{self.__class__.__name__} object loaded from {output_path}")
+    return input_path.read_bytes(pickle.loads(self))
+
+  @abstractmethod
+  def process(self, data: t.Any):
+    """
+    Processes a single input instance
+
+    """
+    pass
+

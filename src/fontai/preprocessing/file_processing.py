@@ -7,32 +7,30 @@ import zipfile
 import io
 import typing as t
 import types
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, Iterable
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 import imageio
-import tensorflow as tf
 
-import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
-from apache_beam.options.pipeline_options import SetupOptions
-from apache_beam.io.gcp.gcsio import GcsIO
-
-from fontai.config.preprocessing import Config
-from fontai.core import InMemoryFile, DataPath, TfrHandler, KeyValuePair, LabeledExample
+from fontai.core import InMemoryFile, DataPath, TfrHandler, LabeledExample
 
 logger = logging.getLogger(__name__)
 
 class ObjectMapper(ABC):
   """
-    Interface for pre-ML file and data transformations
+    Interface for data transformations that return a generator; useful for one-to-many transformations
 
   """
 
   @abstractmethod
-  def _map(self,data: t.Any) -> t.Generator[t.Any, None, None]:
+  def raw_map(self,data: t.Any) -> t.Generator[t.Any, None, None]:
+
+    """
+      Applies a transformation to the input data.
+
+    """
     pass
 
   def map(self,data: t.Any) -> t.Generator[t.Any, None, None]:
@@ -43,61 +41,116 @@ class ObjectMapper(ABC):
     Returns a generator with a variable number of derived data instances
 
     """
-    output = self._map(data)
+    output = self.raw_map(data)
     if not isinstance(output, types.GeneratorType):
       raise TypeError("Output of transform() must be a generator")
     return output
 
 
-
 class KeyValueMapper(ObjectMapper):
-  """
-    Interface for pre-ML file and data transformations; it enforces that the output of the transformation is of type KeyValuePair. This is to keep track of the zip file that originated each derived object, in order to pack them together at the end of the pipeline.
 
   """
+    Wrapper class that applies an ObjectMapper's transformation to a value in a key value pair, and carries the key over.
 
-  @abstractmethod
-  def _map(self,data: t.Any) -> t.Generator[t.Tuple[str,t.Union[InMemoryFile,LabeledExample]], None, None]:
-    pass
-
-  def map(self,data: t.Any) -> t.Generator[KeyValuePair, None, None]:
-
-    """
-    Processes a single data instance.
-
-    Returns a generator with a variable number of derived data instances
-
-    """
-    generator = super().map(data)
-    return self.wrap_output(generator)
-
-  def wrap_output(self, generator: t.Generator[t.Tuple[str,t.Union[InMemoryFile,LabeledExample]], None, None]) -> t.Generator[KeyValuePair, None, None]:
-    for pair in generator:
-      key,value = pair
-      yield KeyValuePair(key=key,value=value)
-
-
-
-class DataPathReader(KeyValueMapper):
+    mapper: An instance of an ObjectMapper's subclass
   """
-    Loads the bytestream from a DataPath object
+  def __init__(self, mapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError("mapper is not an instance of ObjectMapper")
+
+    self.mapper = mapper
+
+  def raw_map(self, pair: t.Tuple[str,t.Any]) -> t.Tuple[str,t.Any]:
+    key, data = pair
+    value_generator = self.mapper.map(data)
+    for value in value_generator:
+      yield key, value
+
+
+class OneToManyMapper(ObjectMapper):
 
   """
+    Wrapper class that applies an ObjectMapper's instance transformation to each item in a generator.
 
-  def _map(self, path: DataPath) -> t.Generator[t.Tuple[str, InMemoryFile], None, None]:
+    mapper: An instance of an ObjectMapper's subclass
+  """
+
+  def __init__(self, mapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError("mapper is not an instance of ObjectMapper")
+
+    self.mapper = mapper
+
+  def raw_map(self, data: Iterable[t.Any, None, None]) -> t.Generator[t.Any, None, None]:
+    for elem in data:
+      for derived in self.map(elem):
+        yield derived
+
+
+class PipelineExecutor(ObjectMapper):
+
+  """
+    Applies a sequence of transformations to an input.
+
+    stages: a list of instances inheriting from ObjectMapper
+  """
+
+  def __init__(self, stages: t.List[ObjectMapper]):
+
+    self.stages = stages
+
+  def raw_map(self, data: t.Any) -> t.Generator[t.Any, None, None]:
+
+    if not isinstance(data, Iterable):
+      data = [data]
+
+    for stage in self.stages:
+      data = stage.map(data)
+
+    for elem in data:
+      yield elem
+
+
+class BeamCompatibleWrapper(beam.DoFn):
+
+  """
+    Wrapper that allows subclasses of ObjectMapper to be used in Beam pipeline stages
+
+    mapper: Instance of an ObjectMapper's subclass
+
+  """
+
+  def __init__(self, mapper: ObjectMapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError("mapper needs to be a subclass of ObjectMapper")
+    self.mapper = mapper
+
+  def process(self, data):
+    return self.mapper.map(data)
+
+
+class DataPathReader(ObjectMapper):
+  """
+    Loads the bytestream from a DataPath object; returns a key-value pair needed in the Beam pipeline to persist Tensorflow records according to the source file.
+
+  """
+
+  def raw_map(self, path: DataPath) -> t.Generator[t.Tuple[str, InMemoryFile], None, None]:
     yield path.filename, InMemoryFile(filename = path.filename, content = path.read_bytes())
 
 
 
-class ZipToFontFiles(KeyValueMapper):
+class ZipToFontFiles(ObjectMapper):
 
   """
     Opens an in-memory zip file and outputs individual ttf files
 
   """
 
-  def _map(self,pair: KeyValuePair)-> t.Generator[t.Tuple[str, InMemoryFile], None, None]:
-    key, file = pair
+  def raw_map(self,file: InMemoryFile)-> t.Generator[InMemoryFile, None, None]:
     logger.info(f"Extracting font files from zip file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
       try:
@@ -107,14 +160,13 @@ class ZipToFontFiles(KeyValueMapper):
         return
       for zipped_file in zipped.namelist():
         try:
-          yield key, InMemoryFile(filename = zipped_file, content = zipped.read(zipped_file))
+          yield InMemoryFile(filename = zipped_file, content = zipped.read(zipped_file))
         except Exception as e:
           logger.exception(f"Error while unzipping file '{zipped_file}' from zip file '{file.filename}'")
 
 
 
-
-class FontFileToCharArrays(KeyValueMapper):
+class FontFileToCharArrays(ObjectMapper):
   """
     Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to individual character images and a metadata string indicating the original filename
 
@@ -143,14 +195,13 @@ class FontFileToCharArrays(KeyValueMapper):
     self.canvas_size = canvas_size
     self.charset = charset
 
-  def _map(self,pair: KeyValuePair)-> t.Generator[t.Tuple[str, LabeledExample], None, None]:
-    key,file = pair
-    logger.info(f"exctracting arrays from file '{file.filename}', source file '{key}'")
+  def raw_map(self,file: InMemoryFile)-> t.Generator[LabeledExample, None, None]:
+    logger.info(f"exctracting arrays from file '{file.filename}'")
     with io.BytesIO(file.content) as bf:
       try:
         font = ImageFont.truetype(bf,self.font_extraction_size)
       except Exception as e:
-        logger.exception(f"Error while reading font file '{file.filename}', source file '{key}'")
+        logger.exception(f"Error while reading font file '{file.filename}'")
         return
       for char in self.charset:
         img = Image.new("RGB",(self.canvas_size,self.canvas_size))
@@ -162,19 +213,19 @@ class FontFileToCharArrays(KeyValueMapper):
             array = imageio.imread(bf2.getvalue(),format="png")
 
           array = np.mean(array, axis = -1).astype(np.uint8)
-          yield key, LabeledExample(x=array,y=char,metadata=file.filename)
+          yield LabeledExample(x=array,y=char,metadata=file.filename)
         except Exception as e:
-          logger.exception(f"Error while reading char '{char}' from font file '{file.filename}', source file '{key}'")
+          logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'")
 
-class ArrayCropper(KeyValueMapper):
+
+class ArrayCropper(ObjectMapper):
 
   """
     Crops an array and returns an array corresponding to the smallest bounding box containing all non-zero value.
 
   """
 
-  def _map(self, pair: KeyValuePair) -> t.Generator[t.Tuple[str, LabeledExample], None, None]:
-    key,example = pair
+  def raw_map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
     nonzero = np.where(example.x > 0)
     if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
       logger.info("Empty image found. ignoring.")
@@ -186,9 +237,10 @@ class ArrayCropper(KeyValueMapper):
       w = w_bound[1] - w_bound[0] + 1
       #crop and map to png
       cropped = example.x[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
-      yield key, LabeledExample(x=cropped, y=example.y, metadata=example.metadata)
+      yield LabeledExample(x=cropped, y=example.y, metadata=example.metadata)
 
-class ArrayResizer(KeyValueMapper):
+
+class ArrayResizer(ObjectMapper):
 
   """
     Resizes an image's numpy array to a square image with the specified dimensions
@@ -200,11 +252,10 @@ class ArrayResizer(KeyValueMapper):
   def __init__(self, output_size = 64):
     self.output_size = 64
 
-  def _map(self, pair: KeyValuePair) -> t.Generator[t.Tuple[str, LabeledExample], None, None]:
+  def _map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
     """
     resize given image to a squared output image
     """
-    key,example = pair
     array, y, metadata = example
 
     output = np.zeros((self.output_size,self.output_size),dtype=np.uint8)
@@ -223,7 +274,7 @@ class ArrayResizer(KeyValueMapper):
         h_pad, w_pad = int((self.output_size - resized_h)/2), int((self.output_size - resized_w)/2)
         output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
         # make the image binary
-        yield key, LabeledExample(x=output.astype(np.uint8), y=y,metadata=metadata)
+        yield LabeledExample(x=output.astype(np.uint8), y=y,metadata=metadata)
     except Exception as e:
       logger.exception(f"Error while resizing array: {e}")
       return
@@ -256,7 +307,7 @@ class TfrRecordWriter(beam.DoFn):
 
     return png, label, metadata
 
-  def process(self,pair: KeyValuePair) -> None:
+  def process(self,pair: t.Tuple[str, LabeledExample]) -> None:
     src, example = pair
 
     if self.filename is None:
@@ -287,79 +338,3 @@ class TfrRecordWriter(beam.DoFn):
   def teardown(self):
     self.writer.close()
 
-class BeamCompatibleWrapper(beam.DoFn):
-
-  """
-    Wrapper that allows subclasses of ObjectMapper to be used in Beam pipeline stages
-
-    mapper: Instance of an ObjectMapper's subclass
-
-  """
-
-  def __init__(self, mapper: ObjectMapper):
-
-    if not isinstance(mapper, ObjectMapper):
-      raise TypeError("mapper needs to be a subclass of ObjectMapper")
-    self.mapper = mapper
-
-  def process(self, data):
-    return self.mapper.map(data)
-
-
-
-
-class FileProcessor(object):
-  """
-  File preprocessing pipeline that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
-
-  config: A Config instance
-
-  """
-
-  def __init__(self, config: Config):
-    self.config = config
-
-  def run(self):
-
-    """
-      Runs Beam preprocessing pipeline as defined in the config object.
-    
-    """
-
-    # if output is locally persisted, create parent folders
-    if not self.config.output_path.is_gcs:
-      Path(str(self.config.output_path)).mkdir(parents=True, exist_ok=True)
-
-    pipeline_options = PipelineOptions(self.config.beam_cmd_line_args)
-    pipeline_options.view_as(SetupOptions).save_main_session = True
-
-    with beam.Pipeline(options=pipeline_options) as p:
-
-      input_objs_list = self.config.input_path.list_files()
-
-      source_stream = p | beam.Create(input_objs_list)# ReadFromText(input_file_list_path)
-
-      # execute pipeline
-      (source_stream 
-      | 'Load file' >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = DataPathReader()))
-      | 'extract font files' >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = ZipToFontFiles()))
-      | "extract arrays from font files" >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = FontFileToCharArrays(**self.config.font_to_array_config.as_dict())))
-      | "crop arrays" >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = ArrayCropper()))
-      | "resize arrays" >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = ArrayResizer(output_size = self.config.output_array_size)))
-      | "write to disk" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))
-
-      #output_writer.close()
-
-      # | "convert to key value tuple" >> beam.Map(lambda pair: (pair.key,pair.value))
-      # | "group by key (source file)" >> beam.GroupByKey()
-      # | "write to disk" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))

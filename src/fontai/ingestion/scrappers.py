@@ -47,11 +47,7 @@ class FileScrapper(ABC):
     """
     logger.info(f"target url: {url}")
 
-    r = requests.get(url, stream=True)
-    bf = io.BytesIO()
-    for chunk in r.iter_content(chunk_size=chunk_size):
-      bf.write(chunk)
-    return bf.getvalue()
+    return DataPath(url).read_bytes()
 
   def get_stream_tuples(self) -> t.Tuple[str,t.Generator[bytes, None, None]]:
     """
@@ -61,59 +57,6 @@ class FileScrapper(ABC):
     """
     for url in self.get_sources():
       yield str(url), self.get_stream_from_source(url)
-
-  def unpack_files_from_stream(self, stream: bytes, source: t.Optional[str] = None) -> t.Generator[InMemoryFile,None,None]:
-    """
-    Generator method that yields all font files from a zip bytestream
-
-    stream: bytestream from in-memory zip file
-
-    source: name from source file, for exception logging.
-
-    Returns tuples of the form (file bytestream, zip filename)
-
-    """
-
-    if source is None:
-      source = "unspecified"
-
-    def choose_ext(lst):
-      ttfs = len([x for x in lst if ".ttf" in x.lower()])
-      otfs = len([x for x in lst if ".otf" in x.lower()])
-      if ttfs >= otfs:
-        return ".ttf"
-      else:
-        return ".otf"
-
-    #we assume the stream is a zip file's contents
-    try:
-      zipped = zipfile.ZipFile(io.BytesIO(stream))
-    except Exception as e:
-      logger.exception(f"Error: source ({source}) can't be read as zip")
-      return
-    files_in_zip = zipped.namelist()
-    # choose whether to proces TTFs or OTFs, but not both
-    ext = choose_ext(files_in_zip)
-    valid_files = sorted([filename for filename in files_in_zip if ext in filename.lower()])
-    
-    for file in valid_files:
-      filename = Path(file).name
-      try: 
-        content = zipped.read(file)
-        yield InMemoryFile(filename=filename, content = content)
-      except Exception as e:
-        logger.exception(f"Error while extracting file {filename} from zip")
-
-  def get_files(self) -> t.Generator[InMemoryFile,None,None]:
-    """
-    Generator method that yields all scrappable font files (either .ttf or .otf) from the source website
-
-    kwargs: args to be passed to the get_stream_tuples() method
-
-    """
-    for source, stream in self.get_stream_tuples():
-      for file in self.unpack_files_from_stream(stream, source=source):
-        yield file
 
 # FileScrapper sublcasses 
 
@@ -220,8 +163,4 @@ class LocalFileScrapper(FileScrapper):
   def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
     for path in self.path.iterdir():
       if path.is_file():
-        yield path
-
-  def get_stream_from_source(self,path: t.Union[str,Path]) -> bytes:
-
-    return path.read_bytes()
+        yield str(path)
