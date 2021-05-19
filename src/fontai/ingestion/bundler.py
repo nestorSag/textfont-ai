@@ -7,9 +7,10 @@ import logging
 
 from PIL import ImageFont
 
-from fontai.core import DataPath, InMemoryZipFile
+from fontai.core.io import DataPath
+from fontai.core.base import InMemoryFile, InMemoryZipFile
 from fontai.config.ingestion import Config
-from fontai.ingestion.scrappers import InMemoryFile, FileScrapper
+
 
 logger = logging.getLogger(__name__)
 

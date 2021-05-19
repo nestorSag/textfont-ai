@@ -9,8 +9,7 @@ from functools import reduce
 from pydantic import BaseModel, PositiveInt, PositiveFloat
 import strictyaml as yml
 
-from fontai.core import DataPath
-from fontai.config.core import BaseConfigHandler, SimpleClassInstantiator
+from fontai.core.base import BaseConfigHandler, SimpleClassInstantiator, BaseConfig
 from fontai.training.models import Model
 
 import tensorflow as tf
@@ -36,22 +35,17 @@ class TrainingConfig(BaseModel):
     return TrainingConfig(**args)
 
 
-class Config(BaseModel):
+class Config(BaseConfig):
   """
-  Wrapper class for the configuration of the ImageExtractor class
+  Wrapper class for the configuration of the ModelTrainingStage class
 
-  output_path: folder in which scrapped and zipped ttf/otf files will be saved
+  training_config: Runtime configuration for training routine
 
-  max_zip_size: maximum pre-compression size of zipped output files
-
-  scrappers: list of FileScrapper instances from which scrapped files will be processed.
+  model: Model instance that's going to be trained
 
   """
-  input_path: DataPath
-  output_path: DataPath
   training_config: TrainingConfig
   model: Model
-  yaml: yml.YAML
 
   # internal BaseModel configuration class
   class Config:
@@ -68,7 +62,7 @@ class ModelFactory(object):
 
     self.SEQUENTIAL_MODEL_SCHEMA = yml.Map({
       "class": "Sequential",
-      "layers": yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
+      "layers": yml.Seq(SimpleClassInstantiator().PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
       })
 
     self.MULTI_SEQUENTIAL_MODEL_SCHEMA = yml.Map({
@@ -82,7 +76,7 @@ class ModelFactory(object):
     self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str()})
 
     self.schema_constructors = {
-      BaseConfigHandler().PY_CLASS_INSTANCE_FROM_YAML_SCHEMA: ("SIMPLE PY CLASS", self.from_simple_python_class)
+      SimpleClassInstantiator().PY_CLASS_INSTANCE_FROM_YAML_SCHEMA: ("SIMPLE PY CLASS", self.from_simple_python_class)
       self.PATH_TO_SAVED_MODEL_SCHEMA: ("SAVED MODEL PATH", self.from_path),
       self.SEQUENTIAL_MODEL_SCHEMA: ("KERAS SEQUENTIAL", self.from_keras_sequential),
       self.MULTI_SEQUENTIAL_MODEL_SCHEMA: ("MULTI SEQUENTIAL", self.from_multi_sequential)
@@ -191,8 +185,8 @@ class ConfigHandler(BaseConfigHandler):
     self.DATA_PREPROCESSING_SCHEMA = {"filters": yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)} | yml.EmptyList()
 
     schema = yml.Map({
-      "output_path": yml.Str(), 
-      "input_path": yml.Str(), 
+      "output_path": self.IO_CONFIG_SCHEMA, 
+      "input_path": self.IO_CONFIG_SCHEMA, 
       "training": self.TRAINING_CONFIG_SCHEMA,
       "model": self.model_factory.MODEL_CONFIG_SCHEMA,
       yml.Optional("preprocessing_filters", default = []): self.DATA_PREPROCESSING_SCHEMA 
@@ -207,8 +201,8 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path = DataPath(config.data["output_path"])
-    input_path = DataPath(config.data["input_path"])
+    output_path = self.instantiate_io_handler(config.get("output_path"))
+    input_path = self.instantiate_io_handler(config.get("input_path"))
     model = self.model_factory.from_yaml(config.get("model"))
     training_config = TrainingConfig.from_yaml(config.get("training"))
 

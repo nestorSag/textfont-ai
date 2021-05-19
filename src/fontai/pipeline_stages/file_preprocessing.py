@@ -5,8 +5,9 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
+from fontai.core.base import MLPipelineStage
 from fontai.config.preprocessing import Config
-from fontai.preprocessing.file_preprocessing import * 
+from fontai.preprocessing.file_preprocessing import PipelineExecutor, OneToManyMapper, KeyValueMapper, FontFileToCharArrays, ArrayCropper, ArrayResizer, DataPathReader, ZipToFontFiles, TfrRecordWriter
 
 logger = logging.Logger(__name__)
 
@@ -24,9 +25,6 @@ class FileProcessingStage(MLPipelineStage):
 
     self.pipeline = PipelineExecutor(
       stages = [
-      OneToManyMapper(
-        mapper = ZipToFontFiles()
-      ),
       OneToManyMapper(
         mapper = FontFileToCharArrays(**self.config.font_to_array_config.as_dict())
       ),
@@ -68,11 +66,18 @@ class FileProcessingStage(MLPipelineStage):
           mapper = DataPathReader()
         )
       )
-      | 'get labeled exampes from zip' >> beam.ParDo(
+      | 'extract font files from zip' >> beam.ParDo(
+        BeamCompatibleWrapper(
+          mapper = KeyValueMapper(
+            mapper = ZipToFontFiles()
+          )
+        )
+      )
+      | 'get labeled exampes from font files' >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = KeyValueMapper(
             mapper = self.pipeline
           )
         )
       )
-      | "write to disk" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))
+      | "write to storage" >> beam.ParDo(TfrRecordWriter(self.config.output_path)))

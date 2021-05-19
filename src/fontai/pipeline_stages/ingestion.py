@@ -9,7 +9,8 @@ import pickle
 
 from PIL import ImageFont
 
-from fontai.core import MLPipelineStage, DataPath, InMemoryFile
+from fontai.core.base import MLPipelineStage, InMemoryFile
+from fontai.core.io import DataPath
 from fontai.ingestion.bundler import FileBundler
 from fontai.config.ingestion import Config
 

@@ -14,7 +14,8 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 import imageio
 
-from fontai.core import InMemoryFile, DataPath, TfrHandler, LabeledExample
+from fontai.core.base import InMemoryFile, TfrHandler, LabeledExample
+from fontai.core.io import DataPath
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +253,7 @@ class ArrayResizer(ObjectMapper):
   def __init__(self, output_size = 64):
     self.output_size = 64
 
-  def _map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
+  def raw_map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
     """
     resize given image to a squared output image
     """
@@ -278,8 +279,6 @@ class ArrayResizer(ObjectMapper):
     except Exception as e:
       logger.exception(f"Error while resizing array: {e}")
       return
-
-
 
 class TfrRecordWriter(beam.DoFn):
   """

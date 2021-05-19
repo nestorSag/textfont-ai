@@ -1,4 +1,6 @@
 from fontai.config.training import Config
+from fontai.core.base import MLPipelineStage
+from fontai.training.file_preprocessing import InputPreprocessor
 
 class ModelTrainingStage(MLPipelineStage):
 
@@ -21,4 +23,4 @@ class ModelTrainingStage(MLPipelineStage):
 
   def process(self, input_data: Path):
 
-    return self.config.model.predict(input_data)
+    raise NotImplementError("This class does not have an implementation for the process() method; for scoring, use ModelScoringStage instead.")

@@ -15,7 +15,7 @@ import imageio
 import tensorflow as tf
 from  tf.python.data.ops.dataset_ops import MapDataset
 
-from fontai.core import TfrHandler
+from fontai.core.base import TfrHandler
 
 logger = logging.getLogger(__name__)
 

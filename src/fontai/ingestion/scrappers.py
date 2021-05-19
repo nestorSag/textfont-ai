@@ -18,58 +18,13 @@ from bs4 import BeautifulSoup
 
 from pydantic import BaseModel
 
-from fontai.core import InMemoryFile
+from fontai.core.base import InMemoryFile
 
 logger = logging.getLogger(__name__)
 
-class FileScrapper(ABC):
-  """
-     Interface implemented by specialised web-scrapping subclasses to retrieve zipped font files.
-  """
+# google fonts source: "https://github.com/google/fonts/archive/main.zip"
 
-  @abstractmethod
-  def get_source_string(self) -> str:
-    """
-    Prints the online resource from which fonts are being retrieved
-    """
-    pass
-
-  @abstractmethod
-  def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
-    """
-    Generator method that yields urls for all scrappable fonts in the current website
-    """
-    pass
-
-  def get_stream_from_source(self,url: t.Union[str,Path]) -> bytes:
-    """
-    Generator method that retrieves streams from each scrapped url; this default implementation assumes a single stream per url.
-    """
-    logger.info(f"target url: {url}")
-
-    return DataPath(url).read_bytes()
-
-  def get_stream_tuples(self) -> t.Tuple[str,t.Generator[bytes, None, None]]:
-    """
-    Generator method that yields all the scrappable streams from a website and their sources.
-
-    kwargs: args to be passed to the get_sources() method
-    """
-    for url in self.get_sources():
-      yield str(url), self.get_stream_from_source(url)
-
-# FileScrapper sublcasses 
-
-
-class GoogleFontsFileScrapper(FileScrapper):
-
-  def get_source_string(self):
-    return "www.github.com@google@fonts@archive"
-
-  def get_sources(self,**kwargs) -> t.Generator[str,None,None]:
-    yield "https://github.com/google/fonts/archive/main.zip"
-
-class FreeFontsFileScrapper(FileScrapper):
+class FreeFontsFileScrapper(DataPath):
   """
   Font scrapper for https://www.1001freefonts.com
 
@@ -79,33 +34,28 @@ class FreeFontsFileScrapper(FileScrapper):
 
   """
 
-  def __init__(self,min_id,max_id):
+  def __init__(self):
+    super().__init__("www.1001freefonts.com")
+    self.min_id = 0
+    self.max_id = 27000
 
-    self.min_id = min_id
-    self.max_id = max_id
-
-  def get_source_string(self):
-    return "www.1001freefonts.com"
-
-  def get_sources(self):
+  def list_files(self):
     
     for font_id in range(self.min_id,self.max_id):
-      fid = str(font_id)
-      print("downloading id {id}...".format(id=fid))
-      font_url = "https://www.1001freefonts.com/d/{id}/".format(id=fid)
-      yield font_url
+      font_url = f"https://www.1001freefonts.com/d/{font_id}/"
+      yield DataPath(font_url)
 
 
-
-class DafontsFileScrapper(FileScrapper):
+class DafontsFileScrapper(DataPath):
   """
     Font scrapper for https://www.dafont.com/
 
   """
-  def get_source_string(self):
-    return "www.dafont.com"
+  def __init__(self):
+    super().__init__("www.dafont.com")
 
-  def get_sources(self):
+
+  def list_files(self):
     my_ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
     for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
       # parse html of first letter page
@@ -122,12 +72,12 @@ class DafontsFileScrapper(FileScrapper):
       # if this happens, there is a single page
         n_pages = max([int(n_pages_rgx.search(x).group(1)) for x in page_refs])
       except Exception as e:
-        print("error: {e}".format(e=e))
+        logger.exception("an error occured while scrapping website (there mya be a single scrappable link) {e}".format(e=e))
         n_pages = 1
       for page_number in range(1,n_pages+1):
         page = "alpha.php?lettre={l}&page={k}&fpp=200".format(l=letter.lower(),k=page_number)
-        if True: #not ((letter == "A" and page_number in list(range(1,11)) + [20]) or (letter == "B" and page_number in list(range(1,11)) + [24])):
-          print("downloading page {p}".format(p=page))
+        if not ((letter == "A" and page_number in list(range(1,11)) + [20]) or (letter == "B" and page_number in list(range(1,11)) + [24])):
+          logger.info("downloading page {p}".format(p=page))
           page_url = "https://www.dafont.com/" + page.replace("&amp;","")
 
           raw_html = requests.get(page_url,headers = {"user-agent": my_ua}).text
@@ -143,24 +93,35 @@ class DafontsFileScrapper(FileScrapper):
             yield "https:" + href
 
 
+class MultiSourceFileScrapper(DataPath):
 
-class LocalFileScrapper(FileScrapper):
-  """
-  Emulates the Scrapper class logic for zip files already in local storage. This class is useful for processing again font files that had been downloaded before with a previous code version; source urls have changed since, and some can't be used to crawl the web sources anymore.
-  
-  path: folder path from which files will be consumed
-  """
-  def __init__(self,path: str):
+  def __init__(self, paths: t.List[str]):
 
-    self.path = Path(path)
-    if not self.path.is_dir() or len(list(self.path.iterdir())) == 0:
-      raise Exception(f"path to be scrapped ({self.path}) does not exist or is empty.")
+    self.string = "Multi-source scrapper instance"
 
-  def get_source_string(self):
+    def str_to_data_path(src):
+      if src == "www.dafont.com":
+        return DafontsFileScrapper()
+      elif src == "www.1001freefonts.com":
+        return FreeFontsDataPath()
+      else:
+        return DataPath(src)
 
-    return f"local@{str(self.path)}"
+    self.sources = [str_to_data_path(path) for path in paths]
+    self.error_on_io = "This instance is meant to be a scrapper and does not implement reading or writing methods; only list_files() is implemented"
 
-  def get_sources(self) -> t.Generator[t.Union[str,Path],None,None]:
-    for path in self.path.iterdir():
-      if path.is_file():
-        yield str(path)
+  def list_files(self):
+
+    for src in self.sources:
+      for sub_src in src.list_files():
+        yield DataPath(sub_src)
+
+  def write_bytes(self, content: bytes):
+
+    raise NotImplementedException(self.error_on_io)
+
+  def read_bytes(self):
+
+    raise NotImplementedException(self.error_on_io)
+
+
