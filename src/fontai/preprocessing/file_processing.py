@@ -86,7 +86,7 @@ class OneToManyMapper(ObjectMapper):
 
   def raw_map(self, data: Iterable[t.Any, None, None]) -> t.Generator[t.Any, None, None]:
     for elem in data:
-      for derived in self.map(elem):
+      for derived in self.mapper.map(elem):
         yield derived
 
 
@@ -333,6 +333,30 @@ class TfrRecordWriter(beam.DoFn):
     if self.writer is not None:
       self.writer.close()
       self.written_files.append(self.filename)
+
+  def teardown(self):
+    self.writer.close()
+
+
+
+class RecordWriter(beam.DoFn):
+  """
+    Takes instances of LabeledExamples and writes them to a tensorflow record file.
+
+  """
+  def __init__(self, output_path: DataPath, writer: BatchWriter):
+    self.output_path = output_path
+    self.filename = None
+    self.writer = writer
+    self.written_files = []
+
+  def process(self,example: LabeledExample) -> None:
+
+    try:
+      self.writer.add(example)
+
+    except Exception as e:
+      logging.exception(f"error writing TF record: {e}")
 
   def teardown(self):
     self.writer.close()

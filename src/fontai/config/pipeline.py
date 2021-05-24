@@ -12,9 +12,7 @@ import strictyaml as yml
 from fontai.core.base import BaseConfigHandler, SimpleClassInstantiator, BaseConfigs
 from fontai.training.models import Model
 
-from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
-from fontai.config.preprocessing import Config as PreprocConfig, ConfigHandler as PreprocConfigHandler
-from fontai.config.training import Config as TrainingConfig, ConfigHandler as TrainingConfigHandler
+import fontai.pipeline_stages as stages 
 
 import tensorflow as tf
 
@@ -27,37 +25,46 @@ class Config(BaseConfig):
   stage_sequence: list of ML stage classes along with their names and provided configuration
 
   """
-  stage_sequence: t.List[t.Tuple[str, MLPipelineStage, BaseConfig]]
+  stage_sequence: t.List[MLPipelineStage]
 
 
 class ConfigHandler(BaseConfigHandler):
   """
-  Wrapper for training configuration processing logic.
+  Wrapper for pipeline configuration processing logic.
 
   """
 
   def __init__(self):
 
-    def remove_io_from_handler_schema(handler):
-      schema = handler.get_config_schema()
-      key_subset = [key for key in schema._required_keys() if key not in ["input_path","output_path"]]
-      schema._required_keys = key_subset
-      return schema
 
-    self.ALLOWED_STAGE_HANDLERS = {name: (handler, remove_io_from_handler_schema(handler)) for name, handler in 
-      [
-        ("ingestion", IngestionConfigHandler()),
-        ("preprocessing", PreprocConfigHandler()),
-        ("training", TrainingConfigHandler())
-      ]
-    }
+    self.ALLOWED_STAGES = [getattr(stages, stage_class) for stage_class in stages.__all__ ]
+
+    expected_schemas = [stage.get_config_handler().get_schema() for stage in self.STAGES_WITH_SCHEMA]
+
+    expected_schema_union = reduce(lambda s1, s2: s1 | s2, expected_schemas)
 
     self.CONFIG_SCHEMA = {
-    "input_path": self.IO_CONFIG_SCHEMA,
-    "output_path": self.IO_CONFIG_SCHEMA,
-    "stages": yml.Any()
-
+    yml.Optional("writer_params", default = {}): self.IO_CONFIG_SCHEMA, 
+    yml.Optional("reader_params", default = {}): self.IO_CONFIG_SCHEMA,
+    "stages": yml.Seq(expected_schema_union)
     }
+
+
+  def build_stage_sequence(self, stages_conf: yml.YAML):
+    """
+      Uses provided pipeline IO paths to impute missing IO paths for individual stages, and instatiates them
+    """
+    stage_input_conf = pipeline_input_conf
+
+    for stage_conf in stages_conf:
+      for stage_class in self.ALLOWED_STAGES:
+        stage_schema = stage_class.get_config_handler().get_schema()
+        try:
+          stage_conf.revalidate(stage_schema)
+          yield stage_class(stage_conf)
+        except yml.exceptions.YAMLValidationError as e:
+          pass
+
 
   def instantiate_config(self, config: yml.YAML) -> Config:
     """
@@ -68,12 +75,11 @@ class ConfigHandler(BaseConfigHandler):
     """
     output_path = self.instantiate_io_handler(config.get("output_path"))
     input_path = self.instantiate_io_handler(config.get("input_path"))
-    model = self.model_factory.from_yaml(config.get("model"))
-    training_config = TrainingConfig.from_yaml(config.get("training"))
+
+    stage_sequence = list(self.build_stage_sequence(stages_yaml=config.get("stages")))   
 
     return Config(
       output_path = output_path, 
       input_path = input_path, 
-      model = model,
-      training_config = training_config,
+      stage_sequence = stage_sequence,
       yaml = config)

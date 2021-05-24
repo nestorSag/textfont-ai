@@ -32,8 +32,8 @@ class ConfigHandler(BaseConfigHandler):
   def get_config_schema(self):
     
     schema = yml.Map({
-      "output_path": self.IO_CONFIG_SCHEMA, 
-      "input_path": self.IO_CONFIG_SCHEMA,
+      yml.Optional("writer_params", default = {}): self.IO_CONFIG_SCHEMA, 
+      yml.Optional("reader_params", default = {}): self.IO_CONFIG_SCHEMA,
       "max_zip_size": yml.Float()
     })
 

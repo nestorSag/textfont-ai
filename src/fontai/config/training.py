@@ -60,9 +60,11 @@ class ModelFactory(object):
 
   def __init__(self):
 
+    self.yaml_to_obj = SimpleClassInstantiator()
+
     self.SEQUENTIAL_MODEL_SCHEMA = yml.Map({
       "class": "Sequential",
-      "layers": yml.Seq(SimpleClassInstantiator().PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
+      "layers": yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
       })
 
     self.MULTI_SEQUENTIAL_MODEL_SCHEMA = yml.Map({
@@ -76,7 +78,7 @@ class ModelFactory(object):
     self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str()})
 
     self.schema_constructors = {
-      SimpleClassInstantiator().PY_CLASS_INSTANCE_FROM_YAML_SCHEMA: ("SIMPLE PY CLASS", self.from_simple_python_class)
+      self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA: ("SIMPLE PY CLASS", self.from_simple_python_class)
       self.PATH_TO_SAVED_MODEL_SCHEMA: ("SAVED MODEL PATH", self.from_path),
       self.SEQUENTIAL_MODEL_SCHEMA: ("KERAS SEQUENTIAL", self.from_keras_sequential),
       self.MULTI_SEQUENTIAL_MODEL_SCHEMA: ("MULTI SEQUENTIAL", self.from_multi_sequential)
@@ -114,7 +116,7 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    return Model(BaseConfigHandler.)
+    return Model(self.yaml_to_obj.get_instance(model_yaml))
 
   def from_path(self,model_yaml):
     """
@@ -185,8 +187,8 @@ class ConfigHandler(BaseConfigHandler):
     self.DATA_PREPROCESSING_SCHEMA = {"filters": yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)} | yml.EmptyList()
 
     schema = yml.Map({
-      "output_path": self.IO_CONFIG_SCHEMA, 
-      "input_path": self.IO_CONFIG_SCHEMA, 
+      yml.Optional("writer_params", default = {}): self.IO_CONFIG_SCHEMA, 
+      yml.Optional("reader_params", default = {}): self.IO_CONFIG_SCHEMA,
       "training": self.TRAINING_CONFIG_SCHEMA,
       "model": self.model_factory.MODEL_CONFIG_SCHEMA,
       yml.Optional("preprocessing_filters", default = []): self.DATA_PREPROCESSING_SCHEMA 
