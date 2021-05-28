@@ -1,3 +1,8 @@
+"""Summary
+
+Attributes:
+    logger (TYPE): Description
+"""
 from __future__ import absolute_import
 from collections.abc import Iterable
 import os
@@ -58,7 +63,7 @@ class InputPreprocessor(object):
     self.charset_encoding = tf.convert_to_tensor(list(self.charset))
 
 
-  def fetch_tfr_files(self, input_files: t.List[DataPath]):
+  def fetch_tfr_files(self, dataset: TFRecordDataset):
     """
       Fetches a list of input Tensorflow record files and prepares them for training
 
@@ -67,16 +72,14 @@ class InputPreprocessor(object):
       Returns a MapDataset object
     """
 
-    dataset = tf.data.TFRecordDataset(filenames=input_files)\
-      .map(tfr_handler.from_tfr)\
+    dataset = dataset\
+      .map(LabeledExample.from_tfr)\
       .filter(self.filter_charset)
 
     for tfr_filter in self.tfr_filters:
       dataset = dataset.map(tfr_filter.get_filter)
 
     dataset = dataset.map(self.parse_tf_records)
-
-    return dataset
 
     for example_filter in self.example_filters:
       dataset = dataset.map(example_filter.get_filter)

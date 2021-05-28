@@ -1,61 +1,69 @@
-import os
+"""This module contains logic that was used to scrape three font file sources: google, 1001fonts.com and dafont.com. As of May 2021 at least one of those sites have changed their url sources and so, some of these classes might not work anymore, and some work might be required to scrape the files again.
+
+"""
 import time
-import io
 import requests 
-import zipfile
 import re
-from shutil import copyfile
+import random
 import typing as t
 from abc import ABC, abstractmethod
 import urllib.request
 import logging
 from pathlib import Path
 
-
-import numpy as np
-
 from bs4 import BeautifulSoup
-
-from pydantic import BaseModel
-
-from fontai.core.base import InMemoryFile
 
 logger = logging.getLogger(__name__)
 
-# google fonts source: "https://github.com/google/fonts/archive/main.zip"
 
-class FreeFontsFileScrapper(DataPath):
-  """
-  Font scrapper for https://www.1001freefonts.com
+class Scrapper(ABC):
 
-  min_id: minimum font id to attempt to retrieve
-
-  max_id: minimum font id to attempt to retrieve
-
+  """Interface implemented by web scrapper classes. Contains a single method, get_source_urls.
   """
 
+  @abstractmethod
+  def get_source_urls(self) -> t.Generator[BytestreamPath, None, None]:
+    """Returns a generator of BytestreamPath objects pointing to each scrappable URL
+
+    """
+    pass
+
+class GoogleFontsScrapper(Scrapper):
+
+  """Retrieves the main zip file from Google fonts repository
+  """
+  
+  def get_source_urls(self):
+    yield BytestreamPath("https://github.com/google/fonts/archive/main.zip")
+
+
+class FreeFontsFileScrapper(object):
+
+  """Retrieves font files from www.1001freefonts.com
+  
+  """
+  
   def __init__(self):
-    super().__init__("www.1001freefonts.com")
     self.min_id = 0
     self.max_id = 27000
 
-  def list_files(self):
+  def get_source_urls(self):
     
     for font_id in range(self.min_id,self.max_id):
       font_url = f"https://www.1001freefonts.com/d/{font_id}/"
-      yield DataPath(font_url)
+      yield BytestreamPath(font_url)
 
 
-class DafontsFileScrapper(DataPath):
+class DafontsFileScrapper(object):
   """
-    Font scrapper for https://www.dafont.com/
+    Retrieves font files from www.dafont.com
 
   """
   def __init__(self):
     super().__init__("www.dafont.com")
 
 
-  def list_files(self):
+  def get_source_urls(self):
     my_ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
     for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
       # parse html of first letter page
@@ -89,39 +97,5 @@ class DafontsFileScrapper(DataPath):
           for link in dl_links:
             href = link["href"]
             # random sleep time 
-            time.sleep(np.random.uniform(size=1,low=1,high=2)[0])
+            time.sleep(random.uniform(1,2))
             yield "https:" + href
-
-
-class MultiSourceFileScrapper(DataPath):
-
-  def __init__(self, paths: t.List[str]):
-
-    self.string = "Multi-source scrapper instance"
-
-    def str_to_data_path(src):
-      if src == "www.dafont.com":
-        return DafontsFileScrapper()
-      elif src == "www.1001freefonts.com":
-        return FreeFontsDataPath()
-      else:
-        return DataPath(src)
-
-    self.sources = [str_to_data_path(path) for path in paths]
-    self.error_on_io = "This instance is meant to be a scrapper and does not implement reading or writing methods; only list_files() is implemented"
-
-  def list_files(self):
-
-    for src in self.sources:
-      for sub_src in src.list_files():
-        yield DataPath(sub_src)
-
-  def write_bytes(self, content: bytes):
-
-    raise NotImplementedException(self.error_on_io)
-
-  def read_bytes(self):
-
-    raise NotImplementedException(self.error_on_io)
-
-
