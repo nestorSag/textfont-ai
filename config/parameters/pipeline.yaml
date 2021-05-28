@@ -1,0 +1,93 @@
+input_path: data/ingested
+output_path: data/pipeline_output/
+reader: ZipReader
+writer: TfrWriter
+stages:
+  preprocessing:
+    writer: TfrWriter
+    output_array_size: 64
+    font_extraction_size: 100
+    canvas_size: 500
+    canvas_padding: 100
+    beam_cmd_line_args:
+    -  --runner
+    -  DirectRunner
+    - --direct_num_workers
+    - 6
+  model-training:
+    training:
+      batch_size: 64
+      epochs: 10
+      steps_per_epoch: 2000
+      optimizer:
+        class: Adam
+      loss:
+        class: CategoricalCrossentropy
+      metrics:
+      - accuracy
+    model:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Conv2D
+          kwargs: 
+            filters: 32
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+        - class: BatchNormalization
+          kwargs: 
+            pool_size: 2
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        -  class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 128
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Flatten
+        - class: Dropout
+          kwargs: 
+            rate: 0.5

@@ -72,6 +72,17 @@ class ConfigurableTransform(ABC):
     """
     pass
 
+  @abstractmethod
+  def transform(self, data: t.Any) -> t.Generator[t.Any]:
+    """
+    transforme a single input instance
+    
+    Args:
+        data (t.Any): Input data
+    
+    """
+    pass
+
 
 
 
@@ -91,17 +102,6 @@ class MLPipelineTransform(ConfigurableTransform, ABC):
     if config.reader is None or config.writer is None:
       raise TypeError("Configuration object does not specify reader and writer instances.")
     cls.from_config(config).transform_batch(config.reader,config.writer)
-
-  @abstractmethod
-  def transform(self, data: t.Any) -> t.Generator[t.Any]:
-    """
-    transforme a single input instance
-    
-    Args:
-        data (t.Any): Input data
-    
-    """
-    pass
 
 
   @abstractmethod
@@ -189,14 +189,22 @@ class FittableMLPipelineTransform(MLPipelineTransform,ABC):
 
 
 
-class MLPipeline(object):
+class MLPipeline(MLPipelineTransform):
   """
   Wrapper class for a sequence of ML pipeline stages; can both fit stages that are fittable and process both batch and in-memory data
     
   Attributes:
-      config (BaseConfig): Configuration object that defines the stages' execution
+      stages (t.List[MLPipelineTransform]): List of pipeline stages.
   
   """
+
+  def __init__(self, stages: t.List[MLPipelineTransform]):
+
+    for stage in stages:
+      if not isinstance(stage, MLPipelineTransform):
+        raise TypeError("Some stages are not instances of MLPipelineTransform")
+
+    self.stages = stages
 
   class StageWrapper(object):
     """
@@ -223,9 +231,6 @@ class MLPipeline(object):
       self.fit(data)
       return self.process(data)
 
-
-  def __init__(self, config: Config):
-    self.config = config
 
   def run_from_config(self) -> None:
 
