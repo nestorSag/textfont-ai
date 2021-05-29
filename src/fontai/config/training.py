@@ -184,14 +184,17 @@ class ConfigHandler(BaseConfigHandler):
         default = {"class": "Adam", "kwargs": {}}): self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA
     })
 
-    self.DATA_PREPROCESSING_SCHEMA = {"filters": yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)} | yml.EmptyList()
+    self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
 
     schema = yml.Map({
-      yml.Optional("writer_params", default = {}): self.IO_CONFIG_SCHEMA, 
-      yml.Optional("reader_params", default = {}): self.IO_CONFIG_SCHEMA,
+      yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
+      yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
+      yml.Optional("model_path", default = None): self.IO_CONFIG_SCHEMA,
+      yml.Optional("reader", default = None): self.IO_CONFIG_SCHEMA,
+      yml.Optional("writer", default = None): self.IO_CONFIG_SCHEMA,
       "training": self.TRAINING_CONFIG_SCHEMA,
       "model": self.model_factory.MODEL_CONFIG_SCHEMA,
-      yml.Optional("preprocessing_filters", default = []): self.DATA_PREPROCESSING_SCHEMA 
+      yml.Optional("charset", default = "uppercase"): yml.Str()
        })
 
     return schema
@@ -203,14 +206,16 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path = self.instantiate_io_handler(config.get("output_path"))
-    input_path = self.instantiate_io_handler(config.get("input_path"))
+    reader, writer = self.instantiate_io_handlers(config)
+    model_path = config.get("model_path")
     model = self.model_factory.from_yaml(config.get("model"))
     training_config = TrainingConfig.from_yaml(config.get("training"))
 
     return Config(
-      output_path = output_path, 
-      input_path = input_path, 
+      reader = reader, 
+      writer = writer, 
+      model_path = model_path,
       model = model,
       training_config = training_config,
+      charset = config.get("charset"),
       yaml = config)

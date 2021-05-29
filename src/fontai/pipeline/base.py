@@ -96,7 +96,7 @@ class MLPipelineTransform(ConfigurableTransform, ABC):
   """
 
   @classmethod
-  def run_from_config_file(cls, path) -> None:
+  def run_from_config_file(cls, path: str) -> None:
 
     config = cls.parse_config(path)
     if config.reader is None or config.writer is None:

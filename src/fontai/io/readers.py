@@ -19,7 +19,10 @@ from tf.data import TFRecordDataset
 
 logger = logging.getLogger(__name__)
 
-
+__all__ = [
+  "TfrReader",
+  "ZipReder"]
+  
 class BatchReader(ABC):
 
   """Interface class between ML stages and storage for file reading.

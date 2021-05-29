@@ -33,19 +33,6 @@ class FontExtractionConfig(BaseModel):
   canvas_size: PositiveInt
   canvas_padding: PositiveInt
 
-  def as_dict(self):
-
-    return {
-      "charset": self.charset,
-      "font_extraction_size": self.font_extraction_size,
-      "canvas_size": self.canvas_size,
-      "canvas_padding": self.canvas_padding
-    }
-
-  @classmethod
-  def from_yaml(cls, yaml: yml.YAML):
-    return FontExtractionConfig(**yaml.data)
-
 
 class Config(BaseConfig):
   """
@@ -72,15 +59,17 @@ class ConfigHandler(BaseConfigHandler):
   def get_config_schema(self):
     
     schema = yml.Map({
-      yml.Optional("writer_params", default = {}): self.IO_CONFIG_SCHEMA, 
-      yml.Optional("reader_params", default = {}): self.IO_CONFIG_SCHEMA,
+      yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
+      yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
+      yml.Optional("reader", default = None): self.IO_CONFIG_SCHEMA, 
+      yml.Optional("writer", default = None): self.IO_CONFIG_SCHEMA,
       "output_array_size": yml.Int(),
       "font_extraction_config": yml.Map({
-        "font_extraction_size": yml.Int(), 
-        "canvas_size": yml.Int(), 
-        "canvas_padding": yml.Int(),
-        yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str()
-        })
+      "font_extraction_size": yml.Int(), 
+      "canvas_size": yml.Int(), 
+      "canvas_padding": yml.Int(),
+      yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str()
+      })
       yml.Optional("beam_cmd_line_args", default = ["--runner", "DirectRunner"]): yml.Seq(yml.Str())
        })
 
@@ -93,19 +82,24 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path = self.instantiate_io_handler(config.get("output_path"))
-    input_path = self.instantiate_io_handler(config.get("input_path"))
+    
+    reader, writer = self.instantiate_io_handlers(config)
+
     beam_cmd_line_args = config.data["beam_cmd_line_args"]
     output_array_size = config.get("output_array_size").data
-    f2a_config = FontExtractionConfig.from_yaml(**config.get("font_extraction_config").data)
+    f2a_config = FontExtractionConfig(
+      charset = config.get("charset").data,
+      font_extraction_size = config.get("font_extraction_size").data,
+      canvas_size = config.get("canvas_size").data,
+      canvas_padding = config.get("canvas_padding").data)
 
 
     if f2a_config.canvas_padding >=  f2a_config.canvas_size/2:
       raise ValueError(f"canvas padding value ({f2a_config.canvas_padding}) is too large for canvas size ({f2a_config.canvas_size})")
 
     return Config(
-      output_path = output_path, 
-      input_path = input_path, 
+      reader = reader, 
+      writer = writer, 
       output_array_size = output_array_size,
       font_to_array_config = f2a_config,
       beam_cmd_line_args = beam_cmd_line_args,

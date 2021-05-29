@@ -6,11 +6,31 @@ import logging
 import strictyaml as yml
 from pydantic import BaseModel
 
-from fontai.core.io import DataPath
+from fontai.core.io import BytestreamPath
 
 logger = logging.getLogger(__name__)
 
-class BaseConfig(BaseModel):
+class IngestionConfig(BaseModel):
+
+  """
+    Base class for ingestion stage's configuration objects
+
+    scrappers: object to list and retrieve input files to be processed
+
+    output_path: object to persist output bojects
+
+    yaml: parsed YAML from supplied configuration file
+
+  """
+  scrappers: t.Optional[Scrapper]
+  output_path: t.Optional[str]
+  yaml: yml.YAML
+
+  class Config:
+    arbitrary_types_allowed = True
+
+
+class BasePipelineTransformConfig(BaseModel):
 
   """
     Base class for ML pipelane stage configuration objects
@@ -22,8 +42,10 @@ class BaseConfig(BaseModel):
     yaml: parsed YAML from supplied configuration file
 
   """
-  input_path: t.Optional[DataPath]
-  output_path: t.Optional[DataPath]
+  input_path: t.Optional[str] = None
+  output_path: t.Optional[str] = None
+  reader: t.Optional[BatchReader] = None
+  writer: t.Optional[BatchWriter] = None
   yaml: yml.YAML
 
   class Config:
@@ -65,26 +87,26 @@ class BaseConfigHandler(ABC):
   def __init__(self):
 
     self.yaml_to_obj = SimpleClassInstantiator()
-    self.IO_CONFIG_SCHEMA = yml.Map({"path": yml.Str()}) | self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA | yml.EmptyDict()
+
+    self.IO_CONFIG_SCHEMA = yml.Str() | yml.EmptyNone()
 
     self.other_setup()
 
     self.CONFIG_SCHEMA: t.Optional[yml.Map] = self.get_config_schema()
 
 
-  def instantiate_io_handler(self, yaml: yml.YAML):
-    if yaml.data == "":
-      return None
+  def instantiate_io_handlers(self, yaml: yml.YAML):
+    if yaml.get("input_path").data is not None and yaml.get("reader").data is not None:
+      reader = globals()[yaml.get("reader").data](input_path = yaml.get("input_path").data)
     else:
-      try:
-        yaml.revalidate(yml.Map({"path": yml.Str()}))
-        return DataPath(yaml.get("path").text)
-      except yml.exceptions.YAMLValidationError as e:
-        obj = self.yaml_to_obj.get_instance(yaml)
-        if isinstance(obj, DataPath):
-          return obj
-        else:
-          raise TypeError("I/O  handler must inherit from DataPath.")
+      reader = None
+
+    if yaml.get("output_path").data is not None and yaml.get("writer").data is not None:
+      writer = globals()[yaml.get("writer").data](output_path = yaml.get("output_path").data)
+    else:
+      writer = None
+
+    return reader, writer
 
   def from_string(self, config: str) -> BaseModel:
     """
@@ -97,7 +119,7 @@ class BaseConfigHandler(ABC):
     conf_yaml = yml.load(config, self.CONFIG_SCHEMA)
     return self.instantiate_config(conf_yaml)
 
-  def from_file(self, config: DataPath) -> BaseModel:
+  def from_file(self, config: BytestreamPath) -> BaseModel:
     """
     Processes a YAML file and maps it to an Config instance
 

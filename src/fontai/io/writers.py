@@ -17,7 +17,10 @@ from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder
 logger = logging.getLogger(__name__)
 
 
-
+__all__ = [
+  "TfrWriter",
+  "ZipWriter"]
+  
 class BatchWriter(ABC):
 
   """Abstract class that forms the interface of ML pipeline stages to storage media; it writes sequences of files to any storage media suported by the BytestreamPath class, in a format specified by classes inheriting from this interface.

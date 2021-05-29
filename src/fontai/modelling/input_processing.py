@@ -24,7 +24,7 @@ from fontai.core.base import TfrHandler
 
 logger = logging.getLogger(__name__)
 
-class InputPreprocessor(object):
+class ExamplePreprocessor(object):
   """
     Fetches and processes a list of Tensorflow record files to be consumed by an ML model
 
@@ -41,7 +41,7 @@ class InputPreprocessor(object):
     batch_size: int,
     charset: str,
     tfr_filters: t.List[TfrFilter] = [],
-    example_filters: t.List[ExampleFilter] = []):
+    filters: t.List[t.Callable] = []):
 
     self.CHARSET_OPTIONS = {
       "uppercase": string.ascii_letters[26::],
@@ -50,9 +50,7 @@ class InputPreprocessor(object):
       "all": string.ascii_letters + string.digits
     }
 
-    self.tfr_handler = TfrHandler()
-    self.tfr_filters = tfr_filters
-    self.example_filters = example_filters
+    self.filters = filters
 
     try:
       self.charset = self.CHARSET_OPTIONS[charset]
@@ -63,7 +61,7 @@ class InputPreprocessor(object):
     self.charset_encoding = tf.convert_to_tensor(list(self.charset))
 
 
-  def fetch_tfr_files(self, dataset: TFRecordDataset):
+  def fetch_tfr_files(self, dataset: TFRecordDataset, drop_fontname=True):
     """
       Fetches a list of input Tensorflow record files and prepares them for training
 
@@ -76,20 +74,19 @@ class InputPreprocessor(object):
       .map(LabeledExample.from_tfr)\
       .filter(self.filter_charset)
 
-    for tfr_filter in self.tfr_filters:
-      dataset = dataset.map(tfr_filter.get_filter)
-
     dataset = dataset.map(self.parse_tf_records)
 
-    for example_filter in self.example_filters:
-      dataset = dataset.map(example_filter.get_filter)
+    dataset = self.batcher(dataset)
 
-    dataset = dataset.map(self.drop_metadata)
-    dataset = self.scrambler(dataset)
+    for example_filter in self.filters:
+      dataset = dataset.map(example_filter)
+
+    if drop_fontname:
+      dataset = dataset.map(self.drop_fontname)
 
     return dataset
 
-  def scrambler(self, dataset):
+  def batcher(self, dataset):
     """
       Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
     """
@@ -108,41 +105,70 @@ class InputPreprocessor(object):
 
       Returns a triplet with the deserialised object.
     """
-    img = tf.image.decode_png(record["image"])
+    img = tf.image.decode_png(record["features"])
     img = tf.cast(img,dtype=tf.float32)
     one_hot_label = tf.cast(tf.where(self.charset_encoding == record["label"]),dtype=tf.int32)
     label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=self.num_classes),(self.num_classes,))#.reshape((num_classes,))
-    return img, label, record["metadata"]
+    return img, label, record["fontname"]
 
   def filter_charset(self, img, label, metadata):
     """
       Filters out triplet examples not containing characters in the charset
     """
-    return tf.reduce_any(self.tf_classes == parsed["char"])
+    return tf.reduce_any(self.tf_classes == parsed["label"])
 
-  def drop_metadata(self, img, label, metadata):
+  def drop_fontname(self, features, label, fontname):
     """
       Drops the metadata from the triplet sothe remaining tuple can be passed to a Tensorflow model.
     """
-    return img, label
+    return features, label
 
 
-class Filter(object):
 
-  def get_filter(self) -> t.Callable:
-    pass
 
-class SupervisedFilter(object):
 
-  def __init__(self, model_path):
-    self.model = Model.load(model_path)
+class InputFilterFactory(object):
 
-  def get_filter(self):
+  """Factory class for different filtering conditions that can be applied to the model's input before being used for training. Functions returned by the factory serve as input to InputPreprocessing instances
+  
+  """
+  
+  @classmethod
+  def supervised_filter(self,threshold=0.5, model_path: str) -> t.Callable:
+    """Returns a filtering function to filter out misclassfied examples or correctly classified examples that are not unambiguous enough. This is useful to filter out 'hard' examples for generative models
+    
+    Args:
+        threshold (float, optional): Probability theshold below which correctly classified examples are also filtered out
+        model_path (str): Path from which to load the scoring model
+    
+    Returns:
+        t.Callable: Filtering function.
+    """
+    model = Model.load(model_path)
 
-    def filter(imgs,labels,metadata):
+    def filter(features,labels,fontnames):
       # filters a batch using a trained model
-      pred = self.model(imgs)
-      condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1)
-      return imgs[condition], labels[condition], filenames[condition]
+      pred = model.predict(features)
+      condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1) and tf.max(pred,axis=-1) > threshold
+      return features[condition], labels[condition], fontnames[condition]
 
     return filter_func
+
+  @classmethod
+  def fontname_filter(self,regex: str) -> t.Callable:
+    """Filter out examples whose filename foesn't match the provided regex. This is useful to isolate examples of differnet font types, e.g. bold, italic and 3D.
+    
+    Args:
+        regex (str): Regex to be matched to fontnames
+    
+    Returns:
+        t.Callable: Filtering function
+    """
+    def filter(features, labels, fontnames):
+      condition = tf.strings.regex_full_match(fotnames, regex)
+      return features[condition], labels[condition], fontnames[condition]
+
+    return filter_func
+
+
+

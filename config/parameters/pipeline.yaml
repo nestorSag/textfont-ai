@@ -1,10 +1,9 @@
 input_path: data/ingested
 output_path: data/pipeline_output/
-reader: ZipReader
-writer: TfrWriter
 stages:
   preprocessing:
     writer: TfrWriter
+    reader: ZipReader
     output_array_size: 64
     font_extraction_size: 100
     canvas_size: 500
@@ -14,7 +13,8 @@ stages:
     -  DirectRunner
     - --direct_num_workers
     - 6
-  model-training:
+  modelling:
+    reader: TfrReader
     training:
       batch_size: 64
       epochs: 10

@@ -15,7 +15,11 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-
+__all__ = [
+ "FreeFontsFileScrapper",
+ "DafontsFileScrapper",
+ "GoogleFontsScrapper"]
+ 
 class Scrapper(ABC):
 
   """Interface implemented by web scrapper classes. Contains a single method, get_source_urls.

@@ -6,21 +6,11 @@ import inspect
 from pydantic import PositiveFloat
 import strictyaml as yml
 
-import fontai.ingestion.scrappers as scrappers
+from fontai.ingestion.scrappers import *
 
-from fontai.core.base import BaseConfigHandler, BaseConfig
-from fontai.ingestion.scrappers import FreeFontsFileScrapper, DafontsFileScrapper, MultiSourceFileScrapper
+from fontai.core.base import IngestionConfig, BaseConfigHandler
 
 logger = logging.getLogger(__name__)
-
-class Config(BaseConfig):
-  """
-  Wrapper class for the configuration of the IngestionStage class
-
-  max_zip_size: maximum pre-compression size in MB of archives containing font files
-
-  """
-  max_zip_size: PositiveFloat
 
 
 class ConfigHandler(BaseConfigHandler):
@@ -32,9 +22,8 @@ class ConfigHandler(BaseConfigHandler):
   def get_config_schema(self):
     
     schema = yml.Map({
-      yml.Optional("writer_params", default = {}): self.IO_CONFIG_SCHEMA, 
-      yml.Optional("reader_params", default = {}): self.IO_CONFIG_SCHEMA,
-      "max_zip_size": yml.Float()
+      yml.Optional("scrappers"): yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) 
+      yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA
     })
 
     return schema
@@ -46,12 +35,11 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path, input_path= self.instantiate_io_handler(config.get("output_path")), self.instantiate_io_handler(config.get("input_path"))
+    output_path = self.instantiate_io_handler(config.get("output_path"))
 
-    max_zip_size = config.get("max_zip_size").text
+    scrappers = [self.yaml_to_obj.get_instance(scrapper) for scrapper in config.get("scrappers")]
 
-    return Config(
+    return IngestionConfig(
       output_path = output_path, 
-      input_path = input_path,
-      max_zip_size = max_zip_size,
+      scrappers = scrappers,
       yaml = config)

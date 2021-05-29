@@ -16,8 +16,8 @@ from apache_beam.options.pipeline_options import SetupOptions
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
 from fontai.preprocessing.file_preprocessing import PipelineExecutor, OneToManyMapper, KeyValueMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, BytestreamPathReader, ZipToFontFiles, TfrRecordWriter
 
-from fontai.core.base import MLPipelineTransform, BatchWritingStage
-from fontai.core.io import BytestreamPath, FileBatcher
+from fontai.pipeline.base import MLPipelineTransform
+from fontai.io.storage import BytestreamPath
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
 
 from fontai.config.training import Config as TrainingConfig, ConfigHandler as TrainingConfigHandler
@@ -107,7 +107,13 @@ class LabeledExampleExtractor(MLPipelineTransform):
 
 
   @classmethod
-  def from_config(cls, config):
+  def from_config(cls, config: Config):
+
+    return cls(
+      output_array_size = config.output_array_size,
+      beam_cmd_line_args = config.beam_cmd_line_args,
+      **config.font_to_array_config.dict())
+
 
     return cls()
   def transform(self, data):
@@ -165,6 +171,16 @@ class Model(FittableMLPipelineTransform):
     self.config = config
     self.data_fetcher = InputPreprocessor()
 
+  def __init__(self,
+    model: TrainableModel,
+    batch_size: int,
+    n_epochs: int,
+    steps_per_epoch: int):
+
+
+    self.model = model
+    self.optimizer = optimizer
+    self.
   def run_from_config(self):
     """
       Run batch processing from initial configutation
