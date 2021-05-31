@@ -1,6 +1,7 @@
-input_path: data/preprocessed
-reader: TfrReader
-output_path: data/models
+input:
+  path: data/preprocessed
+  file_format: tfr
+model_path: data/model
 training:
   batch_size: 64
   epochs: 10

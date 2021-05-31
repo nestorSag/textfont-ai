@@ -1,7 +1,9 @@
-input_path: data/ingested
-reader: ZipReader
-output_path: data/preprocessed
-writer: TfrWriter
+input:
+  path: data/ingested
+  file_format: zip
+output:
+  path: data/preprocessed
+  file_format: tfr
 output_array_size: 64
 font_extraction_size: 100
 canvas_size: 500

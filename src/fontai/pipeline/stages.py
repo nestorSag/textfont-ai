@@ -26,10 +26,12 @@ from fontai.training.file_preprocessing import InputPreprocessor
 logger = logging.Logger(__name__)
   
 
-class FontIngestion(ConfigurableTransform):
+class FontIngestion(ConfigurableTransform, IdentityTransform):
 
   """Ingestor class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers from which it downloads files to storage.
   """
+  input_file_format = InMemoryFile
+  output_file_format = InMemoryFile
 
   def __init__(self):
     """
@@ -43,29 +45,6 @@ class FontIngestion(ConfigurableTransform):
   def from_config(cls, config: IngestionConfig):
     return cls()
 
-  def transform(self, scrappers: t.List[Scrapper], output_path: str) -> None:
-
-    output_path = BytestreamPath(output_path)
-
-    for scrapper in scrappers:
-      for url in scrapper.get_source_urls():
-        try:
-          logger.debug(f"Retrieving data from {url}")
-          content = url.read_bytes()
-          outpath = (out / str(writes_counter))
-          logger.debug(f"persisting to {outpath}")
-          outpath.write_bytes(content)
-          writes_counter += 1
-        except Exception as e:
-          logger.exception(f"An error ocurred when scrapping {url}: {e}")
-
-  def run_from_config_file(self, path: str):
-
-    config = cls.parse_config(path)
-    cls.from_config(config).transform(config.scrappers, config.output_path)
-
-
-
 class LabeledExampleExtractor(MLPipelineTransform):
   """
   File preprocessing pipeline that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
@@ -73,6 +52,9 @@ class LabeledExampleExtractor(MLPipelineTransform):
   config: A Config instance
 
   """
+
+  input_file_format = InMemoryZipHolder
+  output_file_format = TFRecordDatasetWrapper
 
   def __init__(
     self, 
@@ -88,7 +70,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
     self.pipeline = PipelineExecutor(
       stages = [
       OneToManyMapper(
-        mapper = ZipToFontFiles()
+        mapper = InputToFontFiles(input_file_format = input_file_format)
       ),
       OneToManyMapper(
         mapper = FontFileToLabeledExamples(
@@ -166,6 +148,9 @@ class Model(FittableMLPipelineTransform):
 
     """
 
+  input_file_format = TFRecordDatasetWrapper
+  output_file_format = TFRecordDatasetWrapper
+
   def __init__(self, config: TrainingConfig):
 
     self.config = config
@@ -180,8 +165,9 @@ class Model(FittableMLPipelineTransform):
 
     self.model = model
     self.optimizer = optimizer
-    self.
-  def run_from_config(self):
+    
+
+  def fit_from_config(self):
     """
       Run batch processing from initial configutation
 

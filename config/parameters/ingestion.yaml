@@ -1,7 +1,11 @@
-connectors:
+scrappers:
 - class: GoogleFontsScrapper
 - class: FreeFontsScrapper
 - class: DaFontsScrapper
-output_path: data/ingested
-writer:
-  ByteWriter
+input:
+  format: bytes
+output:
+  path: data/ingested
+  format: bytes
+
+

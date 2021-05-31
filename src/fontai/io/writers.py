@@ -35,19 +35,12 @@ class BatchWriter(ABC):
     self.output_path = output_path
     self.size_limit = size_limit
 
-  @property
   @abstractmethod
-  def writer(self) -> t.Any:
-    """Instantiate file writer instance
-    """
-    pass
-
-  @abstractmethod
-  def add(self, file: TfrWritable) -> None:
-    """Add file to the batch to be persisted
+  def write(self, obj: t.Any) -> None:
+    """Add object to the file batch to be persisted
     
     Args:
-        file (TfrWritable): An instance inheriting from TfrWritable
+        obj (t.Any): The data to be persisted
     """
     pass
 
@@ -59,7 +52,7 @@ class BatchWriter(ABC):
     pass
 
   @abstractmethod
-  def close(self, file: t.Any):
+  def close(self):
      """Closes the current output file 
     
     """
@@ -104,7 +97,7 @@ class ZipWriter(BatchWriter):
     return f"{self.file_preffix}-{self.shard_id}.tfr"
 
 
-  def add(self, file: InMemoryFile)-> None:
+  def write(self, file: InMemoryFile)-> None:
 
     if not isinstance(file, InMemoryFile):
       logger.info(f"Casting file to InMemoryFile instance before zipping.")
@@ -178,7 +171,7 @@ class TfrWriter(BatchWriter):
     self.writer.close()
     self.shard_id += 1
 
-  def add(self, obj: TfrWritable) -> None:
+  def write(self, obj: TfrWritable) -> None:
     tf_example = obj.to_tfr()
     obj_size = sys.sizeof(tf_example)
 
@@ -196,3 +189,36 @@ class TfrWriter(BatchWriter):
   def __exit__(self):
     self.close()
 
+
+def IdentityWriter(BatchWriter):
+
+  def __init__(self, output_path: str):
+    self.output_path = BytestreamPath(output_path)
+
+
+    #file prefix avoids file write collitions between workers
+    self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
+    self.shard_id = 0
+
+
+  def shard_name(self):
+    """Returns the shard name from the file preffix and written shard counter
+    
+    """
+    return f"{self.file_preffix}-{self.shard_id}"
+
+  def write(self, file: InMemoryFile) -> None:
+    (self.output_path / self.shard_name()).write_bytes(file.content)
+    self.shard_id += 1
+
+  def open(self):
+    """Open a new output file 
+    
+    """
+    pass
+
+  def close(self, file: t.Any):
+     """Closes the current output file 
+    
+    """
+    pass

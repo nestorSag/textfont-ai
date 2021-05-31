@@ -12,6 +12,55 @@ from fontai.config.base import BaseConfig
 
 logger = logging.Logger(__name__)
   
+class Transform(ABC):
+
+  """This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a process_batch method to process a set of files and persist the results back to storage.
+  """
+
+  input_file_format = InMemoryFile
+  output_file_format = InMemoryFile
+
+  @classmethod
+  def transform(self, data: t.Any) -> t.Any:
+    """Processes a single data instance.
+    
+    Args:
+        data (t.Any): Input data
+    """
+    pass
+
+  @classmethod
+  def process_batch(self, reader: BatchReader, writer: BatchWriter) -> None:
+    """Processes a batch of files and persist the results back to storage.
+    
+    Args:
+        reader (BatchReader): Reader object that retrieves the files
+        writer (BatchWriter): Writer object that persists the output
+    """
+    pass
+
+
+class IdentityTransform(Transform):
+
+  """This class applies an identity transformation to its inputs; it is useful for ML stages that are only active in thetraining stage and not on the deployment stage.
+  """
+
+  def process(self, data: t.Any):
+
+    return data
+
+  def transform_batch(self reader: BatchReader, writer: BatchWriter):
+
+    for path in reader.get_files():
+      try:
+        file = file.as_format(input_file_format).deserialise()
+        try:
+          writer.add(output_file_format.serialise(self.transform(file)))
+        except Exception as e:
+          logger.info(f"Error writing file: {e}")
+      except Exception as e:
+        logger.exception(f"Error reading file: {e}")
+
 
 class ConfigurableTransform(ABC):
 
@@ -53,14 +102,13 @@ class ConfigurableTransform(ABC):
     return cls.from_config(cls.parse_config(path))
 
   @classmethod
-  @abstractmethod
   def run_from_config_file(cls, path: str) -> None:
-    """Instantiate a ConfigurableTransform instance and process a file batch from storage, saving outputs to storage, using storage locations specified in the YAML configuration file.
-    
-    Args:
-        path (str): Path to the YAML configuration file
-    """
-    pass
+
+    config = cls.parse_config(path)
+    if config.reader is None or config.writer is None:
+      raise TypeError("Configuration object does not specify reader and writer instances.")
+    cls.from_config(config).transform_batch(config.reader,config.writer)
+
 
   @classmethod
   @abstractmethod
@@ -72,18 +120,28 @@ class ConfigurableTransform(ABC):
     """
     pass
 
-  @abstractmethod
-  def transform(self, data: t.Any) -> t.Generator[t.Any]:
+
+
+class FittableTransform(ConfigurableTransform,ABC):
+
+  """Interface for pipeline transforms that can be fitted. Scoring is done using the 'transform' method.
+  """
+
+  def fit(self, data: t.Any, model_path: str) -> FittableMLPipelineTransform:
     """
-    transforme a single input instance
-    
-    Args:
-        data (t.Any): Input data
-    
+    Fits the stage to the passed data
+
     """
     pass
 
+  def save(self, output_folder: str) -> None:
+    super().save(output_path)
+    self.model.save(output_path)
 
+  def load(self, input_folder: str) -> FittableMLPipelineTransform:
+    loaded = super().load(input_folder)
+    loaded.model = Model.load(input_folder)
+    return loaded
 
 
 
@@ -94,14 +152,6 @@ class MLPipelineTransform(ConfigurableTransform, ABC):
 
     config: Execution configuration object
   """
-
-  @classmethod
-  def run_from_config_file(cls, path: str) -> None:
-
-    config = cls.parse_config(path)
-    if config.reader is None or config.writer is None:
-      raise TypeError("Configuration object does not specify reader and writer instances.")
-    cls.from_config(config).transform_batch(config.reader,config.writer)
 
 
   @abstractmethod
@@ -155,34 +205,6 @@ class MLPipelineTransform(ConfigurableTransform, ABC):
     """
     logger.info(f"{self.__class__.__name__} loaded from {input_folder}")
     return cls.get_config_parser().from_file(input_folder / "config.yaml")    
-
-
-
-
-
-
-
-class FittableMLPipelineTransform(MLPipelineTransform,ABC):
-
-  """Interface for pipeline transforms that can be fitted. Scoring is done using the 'transform' method.
-  """
-
-  def fit(self, data: t.Any) -> FittableMLPipelineTransform:
-    """
-    Fits the stage to the passed data
-
-    """
-    pass
-
-  def save(self, output_folder: str) -> None:
-    super().save(output_path)
-    self.model.save(output_path)
-
-  def load(self, input_folder: str) -> FittableMLPipelineTransform:
-    loaded = super().load(input_folder)
-    loaded.model = Model.load(input_folder)
-    return loaded
-
 
 
 

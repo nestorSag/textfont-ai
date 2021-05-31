@@ -142,14 +142,17 @@ class BeamCompatibleWrapper(beam.DoFn):
 
 
 
-class ZipToFontFiles(ObjectMapper):
+class InputToFontFiles(ObjectMapper):
 
   """
     Opens an in-memory zip holder and outputs individual font files
 
   """
 
-  def raw_map(cls, file: InMemoryZipHolder) -> t.Generator[InMemoryFontfileHolder,None,None]:
+  def __init__(self, input_file_format: InMemoryZipHolder):
+    self.input_file_format = input_file_format
+
+  def raw_map(cls, file: InMemoryFile) -> t.Generator[InMemoryFontfileHolder,None,None]:
 
     def choose_ext(lst):
       ttfs = len([x for x in lst if ".ttf" in x.lower()])
@@ -161,7 +164,7 @@ class ZipToFontFiles(ObjectMapper):
 
     #we assume the stream is a zip file's contents
     try:
-      zipped = file.to_zipfile()
+      zipped = file.to_format(self.input_file_format).deserialise()
     except Exception as e:
       logger.exception(f"Error: source ({file.filename}) can't be read as zip")
       return
@@ -334,7 +337,7 @@ class Writer(beam.DoFn):
     self.writer = writer
   def process(self,example: LabeledExample) -> None:
     try:
-      writer.add(example)
+      writer.write(example)
     except Exception as e:
       logging.exception(f"error writing example {example}: {e}")
 
