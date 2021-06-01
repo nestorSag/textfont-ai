@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from numpy import ndarray
 import imageio
 
-from tensorflow import string as tf_str
-from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
+from tensorflow import string as tf_str, Tensor
+from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList, FloatList as TFFloatList)
 from tensorflow.io import FixedLenFeature, parse_single_example
 
 logger = logging.getLogger(__name__)
@@ -37,18 +37,27 @@ class TfrWritable(ABC, BaseModel):
     """
     return TFFeature(bytes_list=TFBytesList(value=[value]))
 
-  @classmethod
-  @abstractmethod
-  def to_tf_format(obj: TfrWritable) -> TFFeature:
-    """Maps an object inheriting from this class to a TF record compatible format
+  def float_feature(value: float):
+  """Maps a list of floats to a TF Feature instance
     
     Args:
-        obj (TfrWritable): Object to be encoded
+        value (float): value
+    
+    Returns:
+        TFFeature: encoded value
+    """
+  return tf.train.Feature(float_list=tf.train.TFFloatList(value=[value]))
+
+
+  @classmethod
+  @abstractmethod
+  def serialise(self) -> TFFeature:
+    """Maps an object inheriting from this class to a TF record compatible format
     
     Returns:
         t.Dict: dictionary with encoded features that will be stored into a TF record.
     """
-
+    pass
 
   def to_tfr(self):
     """Returns a Tensorflow example instance encoding the instance's contents
@@ -56,7 +65,7 @@ class TfrWritable(ABC, BaseModel):
     """
 
     return TFExample(
-      features = TFFeatures(features = cls.to_tf_format(self)))
+      features = TFFeatures(features = self.serialise()))
 
   @classmethod
   def from_tfr(cls, serialised: TFExample) -> TfrWritable:
@@ -111,7 +120,7 @@ class LabeledExample(TfrWritable):
   class Config:
     arbitrary_types_allowed = True
 
-  def to_tf_format(self) -> TFFeature:
+  def serialise(self) -> TFFeature:
     return {
     "label": bytes_feature(bytes(str.encode(self.label))),
     "fontname": bytes_feature(bytes(str.encode(self.fontname))),
@@ -120,9 +129,9 @@ class LabeledExample(TfrWritable):
 
 
 class ScoredExample(TfrWritable):
-  # wrapper that holds a scored ML example
+  # wrapper that holds a scored ML example and raw features
   features: ndarray
-  score: np.float32
+  score: Tensor 
 
   _tfr_schema: t.Dict = {
     'features': FixedLenFeature([], tf_str),
@@ -145,9 +154,37 @@ class ScoredExample(TfrWritable):
   class Config:
     arbitrary_types_allowed = True
 
-  def to_tf_format(self) -> TFFeature:
+  def serialise(self) -> TFFeature:
     return {
-    "score": bytes_feature(bytes(self.score)),
+    "score": tf.io.serialise_tensor(self.score),
     "features": bytes_feature(cls.img_to_png_bytes(self.features))
+    }
+
+
+
+class ScoredLabeledExample(TfrWritable):
+  # wrapper that holds a scored, labeled ML example. Useful for model evaluation
+  labeled_example: LabeledExample
+  score: np.float32
+
+  _tfr_schema: t.Dict = {
+    'labeled_example': LabeledExample._tfr_schema,
+    'score': FixedLenFeature([], tf_str)
+  }
+
+  def __iter__(self):
+    return iter((self.features,self.score))
+
+  def __eq__(self,other):
+    return isinstance(other, ScoredLabeledExample) and self.labeled_example == other.labeled_example and self.score == other.score
+
+  # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True
+
+  def serialise(self) -> TFFeature:
+    return {
+    "score": tf.io.serialise_tensor(self.score),
+    "labeled_example": self.labeled_example.serialise(self.labeled_example)
     }
 

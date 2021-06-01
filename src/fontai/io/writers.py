@@ -190,7 +190,7 @@ class TfrWriter(BatchWriter):
     self.close()
 
 
-def IdentityWriter(BatchWriter):
+def BytesWriter(BatchWriter):
 
   def __init__(self, output_path: str):
     self.output_path = BytestreamPath(output_path)
@@ -208,7 +208,7 @@ def IdentityWriter(BatchWriter):
     return f"{self.file_preffix}-{self.shard_id}"
 
   def write(self, file: InMemoryFile) -> None:
-    (self.output_path / self.shard_name()).write_bytes(file.content)
+    (self.output_path / file.filename).write_bytes(file.content)
     self.shard_id += 1
 
   def open(self):
@@ -222,3 +222,14 @@ def IdentityWriter(BatchWriter):
     
     """
     pass
+
+
+class WriterClassFactory(object):
+
+  def get(file_format: InMemoryFile):
+    if file_format == TFRecordDatasetWrapper:
+      return TfrWriter
+    elif isinstance(file_format, InMemoryFile):
+      return ZipWriter
+    else:
+      raise TypeError("File format class not recognised.")

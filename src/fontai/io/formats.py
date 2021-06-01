@@ -12,8 +12,10 @@ from pydantic import BaseModel
 from numpy import ndarray
 import imageio
 
-from tensorflow import string as tf_str
-from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
+#from tensorflow import string as tf_str
+#from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
+from tensorflow.data import TFRecordDataset
+
 from tensorflow.io import FixedLenFeature, parse_single_example
 
 logger = logging.getLogger(__name__)
@@ -108,9 +110,9 @@ class InMemoryFontfileHolder(InMemoryFile):
 
 
 
-class TFRecordDatasetWrapper(TFRecordDataset, InMemoryFile):
+class TFDatasetWrapper(TFRecordDataset, InMemoryFile):
 
-  def as_format(self, file_format: file_format):
+  def as_format(self, file_format: type):
     if file_format != TFRecordDatasetWrapper:
       raise TypeError("Tensorflow datasets cannot be converted to other custom file types.")
 

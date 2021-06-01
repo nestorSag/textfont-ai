@@ -24,7 +24,7 @@ from fontai.core.base import TfrHandler
 
 logger = logging.getLogger(__name__)
 
-class ExamplePreprocessor(object):
+class LabeledExamplePreprocessor(object):
   """
     Fetches and processes a list of Tensorflow record files to be consumed by an ML model
 

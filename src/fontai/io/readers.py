@@ -56,7 +56,7 @@ class TfrReader(BatchReader):
     return TFRecordDatasetWrapper(filenames=str_sources)
 
 
-class FileReader(BatchReader):
+class BytesReader(BatchReader):
 
   """Class that reads a sequence of generic files 
   """
@@ -67,3 +67,12 @@ class FileReader(BatchReader):
       yield InMemoryFile(filename = str(src), content = src.read_bytes())
 
      
+class ReaderClassFactory(object):
+
+  def get(file_format: InMemoryFile):
+    if file_format == TFRecordDatasetWrapper:
+      return TfrReader
+    elif isinstance(file_format, InMemoryFile):
+      return BytesReader
+    else:
+      raise TypeError("File format class not recognised.")

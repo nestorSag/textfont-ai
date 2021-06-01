@@ -149,8 +149,8 @@ class InputToFontFiles(ObjectMapper):
 
   """
 
-  def __init__(self, input_file_format: InMemoryZipHolder):
-    self.input_file_format = input_file_format
+  def __init__(self, expected_file_format: InMemoryZipHolder):
+    self.expected_file_format = expected_file_format
 
   def raw_map(cls, file: InMemoryFile) -> t.Generator[InMemoryFontfileHolder,None,None]:
 
@@ -164,7 +164,7 @@ class InputToFontFiles(ObjectMapper):
 
     #we assume the stream is a zip file's contents
     try:
-      zipped = file.to_format(self.input_file_format).deserialise()
+      zipped = file.to_format(self.expected_file_format).deserialise()
     except Exception as e:
       logger.exception(f"Error: source ({file.filename}) can't be read as zip")
       return

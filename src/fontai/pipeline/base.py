@@ -20,6 +20,16 @@ class Transform(ABC):
   input_file_format = InMemoryFile
   output_file_format = InMemoryFile
 
+  @property
+  def reader_class(self):
+    return ReaderClassFactory.get(input_file_format)
+
+  @property
+  def writer_class(self):
+    return WriterClassFactory.get(output_file_format)
+  
+  
+
   @classmethod
   def transform(self, data: t.Any) -> t.Any:
     """Processes a single data instance.
@@ -30,7 +40,7 @@ class Transform(ABC):
     pass
 
   @classmethod
-  def process_batch(self, reader: BatchReader, writer: BatchWriter) -> None:
+  def process_batch(self, input_path: str, output_path: str) -> None:
     """Processes a batch of files and persist the results back to storage.
     
     Args:
@@ -49,7 +59,7 @@ class IdentityTransform(Transform):
 
     return data
 
-  def transform_batch(self reader: BatchReader, writer: BatchWriter):
+  def transform_batch(self, input_path: str, output_path: str):
 
     for path in reader.get_files():
       try:
@@ -155,7 +165,7 @@ class MLPipelineTransform(ConfigurableTransform, ABC):
 
 
   @abstractmethod
-  def transform_batch(self, reader: BatchReader, writer: BatchWriter) -> None:
+  def transform_batch(self, input_path: str, output_path: str) -> None:
     """
     transformes a batch of files and persist output
     

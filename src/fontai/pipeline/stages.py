@@ -70,7 +70,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
     self.pipeline = PipelineExecutor(
       stages = [
       OneToManyMapper(
-        mapper = InputToFontFiles(input_file_format = input_file_format)
+        mapper = InputToFontFiles(expected_file_format = input_file_format)
       ),
       OneToManyMapper(
         mapper = FontFileToLabeledExamples(
