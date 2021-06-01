@@ -12,10 +12,10 @@ import typing as t
 from abc import ABC, abstractmethod
 import logging
 
-from fontai.io.storage import BytesteamPath
-from fontai.io.formats import InMemoryFile, TFRecordDatasetWrapper
+from fontai.io.storage import BytestreamPath
+from fontai.io.formats import InMemoryFile, TFDatasetWrapper, InMemoryZipHolder, InMemoryFontfileHolder
 
-from tf.data import TFRecordDataset
+from tensorflow.data import TFRecordDataset
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class BatchReader(ABC):
 
   def __init__(self, input_path: str):
 
-    self.input_path = BytestreamPath(output_path)
+    self.input_path = BytestreamPath(input_path)
 
   @abstractmethod
   def get_files(self) -> t.Generator[t.Any]:
@@ -53,10 +53,10 @@ class TfrReader(BatchReader):
 
     str_sources = [str(src) for src in self.input_path.list_sources()]
 
-    return TFRecordDatasetWrapper(filenames=str_sources)
+    return TFDatasetWrapper(filenames=str_sources)
 
 
-class BytesReader(BatchReader):
+class FileReader(BatchReader):
 
   """Class that reads a sequence of generic files 
   """
@@ -66,13 +66,45 @@ class BytesReader(BatchReader):
     for src in self.input_path.list_sources():
       yield InMemoryFile(filename = str(src), content = src.read_bytes())
 
-     
+class ZipReader(BatchReader):
+
+  """Class that reads a sequence of zip files 
+  """
+
+  def get_files(self):
+
+    for src in self.input_path.list_sources():
+      yield InMemoryZipHolder(filename = str(src), content = src.read_bytes())
+
+class TtfReader(BatchReader):
+
+  """Class that reads a sequence of ttf/otf files 
+  """
+
+  def get_files(self):
+
+    for src in self.input_path.list_sources():
+      yield InMemoryFontfileHolder(filename = str(src), content = src.read_bytes())
+
+
 class ReaderClassFactory(object):
 
-  def get(file_format: InMemoryFile):
-    if file_format == TFRecordDatasetWrapper:
+  """Factory class that returns the appropriate reader depending on the expected input file format.
+  """
+  
+  def get(file_format: type) -> type:
+    """Returns a reader type for instantiation at runtime.
+    
+    Args:
+        file_format (InMemoryFile): Expected input file format.
+    
+    """
+    if file_format == TFDatasetWrapper:
       return TfrReader
-    elif isinstance(file_format, InMemoryFile):
-      return BytesReader
+    elif file_format == InMemoryZipHolder:
+      return ZipReader
+    elif file_format == InMemoryFontfileHolder:
+      return TtfReader
     else:
-      raise TypeError("File format class not recognised.")
+      logger.info("Reader class defaulted to FileReader; reading uninterpreted bytestreams.")
+      return FileReader

@@ -4,6 +4,7 @@
 from __future__ import annotations
 import zipfile
 import typing as t
+import io
 import logging
 from abc import ABC, abstractmethod
 
@@ -14,7 +15,7 @@ import imageio
 
 from tensorflow import string as tf_str, Tensor
 from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList, FloatList as TFFloatList)
-from tensorflow.io import FixedLenFeature, parse_single_example
+from tensorflow.io import FixedLenFeature, parse_single_example, serialize_tensor
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,7 @@ class TfrWritable(ABC, BaseModel):
   
   _tfr_schema: t.Dict
 
-  @classmethod
-  def bytes_feature(value: bytes) -> TFFeature:
+  def bytes_feature(self, value: bytes) -> TFFeature:
     """Maps a bytestream to a TF Feature instance
     
     Args:
@@ -37,8 +37,8 @@ class TfrWritable(ABC, BaseModel):
     """
     return TFFeature(bytes_list=TFBytesList(value=[value]))
 
-  def float_feature(value: float):
-  """Maps a list of floats to a TF Feature instance
+  def float_feature(self, value: float):
+    """Maps a list of floats to a TF Feature instance
     
     Args:
         value (float): value
@@ -46,7 +46,7 @@ class TfrWritable(ABC, BaseModel):
     Returns:
         TFFeature: encoded value
     """
-  return tf.train.Feature(float_list=tf.train.TFFloatList(value=[value]))
+    return tf.train.Feature(float_list=tf.train.TFFloatList(value=[value]))
 
 
   @classmethod
@@ -65,7 +65,7 @@ class TfrWritable(ABC, BaseModel):
     """
 
     return TFExample(
-      features = TFFeatures(features = self.serialise()))
+      features = TFFeatures(feature = self.serialise()))
 
   @classmethod
   def from_tfr(cls, serialised: TFExample) -> TfrWritable:
@@ -122,9 +122,9 @@ class LabeledExample(TfrWritable):
 
   def serialise(self) -> TFFeature:
     return {
-    "label": bytes_feature(bytes(str.encode(self.label))),
-    "fontname": bytes_feature(bytes(str.encode(self.fontname))),
-    "features": bytes_feature(cls.img_to_png_bytes(self.features))
+    "label": self.bytes_feature(bytes(str.encode(self.label))),
+    "fontname": self.bytes_feature(bytes(str.encode(self.fontname))),
+    "features": self.bytes_feature(cls.img_to_png_bytes(self.features))
     }
 
 
@@ -154,10 +154,11 @@ class ScoredExample(TfrWritable):
   class Config:
     arbitrary_types_allowed = True
 
+
   def serialise(self) -> TFFeature:
     return {
-    "score": tf.io.serialise_tensor(self.score),
-    "features": bytes_feature(cls.img_to_png_bytes(self.features))
+    "score": serialize_tensor(self.score),
+    "features": self.bytes_feature(LabeledExample.img_to_png_bytes(self.features))
     }
 
 
@@ -184,7 +185,7 @@ class ScoredLabeledExample(TfrWritable):
 
   def serialise(self) -> TFFeature:
     return {
-    "score": tf.io.serialise_tensor(self.score),
+    "score": serialize_tensor(self.score),
     "labeled_example": self.labeled_example.serialise(self.labeled_example)
     }
 

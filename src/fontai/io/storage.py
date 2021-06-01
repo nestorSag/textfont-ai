@@ -73,6 +73,7 @@ class LocalBytestreamHandler(BytestreamHandler):
       return path.read_bytes()
     else:
       raise Exception(f"Path ({str(path)}) does not point to file")
+      #raise Exception(f"An error occurred while trying to read {str(path)}: {e}")
 
   def write(self, path: str, content: bytes) -> None:
     path = Path(path)
@@ -105,7 +106,7 @@ class GcsBytestreamHandler(BytestreamHandler):
     #url = self.as_str(url) 
     raw_list = list(GcsIO().list_prefix(url).keys())
 
-    return (elem for elem in raw_list if elem != url)
+    return (elem for elem in raw_list if Path(elem) != Path(url))
 
 
 class UrlBytestreamHandler(BytestreamHandler):
@@ -134,7 +135,12 @@ class BytestreamHandlerFactory(object):
   """Factory method that determines the appropriate file handler class based on the string path
   
   """
-  
+  allowed_prefixes = {
+    "gs://": GcsBytestreamHandler,
+    "https://": UrlBytestreamHandler,
+    "http://": UrlBytestreamHandler
+  }
+
   @classmethod
   def create(cls, path: str):
     """Creates an appropriate BystreamHandler instance for the storage medium referenced in path; defaults to local storage if no match is found for remote storage media.
@@ -146,15 +152,10 @@ class BytestreamHandlerFactory(object):
         BytestreamHandler: storage interface for the matched storage medium.
     
     """
-    self.PREFIX_TO_HANDLER = {
-    "gs://": GcsBytestreamHandler
-    "https://": UrlBytestreamHandler,
-    "http://": UrlBytestreamHandler
-    }
 
-    for prefix in self.PREFIX_TO_HANDLER:
+    for prefix in cls.allowed_prefixes:
       if prefix in path:
-        return self.PREFIX_TO_HANDLER[prefix]()
+        return cls.allowed_prefixes[prefix]()
 
     return LocalBytestreamHandler()
 
@@ -180,7 +181,15 @@ class BytestreamPath(object):
     self.is_https = "https://" in self.string
 
     self.handler = BytestreamHandlerFactory.create(self.string)
-    self.filename = self.get_filename()
+
+  @property
+  def filename(self):
+    if self.is_url():
+      filename = self.string.split("/")[-1]
+    else:
+      filename = Path(self.string).name
+    if filename == "":
+      return None
 
   def is_url(self):
     """Returns a boolean 
@@ -203,7 +212,7 @@ class BytestreamPath(object):
     def extend(preffix, string, suffix):
       suffixed = string.replace(preffix,"") + "/" + suffix
       suffixed = re.sub("/+","/",suffixed)
-      return BystestreamPath(preffix + suffixed)
+      return BytestreamPath(preffix + suffixed)
 
     if self.is_gcs:
       return extend("gs://", self.string, suffix)
@@ -230,32 +239,23 @@ class BytestreamPath(object):
 
     self.handler.write(self.string, content)
 
-  def list_sources(self) -> t.Generator[BystestreamPath, None, None]:
+  def list_sources(self) -> t.Generator[BytestreamPath, None, None]:
     """
       List files (but not dirs) in the folder given by the instance's storage path
 
-      Returns a generator of BystestreamPath objects corresponding to each source file.
+      Returns a generator of BytestreamPath objects corresponding to each source file.
     """
 
     for elem in self.handler.list_sources(self.string):
-      yield BystestreamPath(elem)
+      yield BytestreamPath(elem)
 
-  def __truediv__(self, path: str) -> BystestreamPath:
+  def __truediv__(self, path: str) -> BytestreamPath:
     if not isinstance(path, str):
       raise TypeError("path must be a string")
     elif self.is_url():
       return self.extend_url_path(path)
     else:
-      return BystestreamPath(str(Path(self.string) / path))
+      return BytestreamPath(str(Path(self.string) / path))
 
   def __str__(self):
     return self.string
-
-  def get_filename(self):
-    if self.is_url():
-      filename = self.string.split("/")[-1]
-    else:
-      filename = Path(self.string).name
-    if filename == "":
-      raise ValueError("Path does not point to a file")
-    return filename

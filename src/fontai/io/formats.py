@@ -5,12 +5,15 @@ from __future__ import annotations
 import zipfile
 import typing as t
 import logging
+import io
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
 from numpy import ndarray
 import imageio
+from PIL import ImageFont
+
 
 #from tensorflow import string as tf_str
 #from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
@@ -30,7 +33,7 @@ class InMemoryFile(BaseModel):
   content: bytes
 
 
-  def as_format(self, file_format: InMemoryFile) -> InMemoryFile:
+  def to_format(self, file_format: InMemoryFile) -> InMemoryFile:
     """Cast instance as a different file type inehriting from InMemoryFile 
     
     Args:
@@ -105,15 +108,15 @@ class InMemoryFontfileHolder(InMemoryFile):
     """
     ImageFont.truetype(io.BytesIO(self.content),self.font_extraction_size)
 
-  def serialise(self, font: PIL.ImageFont.FreeTypeFont):
+  def serialise(self, font: ImageFont.FreeTypeFont):
     raise NotImplementError("Serialisation to InMemoryFontfileHolder is not implemented.")
 
 
 
 class TFDatasetWrapper(TFRecordDataset, InMemoryFile):
 
-  def as_format(self, file_format: type):
-    if file_format != TFRecordDatasetWrapper:
+  def to_format(self, file_format: type):
+    if file_format != TFDatasetWrapper:
       raise TypeError("Tensorflow datasets cannot be converted to other custom file types.")
 
     return self

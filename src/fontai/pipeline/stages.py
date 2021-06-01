@@ -54,7 +54,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
   """
 
   input_file_format = InMemoryZipHolder
-  output_file_format = TFRecordDatasetWrapper
+  output_file_format = TFDatasetWrapper
 
   def __init__(
     self, 
@@ -70,7 +70,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
     self.pipeline = PipelineExecutor(
       stages = [
       OneToManyMapper(
-        mapper = InputToFontFiles(expected_file_format = input_file_format)
+        mapper = InputToFontFiles()
       ),
       OneToManyMapper(
         mapper = FontFileToLabeledExamples(
@@ -148,8 +148,8 @@ class Model(FittableMLPipelineTransform):
 
     """
 
-  input_file_format = TFRecordDatasetWrapper
-  output_file_format = TFRecordDatasetWrapper
+  input_file_format = TFDatasetWrapper
+  output_file_format = TFDatasetWrapper
 
   def __init__(self, config: TrainingConfig):
 
@@ -173,7 +173,7 @@ class Model(FittableMLPipelineTransform):
 
     """
 
-    data_fetcher = InputPreprocessor()
+    data_fetcher = LabeledExamplePreprocessor()
     model = self.config.model 
     model.fit(
       data=data_fetcher.fetch_tfr_files(self.config.input_path.list_files()), 

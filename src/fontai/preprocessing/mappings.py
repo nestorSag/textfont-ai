@@ -149,9 +149,6 @@ class InputToFontFiles(ObjectMapper):
 
   """
 
-  def __init__(self, expected_file_format: InMemoryZipHolder):
-    self.expected_file_format = expected_file_format
-
   def raw_map(cls, file: InMemoryFile) -> t.Generator[InMemoryFontfileHolder,None,None]:
 
     def choose_ext(lst):
@@ -164,7 +161,7 @@ class InputToFontFiles(ObjectMapper):
 
     #we assume the stream is a zip file's contents
     try:
-      zipped = file.to_format(self.expected_file_format).deserialise()
+      zipped = file.deserialise()
     except Exception as e:
       logger.exception(f"Error: source ({file.filename}) can't be read as zip")
       return
@@ -218,7 +215,7 @@ class FontFileToLabeledExamples(ObjectMapper):
   def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledExample, None, None]:
     logger.info(f"exctracting arrays from file '{file.filename}'")
     try:
-      font = file.to_truetype()
+      font = file.deserialise()
     except Exception as e:
       logger.exception(f"Error while reading font file '{file.filename}'")
       return

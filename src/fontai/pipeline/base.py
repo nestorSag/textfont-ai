@@ -63,9 +63,9 @@ class IdentityTransform(Transform):
 
     for path in reader.get_files():
       try:
-        file = file.as_format(input_file_format).deserialise()
+        file = file.deserialise()
         try:
-          writer.add(output_file_format.serialise(self.transform(file)))
+          writer.write(self.process(file))
         except Exception as e:
           logger.info(f"Error writing file: {e}")
       except Exception as e:

@@ -11,8 +11,8 @@ import typing as t
 from abc import ABC, abstractmethod
 import logging
 
-from fontai.io.storage import BystestreamPath
-from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder
+from fontai.io.storage import BytestreamPath
+from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, TFDatasetWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class BatchWriter(ABC):
 
   @abstractmethod
   def close(self):
-     """Closes the current output file 
+    """Closes the current output file 
     
     """
     pass
@@ -133,7 +133,7 @@ class ZipWriter(BatchWriter):
 
 class TfrWriter(BatchWriter):
 
-    """Takes instances of TfrWritable data classes and writes them to a tensorflow record file according to their schema.schema.
+  """Takes instances of TfrWritable data classes and writes them to a tensorflow record file according to their schema.schema.
     
     Attributes:
         file_preffix (str): random file preffix to avoid collitions with concurrent writes
@@ -143,9 +143,9 @@ class TfrWriter(BatchWriter):
         shard_size (int): size of current shard
         shard_objs (int): number of objects in current shard
         writer (tf.io.TFRecordWriter): writer object
-    """
+  """
 
-    def __init__(self, output_path: str, size_limit: float = 128.0):
+  def __init__(self, output_path: str, size_limit: float = 128.0):
     self.output_path = BytestreamPath(output_path)
 
 
@@ -190,7 +190,7 @@ class TfrWriter(BatchWriter):
     self.close()
 
 
-def BytesWriter(BatchWriter):
+def FileWriter(BatchWriter):
 
   def __init__(self, output_path: str):
     self.output_path = BytestreamPath(output_path)
@@ -218,18 +218,24 @@ def BytesWriter(BatchWriter):
     pass
 
   def close(self, file: t.Any):
-     """Closes the current output file 
+    """Closes the current output file 
     
     """
     pass
 
 
 class WriterClassFactory(object):
-
-  def get(file_format: InMemoryFile):
-    if file_format == TFRecordDatasetWrapper:
+  """Factory class that returns the appropriate writer depending on the expected output file format.
+  """
+  def get(file_format: type) -> type:
+    """Returns a writer type for instantiation at runtime.
+    
+    Args:
+        file_format (InMemoryFile): Expected input file format.
+    
+    """
+    if file_format == TFDatasetWrapper:
       return TfrWriter
-    elif isinstance(file_format, InMemoryFile):
-      return ZipWriter
     else:
-      raise TypeError("File format class not recognised.")
+      logger.info(f"Writer class defaulted to FileWriter; writing individual files.")
+      return FileWriter
