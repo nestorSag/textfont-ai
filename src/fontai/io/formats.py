@@ -3,6 +3,7 @@
 """
 from __future__ import annotations
 import zipfile
+import sys
 import typing as t
 import logging
 import io
@@ -100,13 +101,15 @@ class InMemoryFontfileHolder(InMemoryFile):
   """In-memory buffer class for ingested ttf or otf font files
   """
   
-  def deserialise(self):
+  def deserialise(self, font_size: int):
     """
+    Args:
+        font_size (int)
     
-    Returns:
+    No Longer Returned:
         font: A parsed font object.
     """
-    ImageFont.truetype(io.BytesIO(self.content),self.font_extraction_size)
+    return ImageFont.truetype(io.BytesIO(self.content),font_size)
 
   def serialise(self, font: ImageFont.FreeTypeFont):
     raise NotImplementError("Serialisation to InMemoryFontfileHolder is not implemented.")
@@ -143,14 +146,14 @@ class InMemoryZipBundler(object):
     self.buffer = io.BytesIO()
     self.zip_file = zipfile.ZipFile(self.buffer,"w")
 
-  def add_file(self,file: InMemoryFile):
+  def write(self,file: InMemoryFile):
     """Add a file to the open zip file
     
     Args:
         file (InMemoryFile): file to be added
     """
     file_size = sys.getsizeof(file.content)
-    self.zip_file.writestr(str(self.n_files) + file.filename, file.content)
+    self.zip_file.writestr(file.filename, file.content)
     self.n_files += 1
     self.size += file_size
 

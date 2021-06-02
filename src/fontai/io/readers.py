@@ -76,7 +76,7 @@ class ZipReader(BatchReader):
     for src in self.input_path.list_sources():
       yield InMemoryZipHolder(filename = str(src), content = src.read_bytes())
 
-class TtfReader(BatchReader):
+class FontfileReader(BatchReader):
 
   """Class that reads a sequence of ttf/otf files 
   """
@@ -104,7 +104,7 @@ class ReaderClassFactory(object):
     elif file_format == InMemoryZipHolder:
       return ZipReader
     elif file_format == InMemoryFontfileHolder:
-      return TtfReader
+      return FontfileReader
     else:
       logger.info("Reader class defaulted to FileReader; reading uninterpreted bytestreams.")
       return FileReader

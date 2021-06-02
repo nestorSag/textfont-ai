@@ -1,16 +1,18 @@
 import pytest
 import zipfile
-
+import io
 
 from PIL import ImageFont
 
 from fontai.io.storage import BytestreamPath
 from fontai.io.formats import InMemoryFile, InMemoryZipHolder, InMemoryFontfileHolder, TFDatasetWrapper, InMemoryZipBundler
-from fontai.io.records import LabeledExample, ScoredExample
-from fontai.io.readers import ReaderClassFactory, TfrReader, FileReader, ZipReader
+from fontai.io.records import LabeledExample, ScoredExample, ScoredLabeledExample
+from fontai.io.readers import ReaderClassFactory, TfrReader, FileReader, ZipReader, FontfileReader
 from fontai.io.writers import WriterClassFactory, TfrWriter, ZipWriter, FileWriter
 
 from tensorflow import constant as tf_constant
+from tensorflow.train import Example as TFExample
+
 from numpy import empty as np_empty 
 
 TEST_DATA_PATHS = [
@@ -47,15 +49,15 @@ def test_formats():
 
   ttf = InMemoryFile(filename="holder", content = BytestreamPath(TEST_TTF_FILE).read_bytes())\
   .to_format(InMemoryFontfileHolder)\
-  .deserialise()
+  .deserialise(font_size=10)
 
-  assert isinstance(ttf, TrueFont.FontType)
+  assert isinstance(ttf, ImageFont.FreeTypeFont)
 
   zipped_files = zipped.namelist()
 
   bundler = InMemoryZipBundler()
   for file in zipped_files:
-    bundler.add(InMemoryFile(filename=file, content = zipped.read(file)))
+    bundler.write(InMemoryFile(filename=file, content = zipped.read(file)))
 
   from_bundle = zipfile.ZipFile(io.BytesIO(bundler.compress().get_bytes()))
   assert from_bundle.namelist() == zipped_files
@@ -66,15 +68,15 @@ def test_records():
 
   sample_record = ScoredExample(features = np_empty((32,32)), score = tf_constant([0.1,0.2,0.7], dtype = 'float32'))
 
-  assert isinstance(sample_record.to_tfr(), dict)
+  assert isinstance(sample_record.to_tfr(), TFExample)
 
   sample_record = LabeledExample(features = np_empty((32,32)), label = "a", fontname = "my font")
 
-  assert isinstance(sample_record.to_tfr(), dict)
+  assert isinstance(sample_record.to_tfr(), TFExample)
 
   sample_record = ScoredLabeledExample(labeled_example = sample_record, score = tf_constant([0.1,0.2,0.7], dtype = 'float32'))
 
-  assert isinstance(sample_record.to_tfr(), dict)
+  assert isinstance(sample_record.to_tfr(), TFExample)
 
 def test_readers():
   reader_class = ReaderClassFactory.get(TFDatasetWrapper)
@@ -90,9 +92,12 @@ def test_readers():
   for file in reader.get_files():
     assert isinstance(file.deserialise(), zipfile.ZipFile)
 
+  reader_class = ReaderClassFactory.get(InMemoryFontfileHolder)
+  assert reader_class == FontfileReader
+
   reader = reader_class(TEST_TTF_FOLDER)
   for file in reader.get_files():
-    assert isinstance(file.deserialise(), ImageFont.FreeTypeFont)
+    assert isinstance(file.deserialise(font_size=10), ImageFont.FreeTypeFont)
 
 
 

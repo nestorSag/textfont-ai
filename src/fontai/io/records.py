@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from numpy import ndarray
 import imageio
 
-from tensorflow import string as tf_str, Tensor
+from tensorflow import string as tf_str, Tensor, executing_eagerly
 from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList, FloatList as TFFloatList)
 from tensorflow.io import FixedLenFeature, parse_single_example, serialize_tensor
 
@@ -120,11 +120,11 @@ class LabeledExample(TfrWritable):
   class Config:
     arbitrary_types_allowed = True
 
-  def serialise(self) -> TFFeature:
+  def serialise(self) -> t.Dict:
     return {
     "label": self.bytes_feature(bytes(str.encode(self.label))),
     "fontname": self.bytes_feature(bytes(str.encode(self.fontname))),
-    "features": self.bytes_feature(cls.img_to_png_bytes(self.features))
+    "features": self.bytes_feature(self.img_to_png_bytes(self.features))
     }
 
 
@@ -155,9 +155,15 @@ class ScoredExample(TfrWritable):
     arbitrary_types_allowed = True
 
 
-  def serialise(self) -> TFFeature:
+  def serialise(self) -> t.Dict:
+    t = serialize_tensor(self.score)
+    if executing_eagerly():
+      t_ = t.numpy()
+    else:
+      t_ = t.eval()
+
     return {
-    "score": serialize_tensor(self.score),
+    "score": self.bytes_feature(t_),
     "features": self.bytes_feature(LabeledExample.img_to_png_bytes(self.features))
     }
 
@@ -166,12 +172,9 @@ class ScoredExample(TfrWritable):
 class ScoredLabeledExample(TfrWritable):
   # wrapper that holds a scored, labeled ML example. Useful for model evaluation
   labeled_example: LabeledExample
-  score: np.float32
+  score: Tensor
 
-  _tfr_schema: t.Dict = {
-    'labeled_example': LabeledExample._tfr_schema,
-    'score': FixedLenFeature([], tf_str)
-  }
+  _tfr_schema: t.Dict = {**LabeledExample._tfr_schema, **{'score': FixedLenFeature([], tf_str)}}
 
   def __iter__(self):
     return iter((self.features,self.score))
@@ -183,9 +186,16 @@ class ScoredLabeledExample(TfrWritable):
   class Config:
     arbitrary_types_allowed = True
 
-  def serialise(self) -> TFFeature:
+  def serialise(self) -> t.Dict:
+
+    t = serialize_tensor(self.score)
+    if executing_eagerly():
+      t_ = t.numpy()
+    else:
+      t_ = t.eval()
+
     return {
-    "score": serialize_tensor(self.score),
-    "labeled_example": self.labeled_example.serialise(self.labeled_example)
+    **{"score": self.bytes_feature(t_)},
+    **self.labeled_example.serialise()
     }
 
