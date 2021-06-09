@@ -8,20 +8,23 @@ import typing as t
 import pickle
 
 from PIL import ImageFont
+from numpy import ndarray
+from tensorflow import Tensor
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
-from fontai.preprocessing.file_preprocessing import PipelineExecutor, OneToManyMapper, KeyValueMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, BytestreamPathReader, ZipToFontFiles, TfrRecordWriter
+from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
+from fontai.config.training import TrainingConfig, Config as ModelConfig, ConfigHandler as ModelConfigHandler
+
+from fontai.preprocessing.mappings import PipelineExecutor, OneToManyMapper, KeyValueMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, BytestreamPathReader, ZipToFontFiles, TfrRecordWriter
 
 from fontai.pipeline.base import MLPipelineTransform
-from fontai.io.storage import BytestreamPath
-from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
+from fontai.io.readers import ScrapperReader
+from fontai.io.records import ScoredLaebeledExample
 
-from fontai.config.training import Config as TrainingConfig, ConfigHandler as TrainingConfigHandler
-from fontai.training.file_preprocessing import InputPreprocessor
 
 logger = logging.Logger(__name__)
   
@@ -33,17 +36,31 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
   input_file_format = InMemoryFile
   output_file_format = InMemoryFile
 
-  def __init__(self):
-    """
-    """
+  @property
+  def reader_class(self):
+    return ScrapperReader
+
+  def __init__(self, config: IngestionConfig = None):
+    
+    self.config: = config
 
   @classmethod
   def get_config_parse(cls):
     return IngestionConfigHandler()
 
   @classmethod
-  def from_config(cls, config: IngestionConfig):
-    return cls()
+  def from_config_object(cls, config: IngestionConfig):
+    return cls(config)
+
+  @classmethod
+  def run_from_config_file(cls, path: str):
+    
+    config = cls.parse_config_file(path)
+    ingestor = cls.from_config_object(config)
+    writer = ingestor.writer_class(ingestor.config.output_path)
+    for file in ingestor.reader_class(config.scrappers).get_files():
+      writer.write(file)
+
 
 class LabeledExampleExtractor(MLPipelineTransform):
   """
@@ -101,7 +118,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
   def transform(self, data):
     return self.pipeline.map(data)
 
-  def transform_batch(self, reader: BatchReader, writer: BatchWriter):
+  def transform_batch(self, input_path: str, output_path: str):
 
     """
       Runs Beam preprocessing pipeline as defined in the config object.
@@ -109,6 +126,9 @@ class LabeledExampleExtractor(MLPipelineTransform):
     """
 
     # if output is locally persisted, create parent folders
+    reader = self.reader_class(input_path)
+    writer = self.writer_class(output_path)
+
     if not output_path.is_gcs:
       Path(str(output_path)).mkdir(parents=True, exist_ok=True)
 
@@ -122,9 +142,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
       | 'Read from storage' >> beam.Create(reader.read_files()) 
       | 'get labeled exampes from zip files' >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = KeyValueMapper(
-            mapper = self.pipeline
-          )
+          mapper = self.pipeline
         )
       )
       | "write to storage" >> beam.ParDo(Writer(writer)))
@@ -137,10 +155,18 @@ class LabeledExampleExtractor(MLPipelineTransform):
   def get_stage_name(cls):
     return "preprocessing"
 
+  @classmethod
+  def run_from_config_file(cls, path: str):
+    
+    config = cls.parse_config_file(path)
+    processor = cls.from_config_object(config)
+    processor.transform_batch(input_path=config.input_path, output_path=config.output_path)
 
 
 
-class Model(FittableMLPipelineTransform):
+
+
+class ModelHolder(FittableMLPipelineTransform):
   """
       Base class for ML pipeline stages
 
@@ -151,44 +177,57 @@ class Model(FittableMLPipelineTransform):
   input_file_format = TFDatasetWrapper
   output_file_format = TFDatasetWrapper
 
-  def __init__(self, config: TrainingConfig):
+  def __init__(self, model: tf.keras.Model):
 
-    self.config = config
-    self.data_fetcher = InputPreprocessor()
+    self.model = model
 
   def __init__(self,
-    model: TrainableModel,
+    model: tf.keras.Model,
     batch_size: int,
     n_epochs: int,
-    steps_per_epoch: int):
+    steps_per_epoch: int,
+    optimizer: tf.keras.optimizers.Optimizer,
+    loss: tf.keras.losses.Loss,
+    seed = 1):
 
 
     self.model = model
-    self.optimizer = optimizer
+    self.training_config = TrainingConfig(
+      batch_size = batch_size,
+      epochs = epochs,
+      steps_per_epoch = steps_per_epoch,
+      optimizer = optimizer,
+      loss = loss,
+      seed = seed)
+
+  @classmethod
+  def fit_from_config_file(cls, path: str):
     
-
-  def fit_from_config(self):
-    """
-      Run batch processing from initial configutation
-
-    """
-
     data_fetcher = LabeledExamplePreprocessor()
-    model = self.config.model 
-    model.fit(
-      data=data_fetcher.fetch_tfr_files(self.config.input_path.list_files()), 
-      steps_per_epoch = args.steps_per_epoch, 
-      epochs = args.n_epochs, 
-      callbacks=callbacks)
+    config = cls.parse_config_file(path)
+    predictor = cls.from_config_object(config)
 
-    return model
+    predictor.model.compile(
+      loss = predictor.training_config.loss, 
+      optimizer = predictor.training_config.optimizer)
 
-  def process(self, input_data: Path) -> t.Generator[t.Any, None, None]:
+    predictor.model.fit(
+      data=data_fetcher.fetch_tfr_files(config.input_path),
+      steps_per_epoch = predictor.training_config.steps_per_epoch, 
+      epochs = predictor.training_config.n_epochs)
+
+    predictor.save_model(config.output_path)
+
+  def process(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Generator[t.Any, None, None]:
     """
     Process a single instance
     """
-
-    raise NotImplementError("This class does not have an implementation for the process() method; for scoring, use ModelScoringStage instead.")
+    if isinstance(input_data, (ndarray, Tensor)):
+      return self.model.predict(input_data)
+    elif isinstance(input_data, LabeledExample):
+      return ScoredLaebeledExample(labeled_example = input_data, score = self.model.predict(input_data.features))
+    else:
+      raise TypeError("Input type is not one of ndarra, Tensor or LabeledExample")
 
   @classmethod
   def get_config_parser(cls):

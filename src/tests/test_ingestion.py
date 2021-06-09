@@ -4,19 +4,24 @@ import io
 from pathlib import Path
 
 from fontai.ingestion import bundler, scrappers
-from fontai.config.ingestion import ConfigHandler
+from fontai.pipeline.stages import FontIngestion
 
 from PIL import ImageFont
 import numpy as np
 
 TEST_INGESTION_CONFIG = """
+scrappers:
+- class: LocalScrapper
+  kwargs: 
+    folders:
+    - src/tests/data/ingestion/input
 output_path: src/tests/data/ingestion/output
-max_zip_size: 0.2 #max size in MB 
-input_path: src/tests/data/ingestion/input
 """
 
 test_config_object = ConfigHandler().from_string(TEST_INGESTION_CONFIG)
 
+def test_ingestion():
+  ingestor = 
 def is_fontfile(content: bytes) -> bool:
 
   #bf = io.BytesIO()

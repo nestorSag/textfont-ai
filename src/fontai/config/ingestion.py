@@ -6,12 +6,16 @@ import inspect
 from pydantic import PositiveFloat
 import strictyaml as yml
 
-from fontai.ingestion.scrappers import *
+import fontai.ingestion.scrappers as scrappers
 
 from fontai.core.base import IngestionConfig, BaseConfigHandler
 
 logger = logging.getLogger(__name__)
 
+
+class Config(BasePipelineTransformConfig):
+
+  scrappers: t.List[Scrapper]
 
 class ConfigHandler(BaseConfigHandler):
   """
@@ -35,9 +39,9 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    output_path = self.instantiate_io_handler(config.get("output_path"))
+    output_path = config.get("output_path").text
 
-    scrappers = [self.yaml_to_obj.get_instance(scrapper) for scrapper in config.get("scrappers")]
+    scrappers = [self.yaml_to_obj.get_instance(yaml=scrapper, scope=scrappers) for scrapper in config.get("scrappers")]
 
     return IngestionConfig(
       output_path = output_path, 

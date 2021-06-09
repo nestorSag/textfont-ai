@@ -26,7 +26,7 @@ class Scrapper(ABC):
   """
 
   @abstractmethod
-  def get_source_urls(self) -> t.Generator[BytestreamPath, None, None]:
+  def get_source_urls(self) -> t.Generator[str, None, None]:
     """Returns a generator of BytestreamPath objects pointing to each scrappable URL
 
     """
@@ -38,10 +38,10 @@ class GoogleFontsScrapper(Scrapper):
   """
   
   def get_source_urls(self):
-    yield BytestreamPath("https://github.com/google/fonts/archive/main.zip")
+    yield "https://github.com/google/fonts/archive/main.zip"
 
 
-class FreeFontsFileScrapper(object):
+class FreeFontsFileScrapper(Scrapper):
 
   """Retrieves font files from www.1001freefonts.com
   
@@ -55,10 +55,10 @@ class FreeFontsFileScrapper(object):
     
     for font_id in range(self.min_id,self.max_id):
       font_url = f"https://www.1001freefonts.com/d/{font_id}/"
-      yield BytestreamPath(font_url)
+      yield font_url
 
 
-class DafontsFileScrapper(object):
+class DafontsFileScrapper(Scrapper):
   """
     Retrieves font files from www.dafont.com
 
@@ -103,3 +103,22 @@ class DafontsFileScrapper(object):
             # random sleep time 
             time.sleep(random.uniform(1,2))
             yield "https:" + href
+
+
+class LocalScrapper(Scrapper):
+
+  """
+  Scrapper simulator from local files
+  
+  Attributes:
+      folders (t.List[str]): List of source folders
+  """
+  def __init__(self, folders: t.List[str]):
+    self.folders = folders
+
+  def get_source_urls(self):
+
+    for folder in self.folders:
+      current = BytestreamPath(folder)
+      for file in current.list_sources():
+        yield str(file)

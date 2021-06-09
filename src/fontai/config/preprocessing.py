@@ -61,8 +61,6 @@ class ConfigHandler(BaseConfigHandler):
     schema = yml.Map({
       yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
       yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
-      yml.Optional("reader", default = None): self.IO_CONFIG_SCHEMA, 
-      yml.Optional("writer", default = None): self.IO_CONFIG_SCHEMA,
       "output_array_size": yml.Int(),
       "font_extraction_config": yml.Map({
       "font_extraction_size": yml.Int(), 

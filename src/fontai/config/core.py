@@ -10,25 +10,6 @@ from fontai.core.io import BytestreamPath
 
 logger = logging.getLogger(__name__)
 
-class IngestionConfig(BaseModel):
-
-  """
-    Base class for ingestion stage's configuration objects
-
-    scrappers: object to list and retrieve input files to be processed
-
-    output_path: object to persist output bojects
-
-    yaml: parsed YAML from supplied configuration file
-
-  """
-  scrappers: t.Optional[Scrapper]
-  output_path: t.Optional[str]
-  yaml: yml.YAML
-
-  class Config:
-    arbitrary_types_allowed = True
-
 
 class BasePipelineTransformConfig(BaseModel):
 
@@ -44,8 +25,6 @@ class BasePipelineTransformConfig(BaseModel):
   """
   input_path: t.Optional[str] = None
   output_path: t.Optional[str] = None
-  reader: t.Optional[BatchReader] = None
-  writer: t.Optional[BatchWriter] = None
   yaml: yml.YAML
 
   class Config:
@@ -65,7 +44,7 @@ class SimpleClassInstantiator(object):
             yml.Str(),
             self.ANY_PRIMITIVES) | yml.EmptyDict()})
 
-  def get_instance(csl, yaml: yml.YAML) -> object:
+  def get_instance(csl, yaml: yml.YAML, scope: module) -> object:
     """
       This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.
 
@@ -73,7 +52,7 @@ class SimpleClassInstantiator(object):
     """
     try:
       yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
-      return globals()[yaml.get("class").text](**yaml.get("kwargs").data)
+      return getattr(scope, yaml.get("class").text)(**yaml.get("kwargs").data)
     except Exception as e:
       logger.exception(f"Cannot instantiate class {yaml.get("class").text} from global namespace: {e}")
 
@@ -108,7 +87,7 @@ class BaseConfigHandler(ABC):
 
     return reader, writer
 
-  def from_string(self, config: str) -> BaseModel:
+  def from_string(self, config: str) -> BasePipelineTransformConfig:
     """
     Processes a YAML file and maps it to an Config instance
 
@@ -119,7 +98,7 @@ class BaseConfigHandler(ABC):
     conf_yaml = yml.load(config, self.CONFIG_SCHEMA)
     return self.instantiate_config(conf_yaml)
 
-  def from_file(self, config: BytestreamPath) -> BaseModel:
+  def from_file(self, config: BytestreamPath) -> BasePipelineTransformConfig:
     """
     Processes a YAML file and maps it to an Config instance
 
@@ -131,7 +110,7 @@ class BaseConfigHandler(ABC):
     return self.instantiate_config(conf_yaml)
 
   @abstractmethod
-  def instantiate_config(self, config: yml.YAML) -> BaseModel:
+  def instantiate_config(self, config: yml.YAML) -> BasePipelineTransformConfig:
     """
     Processes a YAML instance to produce an Config instance.
 

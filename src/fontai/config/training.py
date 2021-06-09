@@ -24,6 +24,7 @@ class TrainingConfig(BaseModel):
   steps_per_epoch: PositiveInt
   optimizer: tf.keras.optimizers.Optimizer
   loss: tf.keras.losses.Loss
+  seed: int = 1
   #lr_shrink_factor: PositiveFloat
 
   @classmethod
@@ -190,8 +191,6 @@ class ConfigHandler(BaseConfigHandler):
       yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
       yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
       yml.Optional("model_path", default = None): self.IO_CONFIG_SCHEMA,
-      yml.Optional("reader", default = None): self.IO_CONFIG_SCHEMA,
-      yml.Optional("writer", default = None): self.IO_CONFIG_SCHEMA,
       "training": self.TRAINING_CONFIG_SCHEMA,
       "model": self.model_factory.MODEL_CONFIG_SCHEMA,
       yml.Optional("charset", default = "uppercase"): yml.Str()

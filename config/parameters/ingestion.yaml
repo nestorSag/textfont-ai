@@ -1,11 +1,10 @@
 scrappers:
-- class: GoogleFontsScrapper
-- class: FreeFontsScrapper
-- class: DaFontsScrapper
-input:
-  format: bytes
-output:
-  path: data/ingested
-  format: bytes
+- class: LocalScrapper
+  kwargs: 
+    folders:
+    - data/font-zipfiles/1001free
+    - data/font-zipfiles/dafont
+    - data/font-zipfiles/google
+output_path: data/raw
 
 

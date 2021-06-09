@@ -6,19 +6,6 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-thismodule = sys.modules[__name__]
-
-
-class Model(object):
-
-  def __init__(self, model: tf.keras.Model):
-    self.model = model
-
-  @classmethod
-  def from_path(self, path: DataPath):
-    
-
-
 def rescaled_sigmoid_activation(factor):
   def f(x):
     return factor * tf.keras.activations.sigmoid(x)
@@ -94,17 +81,46 @@ class SAAECallback(tf.keras.callbacks.Callback):
 
 class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
+  """This class fits a supervised adversarial autoencoder as laid out in "Adversarial Autoencoders" by Ian Goodfellow et al.
+  
+  Attributes:
+      accuracy_metric (tf.keras.metrics.Accuracy): Accuracy metric
+      code_dim (int): Dimensionality of encoded representation
+      cross_entropy (tf.keras.losses.BinaryCrossentropy): Cross entropy loss
+      decoder (tf.keras.Model): Decoder model
+      discriminator (tf.keras.Model): Discriminator model
+      encoder (tf.keras.Model): Encoder model
+      input_dim (t.Tuple[int]): Input dimension
+      mse_loss (TYPE): Description
+      mse_metric (tf.keras.losses.MSE): MSE loss
+      n_classes (int): number of labeled classes
+      prior_batch_size (int): Batch size from prior distribution at training time
+      prior_sampler : Object from which prior samples are generated
+      rec_loss_weight (float): Weight of reconstruction loss at training time. Should be between 0 and 1.
+  """
+
   def __init__(
     self,
-    encoder: Model,
-    decoder: Model,
-    discriminator: Model,
+    encoder: tf.keras.Model,
+    decoder: tf.keras.Model,
+    discriminator: tf.keras.Model,
     code_dim: int,
     reconstruction_loss_weight:float=0.5,
     input_dim=(64,64,1),
     n_classes:int = 62,
     prior_batch_size:int=32):
-
+    """Summary
+    
+    Args:
+        decoder (tf.keras.Model): Decoder model
+        discriminator (tf.keras.Model): Discriminator model
+        encoder (tf.keras.Model): Encoder model
+        code_dim (int): Dimensionality of encoded representation
+        reconstruction_loss_weight (float, optional): Weight of reconstruction loss at training time. Should be between 0 and 1.
+        input_dim (t.Tuple[int]): Input dimension
+        n_classes (int): number of labeled classes
+        prior_batch_size (int): Batch size from prior distribution at training time
+    """
     super(SupervisedAdversarialAutoEncoder, self).__init__()
 
     #encoder.build(input_shape=input_dim)
@@ -143,10 +159,11 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
     prior_samples = self.prior_sampler(shape=(self.prior_batch_size,self.code_dim),maxval=1.0)
     with tf.GradientTape() as tape1, tf.GradientTape() as tape2, tf.GradientTape() as tape3:
+
+      # Forward pass
       code = self.encoder(x, training=True)
-      extended_code = tf.concat([code,labels],axis=1)
-      decoded = self.decoder(extended_code,training=True)  # Forward pass
-      #dcdr_loss = self.decoder_loss(x,decoded)
+      extended_code = tf.concat([code,labels],axis=-1)
+      decoded = self.decoder(extended_code,training=True)  
 
       real = self.discriminator(prior_samples,training=True)
       fake = self.discriminator(code,training=True)
@@ -175,14 +192,19 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
 
   @property
   def metrics(self):
-    # We list our `Metric` objects here so that `reset_states()` can be
-    # called automatically at the start of each epoch
-    # or at the start of `evaluate()`.
-    # If you don't implement this property, you have to call
-    # `reset_states()` yourself at the time of your choosing.
+    """Performance metrics to report at training time
+    
+    Returns: A list of metric objects
+
+    """
     return [self.mse_metric, self.accuracy_metric]
 
-  def save(self,output_dir):
+  def save(self,output_dir: str):
+    """Save the model to an output folder
+    
+    Args:
+        output_dir (str): Target output folder
+    """
     self.encoder.save(output_dir + "encoder")
     self.decoder.save(output_dir + "decoder")
     self.discriminator.save(output_dir + "discriminator")
@@ -199,7 +221,15 @@ class SupervisedAdversarialAutoEncoder(tf.keras.Model):
       json.dump(d,f)
 
   @classmethod
-  def load(cls,folder):
+  def load(cls,folder: str):
+    """Loads a saved instance of this class
+    
+    Args:
+        folder (str): Target input folder
+    
+    Returns:
+        SupervisedAdversarialAutoEncoder: Loaded model
+    """
     encoder = tf.keras.models.load_model(folder + "encoder")
     decoder = tf.keras.models.load_model(folder + "decoder")
     discriminator = tf.keras.models.load_model(folder + "discriminator")

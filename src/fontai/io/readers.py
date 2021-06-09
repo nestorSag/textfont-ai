@@ -14,6 +14,7 @@ import logging
 
 from fontai.io.storage import BytestreamPath
 from fontai.io.formats import InMemoryFile, TFDatasetWrapper, InMemoryZipHolder, InMemoryFontfileHolder
+from fontai.io.scrappers import Scrapper
 
 from tensorflow.data import TFRecordDataset
 
@@ -56,7 +57,7 @@ class TfrReader(BatchReader):
     return TFDatasetWrapper(filenames=str_sources)
 
 
-class FileReader(BatchReader):
+class FileScrapper(BatchReader):
 
   """Class that reads a sequence of generic files 
   """
@@ -85,6 +86,27 @@ class FontfileReader(BatchReader):
 
     for src in self.input_path.list_sources():
       yield InMemoryFontfileHolder(filename = str(src), content = src.read_bytes())
+
+
+class ScrapperReader(BatchReader):
+
+  """Class that reads a sequence of bytes from scrapped urls
+
+  Attributes:
+      scrappers (t.List[Scrappers]): List of Scrapper instances
+  """
+
+  def __init__(self, scrappers: t.List[Scrapper]):
+
+    self.scrappers = scrappers
+
+  def get_files(self):
+
+    for scrapper in self.scrappers:
+      for url in scrapper.get_source_urls():
+        stream = BytestreamPath(url)
+        yield InMemoryFile(filename = str(stream), content = stream.read_bytes())
+
 
 
 class ReaderClassFactory(object):

@@ -14,7 +14,7 @@ logger = logging.Logger(__name__)
   
 class Transform(ABC):
 
-  """This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a process_batch method to process a set of files and persist the results back to storage.
+  """This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.
   """
 
   input_file_format = InMemoryFile
@@ -40,12 +40,13 @@ class Transform(ABC):
     pass
 
   @classmethod
-  def process_batch(self, input_path: str, output_path: str) -> None:
+  @abstractmethod
+  def transform_batch(self, input_path: str, output_path: str) -> None:
     """Processes a batch of files and persist the results back to storage.
     
     Args:
-        reader (BatchReader): Reader object that retrieves the files
-        writer (BatchWriter): Writer object that persists the output
+        input_path (str): Input folder
+        output_path (str): Output folder
     """
     pass
 
@@ -59,17 +60,17 @@ class IdentityTransform(Transform):
 
     return data
 
-  def transform_batch(self, input_path: str, output_path: str):
-
-    for path in reader.get_files():
-      try:
-        file = file.deserialise()
-        try:
-          writer.write(self.process(file))
-        except Exception as e:
-          logger.info(f"Error writing file: {e}")
-      except Exception as e:
-        logger.exception(f"Error reading file: {e}")
+  # def transform_batch(self, input_path: str, output_path: str):
+  #   writer = writer(output_path)
+  #   for file in reader(input_path).get_files():
+  #     try:
+  #       file = file.deserialise()
+  #       try:
+  #         writer.write(self.process(file))
+  #       except Exception as e:
+  #         logger.info(f"Error writing file: {e}")
+  #     except Exception as e:
+  #       logger.exception(f"Error reading file: {e}")
 
 
 class ConfigurableTransform(ABC):
@@ -79,7 +80,7 @@ class ConfigurableTransform(ABC):
 
   @classmethod
   @abstractmethod
-  def from_config(cls, config: BaseConfig):
+  def from_config_object(cls, config: BaseConfig) -> ConfigurableTransform:
     """Instantiate class from a configuration object
     
     Args:
@@ -88,19 +89,31 @@ class ConfigurableTransform(ABC):
     pass
 
   @classmethod
-  def parse_config(cls, path: str) -> BaseConfig:
-    """Parse a YAML configuration file and create an instance inheriting from BaseConfig
+  def parse_config_str(cls, config_str: str) -> BaseConfig:
+    """Parse the contents of a YAML configuration file and create an instance inheriting from BaseConfig
     
     Args:
-        path (str): Path to the YAML configuration file
+        config_str (str): YAML content in string format
     
     Returns:
         BaseConfig: Instantiated Config instance
     """
-    return self.get_config_parser().from_file(BytestreamPath(path))
+    return self.get_config_parser().from_string(config_str)
 
   @classmethod
-  def from_config_file(cls, path: str):
+  def parse_config_file(cls, path: str) -> BaseConfig:
+    """Parse a YAML configuration file and create an instance inheriting from BaseConfig
+    
+    Args:
+        path (str): path to YAML configuration file
+    
+    Returns:
+        BaseConfig: Instantiated Config instance
+    """
+    return self.get_config_parser().from_file(path)
+
+  @classmethod
+  def from_config_file(cls, path: str) -> ConfigurableTransform:
     """Create a ConfigurableTransform instance from a YAML configuration file
     
     Args:
@@ -109,15 +122,14 @@ class ConfigurableTransform(ABC):
     Returns:
         ConfigurableTransform: Instance created from configuration file.
     """
-    return cls.from_config(cls.parse_config(path))
+    return cls.from_config_object(cls.parse_config_file(path))
 
   @classmethod
+  @abstractmethod
   def run_from_config_file(cls, path: str) -> None:
 
-    config = cls.parse_config(path)
-    if config.reader is None or config.writer is None:
-      raise TypeError("Configuration object does not specify reader and writer instances.")
-    cls.from_config(config).transform_batch(config.reader,config.writer)
+    pass
+    #cls.from_config_file(path).run_from_config()
 
 
   @classmethod
@@ -129,7 +141,6 @@ class ConfigurableTransform(ABC):
     
     """
     pass
-
 
 
 class FittableTransform(ConfigurableTransform,ABC):
