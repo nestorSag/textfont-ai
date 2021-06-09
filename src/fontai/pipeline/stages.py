@@ -203,10 +203,15 @@ class ModelHolder(FittableMLPipelineTransform):
   @classmethod
   def fit_from_config_file(cls, path: str):
     
-    data_fetcher = LabeledExamplePreprocessor()
+
     config = cls.parse_config_file(path)
     predictor = cls.from_config_object(config)
 
+    data_fetcher = LabeledExamplePreprocessor(
+      batch_size = predictor.training_config.batch_size,
+      charset = predictor.training_config.char_set,
+      filters = predictor.training_config.filters)
+    
     predictor.model.compile(
       loss = predictor.training_config.loss, 
       optimizer = predictor.training_config.optimizer)

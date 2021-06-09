@@ -21,7 +21,7 @@ output_path: src/tests/data/ingestion/output
 test_config_object = ConfigHandler().from_string(TEST_INGESTION_CONFIG)
 
 def test_ingestion():
-  ingestor = 
+  ingestor = FontIngestion.
 def is_fontfile(content: bytes) -> bool:
 
   #bf = io.BytesIO()

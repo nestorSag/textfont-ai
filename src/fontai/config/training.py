@@ -6,11 +6,11 @@ import string
 from argparse import Namespace
 from functools import reduce
 
-from pydantic import BaseModel, PositiveInt, PositiveFloat
+from pydantic import BaseModel, PositiveInt, PositiveFloat, validator
 import strictyaml as yml
 
 from fontai.core.base import BaseConfigHandler, SimpleClassInstantiator, BaseConfig
-from fontai.training.models import Model
+import fontai.training.input_filters as input_filters
 
 import tensorflow as tf
 
@@ -24,15 +24,26 @@ class TrainingConfig(BaseModel):
   steps_per_epoch: PositiveInt
   optimizer: tf.keras.optimizers.Optimizer
   loss: tf.keras.losses.Loss
+  charset: str = "all"
+  filters: t.List[callable] = []
   seed: int = 1
+
+  @validator("charset")
+  def allowed_charsets(charset):
+    allowed_vals = ["all","uppercase","lowercase","digits"]
+    if charset in allowed_vals:
+      return charset
+    else:
+      raise ValueError(f"charset must be one of {allowed_vals}")
   #lr_shrink_factor: PositiveFloat
 
   @classmethod
   def from_yaml(cls, yaml):
     schema_handler = SimpleClassInstantiator()
     args = yaml.data
-    args["optimizer"] = schema_handler.get_instance(yaml.get("optimizer"))
-    args["loss"] = schema_handler.get_instance(yaml.get("loss"))
+    args["optimizer"] = schema_handler.get_instance(yaml=yaml.get("optimizer"), scope=tf.keras.optimizers)
+    args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=tf.keras.losses)
+    args["filters"] = schema_handler.get_instance(yaml=yaml.get("filters"), scope=input_filters)
     return TrainingConfig(**args)
 
 
@@ -46,7 +57,7 @@ class Config(BaseConfig):
 
   """
   training_config: TrainingConfig
-  model: Model
+  model: tf.keras.Model
 
   # internal BaseModel configuration class
   class Config:
@@ -79,7 +90,6 @@ class ModelFactory(object):
     self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str()})
 
     self.schema_constructors = {
-      self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA: ("SIMPLE PY CLASS", self.from_simple_python_class)
       self.PATH_TO_SAVED_MODEL_SCHEMA: ("SAVED MODEL PATH", self.from_path),
       self.SEQUENTIAL_MODEL_SCHEMA: ("KERAS SEQUENTIAL", self.from_keras_sequential),
       self.MULTI_SEQUENTIAL_MODEL_SCHEMA: ("MULTI SEQUENTIAL", self.from_multi_sequential)
@@ -107,18 +117,6 @@ class ModelFactory(object):
         logger.debug(f"Model schema did not match {name}; {e}")
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
-
-  def from_simple_python_class(self, model_yaml):
-    """
-    Instantiate a ML model from a YAML object that matches the  schema for a simple Python class (i.e. only primitive types arguments)
-
-    model_yaml: YAML object
-
-    Returns an instance of class Model
-
-    """
-    return Model(self.yaml_to_obj.get_instance(model_yaml))
-
   def from_path(self,model_yaml):
     """
     Loads a saved model 
@@ -139,7 +137,7 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    layer_instances = [self.get_instance(layer_yaml) for layer_yaml in model_yaml.get("layers")]
+    layer_instances = [self.get_instance(layer_yaml, tf.keras) for layer_yaml in model_yaml.get("layers")]
     return Model(Sequential(layer_instances))
 
   def from_multi_sequential(self, model_yaml):
@@ -205,16 +203,15 @@ class ConfigHandler(BaseConfigHandler):
     config: YAML object from the strictyaml library
 
     """
-    reader, writer = self.instantiate_io_handlers(config)
+    input_path, output_path = config.get("input_path").text, config.get("output_path").text
+
     model_path = config.get("model_path")
     model = self.model_factory.from_yaml(config.get("model"))
     training_config = TrainingConfig.from_yaml(config.get("training"))
 
     return Config(
-      reader = reader, 
-      writer = writer, 
-      model_path = model_path,
+      input_path = input_path, 
+      output_path = output_path, 
       model = model,
       training_config = training_config,
-      charset = config.get("charset"),
       yaml = config)

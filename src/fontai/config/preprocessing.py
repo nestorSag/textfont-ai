@@ -81,7 +81,7 @@ class ConfigHandler(BaseConfigHandler):
 
     """
     
-    reader, writer = self.instantiate_io_handlers(config)
+    input_path, output_path = config.get("input_path").text, config.get("output_path").text
 
     beam_cmd_line_args = config.data["beam_cmd_line_args"]
     output_array_size = config.get("output_array_size").data
@@ -96,8 +96,8 @@ class ConfigHandler(BaseConfigHandler):
       raise ValueError(f"canvas padding value ({f2a_config.canvas_padding}) is too large for canvas size ({f2a_config.canvas_size})")
 
     return Config(
-      reader = reader, 
-      writer = writer, 
+      input_path = input_path, 
+      output_path = output_path, 
       output_array_size = output_array_size,
       font_to_array_config = f2a_config,
       beam_cmd_line_args = beam_cmd_line_args,

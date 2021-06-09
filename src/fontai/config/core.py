@@ -44,11 +44,20 @@ class SimpleClassInstantiator(object):
             yml.Str(),
             self.ANY_PRIMITIVES) | yml.EmptyDict()})
 
-  def get_instance(csl, yaml: yml.YAML, scope: module) -> object:
+  def get_instance(csl, yaml: yml.YAML, scope) -> object:
     """
-      This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.
-
-      yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute
+    This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.
+    
+    yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute
+    
+    scope: module namespace from which the object is to be instantiated.
+    
+    Args:
+        yaml (yml.YAML): AML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute
+        scope (module): module namespace from which the object is to be instantiated.
+    
+    Returns:
+        object: instantiated object
     """
     try:
       yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
