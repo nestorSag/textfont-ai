@@ -89,16 +89,28 @@ class ConfigurableTransform(ABC):
     pass
 
   @classmethod
-  def parse_config_str(cls, config_str: str) -> BaseConfig:
-    """Parse the contents of a YAML configuration file and create an instance inheriting from BaseConfig
+  def from_config_file(cls, path: str) -> ConfigurableTransform:
+    """Create a ConfigurableTransform instance from a YAML configuration file
     
     Args:
-        config_str (str): YAML content in string format
+        path (str): Path to the YAML configuration file
     
     Returns:
-        BaseConfig: Instantiated Config instance
+        ConfigurableTransform: Instance created from configuration file.
     """
-    return self.get_config_parser().from_string(config_str)
+    return cls.from_config_object(cls.parse_config_file(path))
+
+  @classmethod
+  def from_config_str(cls, yaml: str) -> ConfigurableTransform:
+    """Create a ConfigurableTransform instance from the content of a YAML configuration file
+    
+    Args:
+        yaml (str): YAML file content
+    
+    Returns:
+        ConfigurableTransform: Instance created from configuration file.
+    """
+    return cls.from_config_object(cls.parse_config_str(yaml))
 
   @classmethod
   def parse_config_file(cls, path: str) -> BaseConfig:
@@ -113,20 +125,27 @@ class ConfigurableTransform(ABC):
     return self.get_config_parser().from_file(path)
 
   @classmethod
-  def from_config_file(cls, path: str) -> ConfigurableTransform:
-    """Create a ConfigurableTransform instance from a YAML configuration file
+  def parse_config_str(cls, config_str: str) -> BaseConfig:
+    """Parse the contents of a YAML configuration file and create an instance inheriting from BaseConfig
     
     Args:
-        path (str): Path to the YAML configuration file
+        config_str (str): YAML content in string format
     
     Returns:
-        ConfigurableTransform: Instance created from configuration file.
+        BaseConfig: Instantiated Config instance
     """
-    return cls.from_config_object(cls.parse_config_file(path))
+    return self.get_config_parser().from_string(config_str)
 
   @classmethod
   @abstractmethod
   def run_from_config_file(cls, path: str) -> None:
+
+    pass
+    #cls.from_config_file(path).run_from_config()
+
+  @classmethod
+  @abstractmethod
+  def run_from_config(cls, config: BaseConfig) -> None:
 
     pass
     #cls.from_config_file(path).run_from_config()

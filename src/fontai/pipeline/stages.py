@@ -61,6 +61,14 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
     for file in ingestor.reader_class(config.scrappers).get_files():
       writer.write(file)
 
+  @classmethod
+  def run_from_config(cls, config: IngestionConfig):
+    
+    ingestor = cls.from_config_object(config)
+    writer = ingestor.writer_class(ingestor.config.output_path)
+    for file in ingestor.reader_class(config.scrappers).get_files():
+      writer.write(file)
+
 
 class LabeledExampleExtractor(MLPipelineTransform):
   """
@@ -176,10 +184,6 @@ class ModelHolder(FittableMLPipelineTransform):
 
   input_file_format = TFDatasetWrapper
   output_file_format = TFDatasetWrapper
-
-  def __init__(self, model: tf.keras.Model):
-
-    self.model = model
 
   def __init__(self,
     model: tf.keras.Model,

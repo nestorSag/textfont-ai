@@ -10,9 +10,9 @@ from pydantic import BaseModel, PositiveInt, PositiveFloat, validator
 import strictyaml as yml
 
 from fontai.core.base import BaseConfigHandler, SimpleClassInstantiator, BaseConfig
-import fontai.training.input_filters as input_filters
+import fontai.training.input_processing as input_processing
 
-import tensorflow as tf
+from tensorflow import keras
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ class TrainingConfig(BaseModel):
   batch_size: PositiveInt
   epochs: PositiveInt
   steps_per_epoch: PositiveInt
-  optimizer: tf.keras.optimizers.Optimizer
-  loss: tf.keras.losses.Loss
+  optimizer: keras.optimizers.Optimizer
+  loss: keras.losses.Loss
   charset: str = "all"
   filters: t.List[callable] = []
   seed: int = 1
@@ -40,10 +40,11 @@ class TrainingConfig(BaseModel):
   @classmethod
   def from_yaml(cls, yaml):
     schema_handler = SimpleClassInstantiator()
-    args = yaml.data
-    args["optimizer"] = schema_handler.get_instance(yaml=yaml.get("optimizer"), scope=tf.keras.optimizers)
-    args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=tf.keras.losses)
-    args["filters"] = schema_handler.get_instance(yaml=yaml.get("filters"), scope=input_filters)
+    args = yml.data
+    args["optimizer"] = schema_handler.get_instance(yaml=yml.get("optimizer"), scope=keras.optimizers)
+    args["loss"] = schema_handler.get_instance(yaml=yml.get("loss"), scope=keras.losses)
+    args["filters"] = [getattr(input_processing, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("filters")]
+    
     return TrainingConfig(**args)
 
 
@@ -57,7 +58,7 @@ class Config(BaseConfig):
 
   """
   training_config: TrainingConfig
-  model: tf.keras.Model
+  model: keras.Model
 
   # internal BaseModel configuration class
   class Config:
@@ -109,7 +110,7 @@ class ModelFactory(object):
     for schema in self.schema_constructors:
       name, constructor = self.schema_constructors[schema]
       try:
-        model_yaml.revalidate(schema)
+        model_yml.revalidate(schema)
         logger.info(f"Model schema matched to: {name}")
         model = constructor(model_yaml)
         return model
@@ -126,7 +127,7 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    return Model.from_path(model_yaml.get("path").text)
+    return keras.models.load_model(model_yml.get("path").text)
 
   def from_keras_sequential(self, model_yaml):
     """
@@ -137,7 +138,7 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    layer_instances = [self.get_instance(layer_yaml, tf.keras) for layer_yaml in model_yaml.get("layers")]
+    layer_instances = [self.get_instance(layer_yaml, keras) for layer_yaml in model_yml.get("layers")]
     return Model(Sequential(layer_instances))
 
   def from_multi_sequential(self, model_yaml):
@@ -149,7 +150,7 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    args = model_yaml.get("kwargs")
+    args = model_yml.get("kwargs")
     materialised_kwargs = copy.deepcopy(args.data)
     for named_param in materialised_kwargs:
       try:
@@ -172,6 +173,8 @@ class ConfigHandler(BaseConfigHandler):
 
   def get_config_schema(self):
 
+    self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
+
     self.TRAINING_CONFIG_SCHEMA = yml.Map({
       "batch_size": yml.Int(),
       "epochs": yml.Int(),
@@ -180,10 +183,11 @@ class ConfigHandler(BaseConfigHandler):
         default = 10000): yml.Int(),
       Optional(
         "optimizer", 
-        default = {"class": "Adam", "kwargs": {}}): self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA
+        default = {"class": "Adam", "kwargs": {}}): self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA,
+      Optional(
+        "filters",
+        default = []): self.DATA_PREPROCESSING_SCHEMA
     })
-
-    self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
 
     schema = yml.Map({
       yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
@@ -205,8 +209,8 @@ class ConfigHandler(BaseConfigHandler):
     """
     input_path, output_path = config.get("input_path").text, config.get("output_path").text
 
-    model_path = config.get("model_path")
-    model = self.model_factory.from_yaml(config.get("model"))
+    model_path = config.get("model_path").text
+    model = self.model_factory.from_yaml(config.get("model").text)
     training_config = TrainingConfig.from_yaml(config.get("training"))
 
     return Config(
