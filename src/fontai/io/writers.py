@@ -6,7 +6,9 @@ from pathlib import Path
 import io
 import zipfile
 import sys
+import random
 import re
+import datetime
 import typing as t
 from abc import ABC, abstractmethod
 import logging
@@ -190,7 +192,7 @@ class TfrWriter(BatchWriter):
     self.close()
 
 
-def FileWriter(BatchWriter):
+class FileWriter(BatchWriter):
 
   def __init__(self, output_path: str):
     self.output_path = BytestreamPath(output_path)
@@ -208,7 +210,9 @@ def FileWriter(BatchWriter):
     return f"{self.file_preffix}-{self.shard_id}"
 
   def write(self, file: InMemoryFile) -> None:
-    (self.output_path / file.filename).write_bytes(file.content)
+    x = BytestreamPath(file.filename).filename
+    print(f"x: {x}, file.filename: {file.filename}, filename from Path: {Path(file.filename).name}")
+    (self.output_path / x).write_bytes(file.content)
     self.shard_id += 1
 
   def open(self):
@@ -227,7 +231,8 @@ def FileWriter(BatchWriter):
 class WriterClassFactory(object):
   """Factory class that returns the appropriate writer depending on the expected output file format.
   """
-  def get(file_format: type) -> type:
+  @classmethod
+  def get(cls, file_format: type) -> type:
     """Returns a writer type for instantiation at runtime.
     
     Args:

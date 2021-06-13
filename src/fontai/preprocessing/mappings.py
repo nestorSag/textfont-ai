@@ -10,16 +10,20 @@ import zipfile
 import io
 import typing as t
 import types
-from abc import ABC, abstractmethod, Iterable
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 import imageio
+import apache_beam as beam
 
-from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder
+
+from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
 from fontai.io.writers import BatchWriter
 from fontai.io.storage import BytestreamPath
+from fontai.io.records import LabeledExample
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +85,7 @@ class OneToManyMapper(ObjectMapper):
 
     self.mapper = mapper
 
-  def raw_map(self, data: Iterable[t.Any, None, None]) -> t.Generator[t.Any, None, None]:
+  def raw_map(self, data: t.Iterable[t.Any]) -> t.Generator[t.Any, None, None]:
     for elem in data:
       for derived in self.mapper.map(elem):
         yield derived
@@ -149,7 +153,7 @@ class InputToFontFiles(ObjectMapper):
 
   """
 
-  def raw_map(cls, file: InMemoryFile) -> t.Generator[InMemoryFontfileHolder,None,None]:
+  def raw_map(self, file: InMemoryZipHolder) -> t.Generator[InMemoryFontfileHolder,None,None]:
 
     def choose_ext(lst):
       ttfs = len([x for x in lst if ".ttf" in x.lower()])
@@ -300,24 +304,24 @@ class FeatureResizer(ObjectMapper):
 
 
 
-class Reader(beam.DoFn):
-  """
-  Takes instances of LabeledExamples and writes them to a tensorflow record file.
+# class Reader(beam.DoFn):
+#   """
+#   Beam compatible class to use package's reader classes to retrieve files
   
-  Attributes:
-      writer (BatchWriter): An instance inheriting from the BatchWriter class
+#   Attributes:
+#       reader (BatchReader): An instance inheriting from the BathReader class
   
-  """
-  def __init__(self, writer: BatchReader):
-    self.reader = reader
-  def process(self, example: LabeledExample) -> None:
-    try:
-      writer.add(example)
-    except Exception as e:
-      logging.exception(f"error writing example {example}: {e}")
+#   """
+#   def __init__(self, reader: BatchReader):
+#     self.reader = reader
+#   def process(self, path: str) -> None:
+#     try:
+#       return reader.get_files()
+#     except Exception as e:
+#       logging.exception(f"error reading file {path}: {e}")
 
-  def teardown(self):
-    self.writer.close()
+#   def teardown(self):
+#     self.writer.close()
 
 
 

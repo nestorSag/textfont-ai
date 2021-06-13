@@ -9,7 +9,7 @@ from functools import reduce
 from pydantic import BaseModel, PositiveInt, PositiveFloat
 import strictyaml as yml
 
-from fontai.core.base import BaseConfigHandler, SimpleClassInstantiator, BaseConfigs
+from fontai.config.core import BaseConfigHandler, SimpleClassInstantiator, BasePipelineTransformConfig
 from fontai.training.models import Model
 
 import fontai.pipeline_stages as stages 
@@ -18,7 +18,7 @@ import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
-class Config(BaseConfig):
+class Config(BasePipelineTransformConfig):
   """
   Wrapper class for the configuration of the MLPipeline class
 

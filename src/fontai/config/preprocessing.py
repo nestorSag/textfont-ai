@@ -8,7 +8,7 @@ from argparse import Namespace
 from pydantic import BaseModel, PositiveInt
 import strictyaml as yml
 
-from fontai.core.base import BaseConfigHandler, BaseConfig
+from fontai.config.core import BaseConfigHandler, BasePipelineTransformConfig
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class FontExtractionConfig(BaseModel):
   canvas_padding: PositiveInt
 
 
-class Config(BaseConfig):
+class Config(BasePipelineTransformConfig):
   """
   Configuration class for the image extraction pipeline stage
 
@@ -67,7 +67,7 @@ class ConfigHandler(BaseConfigHandler):
       "canvas_size": yml.Int(), 
       "canvas_padding": yml.Int(),
       yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str()
-      })
+      }),
       yml.Optional("beam_cmd_line_args", default = ["--runner", "DirectRunner"]): yml.Seq(yml.Str())
        })
 

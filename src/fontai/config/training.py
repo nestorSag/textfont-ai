@@ -9,8 +9,9 @@ from functools import reduce
 from pydantic import BaseModel, PositiveInt, PositiveFloat, validator
 import strictyaml as yml
 
-from fontai.core.base import BaseConfigHandler, SimpleClassInstantiator, BaseConfig
+from fontai.config.core import BaseConfigHandler, SimpleClassInstantiator, BasePipelineTransformConfig
 import fontai.training.input_processing as input_processing
+import fontai.training.models as custom_models
 
 from tensorflow import keras
 
@@ -25,7 +26,7 @@ class TrainingConfig(BaseModel):
   optimizer: keras.optimizers.Optimizer
   loss: keras.losses.Loss
   charset: str = "all"
-  filters: t.List[callable] = []
+  filters: t.List[t.Callable] = []
   seed: int = 1
 
   @validator("charset")
@@ -47,8 +48,11 @@ class TrainingConfig(BaseModel):
     
     return TrainingConfig(**args)
 
+  class Config:
+    arbitrary_types_allowed = True
 
-class Config(BaseConfig):
+
+class Config(BasePipelineTransformConfig):
   """
   Wrapper class for the configuration of the ModelTrainingStage class
 
@@ -58,6 +62,7 @@ class Config(BaseConfig):
 
   """
   training_config: TrainingConfig
+  model_output_path: str
   model: keras.Model
 
   # internal BaseModel configuration class
@@ -88,7 +93,7 @@ class ModelFactory(object):
         )
       })
 
-    self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str()})
+    self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str(), Optional("custom_class", default = None): yml.Str() | yml.EmptyNone})
 
     self.schema_constructors = {
       self.PATH_TO_SAVED_MODEL_SCHEMA: ("SAVED MODEL PATH", self.from_path),
@@ -127,7 +132,10 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    return keras.models.load_model(model_yml.get("path").text)
+    model_class = model_yaml.get("custom_class")
+    custom_objects = {model_class.text: getattr(custom_models, model_class.text)} if model_class is not None else None
+
+    return keras.models.load_model(model_yaml.get("path").text, custom_objects = custom_objects)
 
   def from_keras_sequential(self, model_yaml):
     """
@@ -139,7 +147,7 @@ class ModelFactory(object):
 
     """
     layer_instances = [self.get_instance(layer_yaml, keras) for layer_yaml in model_yml.get("layers")]
-    return Model(Sequential(layer_instances))
+    return Sequential(layer_instances)
 
   def from_multi_sequential(self, model_yaml):
     """
@@ -158,7 +166,7 @@ class ModelFactory(object):
         materialised_kwargs[named_param] = self.from_keras_sequential(self,args.get(named_param))
       except Exception as e:
         logger.debug(f"Parameter {named_param} does not match Sequential model schema.")
-    return Model(globals()[args.get("class").text](**materialised_kwargs))
+    return self.yaml_to_obj(yaml = args.get("class").text, scope = custom_models)(**materialised_kwargs)
 
 
 

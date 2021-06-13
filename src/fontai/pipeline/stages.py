@@ -10,20 +10,25 @@ import pickle
 from PIL import ImageFont
 from numpy import ndarray
 from tensorflow import Tensor
+from strictyaml import as_document
+import tensorflow as tf
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
+
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
 from fontai.config.training import TrainingConfig, Config as ModelConfig, ConfigHandler as ModelConfigHandler
 
-from fontai.preprocessing.mappings import PipelineExecutor, OneToManyMapper, KeyValueMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, BytestreamPathReader, ZipToFontFiles, TfrRecordWriter
+from fontai.preprocessing.mappings import PipelineExecutor, OneToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer
 
-from fontai.pipeline.base import MLPipelineTransform
+#from fontai.pipeline.base import MLPipelineTransform
 from fontai.io.readers import ScrapperReader
-from fontai.io.records import ScoredLaebeledExample
+from fontai.io.records import ScoredLabeledExample, LabeledExample
+from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFDatasetWrapper
+from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
 
 logger = logging.Logger(__name__)
@@ -42,14 +47,14 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
 
   def __init__(self, config: IngestionConfig = None):
     
-    self.config: = config
+    self.config=config
 
   @classmethod
-  def get_config_parse(cls):
+  def get_config_parser(cls):
     return IngestionConfigHandler()
 
   @classmethod
-  def from_config_object(cls, config: IngestionConfig):
+  def from_config_object(cls, config: IngestionConfig, **kwargs):
     return cls(config)
 
   @classmethod
@@ -69,8 +74,15 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
     for file in ingestor.reader_class(config.scrappers).get_files():
       writer.write(file)
 
+  @classmethod
+  def get_stage_name(cls):
+    return "ingestion"
 
-class LabeledExampleExtractor(MLPipelineTransform):
+  def transform_batch(self, input_path: str, output_path: str):
+    raise NotImplementedError("This method is not implemented for ingestion.")
+
+
+class LabeledExampleExtractor(ConfigurableTransform):
   """
   File preprocessing pipeline that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
 
@@ -114,7 +126,7 @@ class LabeledExampleExtractor(MLPipelineTransform):
 
 
   @classmethod
-  def from_config(cls, config: Config):
+  def from_config_object(cls, config: ProcessingConfig, **kwargs):
 
     return cls(
       output_array_size = config.output_array_size,
@@ -164,17 +176,21 @@ class LabeledExampleExtractor(MLPipelineTransform):
     return "preprocessing"
 
   @classmethod
-  def run_from_config_file(cls, path: str):
+  def run_from_config_object(cls, config: ProcessingConfig):
     
-    config = cls.parse_config_file(path)
     processor = cls.from_config_object(config)
     processor.transform_batch(input_path=config.input_path, output_path=config.output_path)
 
 
+  @classmethod
+  def run_from_config_file(cls, path: str):
+    
+    config = cls.parse_config_file(path)
+    cls.run_from_config_object(config)
 
 
 
-class ModelHolder(FittableMLPipelineTransform):
+class Predictor(FittableTransform):
   """
       Base class for ML pipeline stages
 
@@ -185,47 +201,31 @@ class ModelHolder(FittableMLPipelineTransform):
   input_file_format = TFDatasetWrapper
   output_file_format = TFDatasetWrapper
 
-  def __init__(self,
-    model: tf.keras.Model,
-    batch_size: int,
-    n_epochs: int,
-    steps_per_epoch: int,
-    optimizer: tf.keras.optimizers.Optimizer,
-    loss: tf.keras.losses.Loss,
-    seed = 1):
-
-
+  def __init__(self, model: tf.keras.Model, training_config: TrainingConfig = None):
     self.model = model
-    self.training_config = TrainingConfig(
-      batch_size = batch_size,
-      epochs = epochs,
-      steps_per_epoch = steps_per_epoch,
-      optimizer = optimizer,
-      loss = loss,
-      seed = seed)
+    self.training_config = training_config
 
   @classmethod
-  def fit_from_config_file(cls, path: str):
-    
+  def fit(self):
 
-    config = cls.parse_config_file(path)
-    predictor = cls.from_config_object(config)
+    if self.training_config is None:
+      raise ValueError("Training configuration not provided at instantiation time.")
 
     data_fetcher = LabeledExamplePreprocessor(
-      batch_size = predictor.training_config.batch_size,
-      charset = predictor.training_config.char_set,
-      filters = predictor.training_config.filters)
+      batch_size = self.training_config.batch_size,
+      charset = self.training_config.char_set,
+      filters = self.training_config.filters)
     
-    predictor.model.compile(
-      loss = predictor.training_config.loss, 
-      optimizer = predictor.training_config.optimizer)
+    self.model.compile(
+      loss = self.training_config.loss, 
+      optimizer = self.training_config.optimizer)
 
-    predictor.model.fit(
+    self.model.fit(
       data=data_fetcher.fetch_tfr_files(config.input_path),
       steps_per_epoch = predictor.training_config.steps_per_epoch, 
       epochs = predictor.training_config.n_epochs)
 
-    predictor.save_model(config.output_path)
+    return self
 
   def process(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Generator[t.Any, None, None]:
     """
@@ -236,7 +236,7 @@ class ModelHolder(FittableMLPipelineTransform):
     elif isinstance(input_data, LabeledExample):
       return ScoredLaebeledExample(labeled_example = input_data, score = self.model.predict(input_data.features))
     else:
-      raise TypeError("Input type is not one of ndarra, Tensor or LabeledExample")
+      raise TypeError("Input type is not one of ndarray, Tensor or LabeledExample")
 
   @classmethod
   def get_config_parser(cls):
@@ -244,4 +244,45 @@ class ModelHolder(FittableMLPipelineTransform):
 
   @classmethod
   def get_stage_name(cls):
-    return "training"
+    return "predictor"
+
+
+  @classmethod
+  def from_config_object(cls, config: TrainingConfig, training_config = True):
+    if training_config:
+      model = config.model
+    else:
+      model_class_name = config.model.__class__.__name__
+      classname_tuple = ("custom_class", model_class_name if model_class_name != "Sequential" else None)
+      model_yaml = as_document(OrderedDict([("path", config.model_path), classname_tuple]))
+      model = ModelFactory().from_path(model_yaml)
+    predictor = Predictor(model = model, training_config = config.training_config)
+    return predictor
+
+  @classmethod
+  def run_from_config_file(cls, path: str):
+    
+    config = cls.parse_config_file(path)
+    self.run_from_config(config)
+
+  @classmethod
+  def run_from_config(cls, config: TrainingConfig):
+    
+    predictor = cls.from_config_object(config)
+    writer = self.writer_class(config.output_path)
+
+    for example in self.reader_class(config.input_path):
+      predicted = predictor.predict(example)
+      writer.write(predicted)
+
+  @classmethod
+  def fit_from_config_file(cls, path: str):
+    
+    config = cls.parse_config_file(path)
+    cls.fit_from_config(config)
+
+  @classmethod
+  def fit_from_config(cls, config: TrainingConfig):
+    
+    predictor = cls.from_config_object(config).fit()
+    predictor.model.save(config.model_path)

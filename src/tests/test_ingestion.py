@@ -1,22 +1,25 @@
 from pathlib import Path
 
+import fontai.io.scrappers as scrapper_module
+
 from fontai.pipeline.stages import FontIngestion
+
+import logging
 
 TEST_INGESTION_CONFIG = """
 scrappers:
 - class: LocalScrapper
   kwargs: 
-    folders:
-    - src/tests/data/ingestion/input
+    folder: src/tests/data/ingestion/input
 output_path: src/tests/data/ingestion/output
 """
 
-test_config_object = ConfigHandler().from_string(TEST_INGESTION_CONFIG)
+logger = logging.getLogger(__name__)
 
 def test_ingestion():
   config = FontIngestion.parse_config_str(TEST_INGESTION_CONFIG)
   FontIngestion.run_from_config(config)
 
-  assert Path(config.output_path).iterdir() == Path(config.scrappers[0].folders[0]).iterdir()
+  assert [obj.name for obj in list(Path(config.output_path).iterdir())] == [obj.name for obj in list(Path(config.scrappers[0].folder).iterdir())]
 
 

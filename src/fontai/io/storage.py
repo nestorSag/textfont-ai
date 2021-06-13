@@ -188,8 +188,7 @@ class BytestreamPath(object):
       filename = self.string.split("/")[-1]
     else:
       filename = Path(self.string).name
-    if filename == "":
-      return None
+    return filename
 
   def is_url(self):
     """Returns a boolean 

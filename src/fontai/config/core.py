@@ -6,7 +6,7 @@ import logging
 import strictyaml as yml
 from pydantic import BaseModel
 
-from fontai.core.io import BytestreamPath
+from fontai.io.storage import BytestreamPath
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class SimpleClassInstantiator(object):
             yml.Str(),
             self.ANY_PRIMITIVES) | yml.EmptyDict()})
 
-  def get_instance(csl, yaml: yml.YAML, scope) -> object:
+  def get_instance(self, yaml: yml.YAML, scope) -> object:
     """
     This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.
     
@@ -63,7 +63,7 @@ class SimpleClassInstantiator(object):
       yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
       return getattr(scope, yaml.get("class").text)(**yaml.get("kwargs").data)
     except Exception as e:
-      logger.exception(f"Cannot instantiate class {yaml.get("class").text} from global namespace: {e}")
+      logger.exception(f"Cannot instantiate class {yaml.get('class').text} from global namespace: {e}")
 
 
 
@@ -107,7 +107,7 @@ class BaseConfigHandler(ABC):
     conf_yaml = yml.load(config, self.CONFIG_SCHEMA)
     return self.instantiate_config(conf_yaml)
 
-  def from_file(self, config: BytestreamPath) -> BasePipelineTransformConfig:
+  def from_file(self, path: str) -> BasePipelineTransformConfig:
     """
     Processes a YAML file and maps it to an Config instance
 
@@ -115,7 +115,7 @@ class BaseConfigHandler(ABC):
 
     """
 
-    conf_yaml = self.from_string(config.read_bytes().decode("utf-8"))
+    conf_yaml = self.from_string(BytestreamPath(path).read_bytes().decode("utf-8"))
     return self.instantiate_config(conf_yaml)
 
   @abstractmethod
@@ -132,5 +132,5 @@ class BaseConfigHandler(ABC):
 
     return None
 
-  def setup(self):
+  def other_setup(self):
     pass

@@ -111,14 +111,14 @@ class LocalScrapper(Scrapper):
   Scrapper simulator from local files
   
   Attributes:
-      folders (t.List[str]): List of source folders
+      folders (str): Source folder
   """
-  def __init__(self, folders: t.List[str]):
-    self.folders = folders
+  def __init__(self, folder: str):
+    self.folder = folder
 
   def get_source_urls(self):
 
-    for folder in self.folders:
-      current = BytestreamPath(folder)
-      for file in current.list_sources():
+    current = Path(self.folder)
+    for file in current.iterdir():
+      if file.is_file():
         yield str(file)
