@@ -20,7 +20,7 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
-from fontai.config.training import TrainingConfig, Config as ModelConfig, ConfigHandler as ModelConfigHandler
+from fontai.config.prediction import TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
 
 from fontai.preprocessing.mappings import PipelineExecutor, ManyToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer, BeamCompatibleWrapper
 
@@ -226,7 +226,7 @@ class Predictor(FittableTransform):
 
     return self
 
-  def process(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Generator[t.Any, None, None]:
+  def transform(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Generator[t.Any, None, None]:
     """
     Process a single instance
     """
@@ -239,7 +239,7 @@ class Predictor(FittableTransform):
 
   @classmethod
   def get_config_parser(cls):
-    return TrainingConfigHandler()
+    return PredictorConfigHandler()
 
   @classmethod
   def get_stage_name(cls):
@@ -247,8 +247,8 @@ class Predictor(FittableTransform):
 
 
   @classmethod
-  def from_config_object(cls, config: TrainingConfig, training_config = True):
-    if training_config:
+  def from_config_object(cls, config: PredictorConfig, training_stage = True):
+    if training_stage:
       model = config.model
     else:
       model_class_name = config.model.__class__.__name__
@@ -265,12 +265,17 @@ class Predictor(FittableTransform):
     self.run_from_config(config)
 
   @classmethod
-  def run_from_config(cls, config: TrainingConfig):
+  def run_from_config_object(cls, config: PredictorConfig):
     
+    data_fetcher = LabeledExamplePreprocessor(
+      batch_size = self.training_config.batch_size,
+      charset = "all",
+      filters = [])
+
     predictor = cls.from_config_object(config)
     writer = self.writer_class(config.output_path)
 
-    for example in self.reader_class(config.input_path):
+    for example in data_fetcher.fetch_tfr_files(config.input_path):
       predicted = predictor.predict(example)
       writer.write(predicted)
 
@@ -281,7 +286,7 @@ class Predictor(FittableTransform):
     cls.fit_from_config(config)
 
   @classmethod
-  def fit_from_config(cls, config: TrainingConfig):
+  def fit_from_config(cls, config: PredictorConfig):
     
     predictor = cls.from_config_object(config).fit()
     predictor.model.save(config.model_path)

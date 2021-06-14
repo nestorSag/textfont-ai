@@ -36,7 +36,7 @@ class SimpleClassInstantiator(object):
   """
   def __init__(self):
 
-    self.ANY_PRIMITIVES = yml.Int() | yml.Float() | yml.Str() | yml.Bool()
+    self.ANY_PRIMITIVES = yml.Int() | yml.Float() | yml.Bool() | yml.Str()
 
     self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA = yml.Map(
           {"class": yml.Str(), 

@@ -43,16 +43,16 @@ class Transform(ABC):
     """
     pass
 
-  @classmethod
-  @abstractmethod
-  def transform_batch(self, input_path: str, output_path: str) -> None:
-    """Processes a batch of files and persist the results back to storage.
+  # @classmethod
+  # @abstractmethod
+  # def transform_batch(self, input_path: str, output_path: str) -> None:
+  #   """Processes a batch of files and persist the results back to storage.
     
-    Args:
-        input_path (str): Input folder
-        output_path (str): Output folder
-    """
-    pass
+  #   Args:
+  #       input_path (str): Input folder
+  #       output_path (str): Output folder
+  #   """
+  #   pass
 
 class IdentityTransform(Transform):
 
