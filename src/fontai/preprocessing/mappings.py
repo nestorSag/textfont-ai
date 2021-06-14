@@ -68,7 +68,7 @@ class ObjectMapper(ABC):
     return output
 
 
-class OneToManyMapper(ObjectMapper):
+class ManyToManyMapper(ObjectMapper):
 
   """
   Wrapper Wrapper class to apply trnsformations to an entire generator of input data
@@ -105,9 +105,6 @@ class PipelineExecutor(ObjectMapper):
     self.stages = stages
 
   def raw_map(self, data: t.Any) -> t.Generator[t.Any, None, None]:
-
-    if not isinstance(data, Iterable):
-      data = [data]
 
     for stage in self.stages:
       data = stage.map(data)
@@ -219,7 +216,7 @@ class FontFileToLabeledExamples(ObjectMapper):
   def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledExample, None, None]:
     logger.info(f"exctracting arrays from file '{file.filename}'")
     try:
-      font = file.deserialise()
+      font = file.deserialise(font_size = self.font_extraction_size)
     except Exception as e:
       logger.exception(f"Error while reading font file '{file.filename}'")
       return
@@ -246,7 +243,7 @@ class FeatureCropper(ObjectMapper):
   """
 
   def raw_map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
-    nonzero = np.where(example.x > 0)
+    nonzero = np.where(example.features > 0)
     if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
       logger.info("Empty image found. ignoring.")
       return
@@ -256,8 +253,8 @@ class FeatureCropper(ObjectMapper):
       h = h_bound[1] - h_bound[0] + 1
       w = w_bound[1] - w_bound[0] + 1
       #crop and map to png
-      cropped = example.x[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
-      yield LabeledExample(features=cropped, label=example.y, fontname=example.metadata)
+      cropped = example.features[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+      yield LabeledExample(features=cropped, label=example.label, fontname=example.fontname)
 
 
 class FeatureResizer(ObjectMapper):
@@ -284,7 +281,7 @@ class FeatureResizer(ObjectMapper):
     output = np.zeros((self.output_size,self.output_size),dtype=np.uint8)
     # resize img to fit into output dimensions
     try:
-      height, width = example.x.shape
+      height, width = example.features.shape
       if height > 0 and width > 0:
         if height >= width:
           resize_dim = (self.output_size,int(width*self.output_size/height))
@@ -297,7 +294,7 @@ class FeatureResizer(ObjectMapper):
         h_pad, w_pad = int((self.output_size - resized_h)/2), int((self.output_size - resized_w)/2)
         output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
         # make the image binary
-        yield LabeledExample(features=output.astype(np.uint8), label=y,filename=metadata)
+        yield LabeledExample(features=output.astype(np.uint8), label=y,fontname=metadata)
     except Exception as e:
       logger.exception(f"Error while resizing array: {e}")
       return
@@ -338,7 +335,7 @@ class Writer(beam.DoFn):
     self.writer = writer
   def process(self,example: LabeledExample) -> None:
     try:
-      writer.write(example)
+      self.writer.write(example)
     except Exception as e:
       logging.exception(f"error writing example {example}: {e}")
 

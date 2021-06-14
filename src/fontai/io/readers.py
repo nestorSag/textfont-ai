@@ -57,7 +57,7 @@ class TfrReader(BatchReader):
     return TFDatasetWrapper(filenames=str_sources)
 
 
-class FileScrapper(BatchReader):
+class FileReader(BatchReader):
 
   """Class that reads a sequence of generic files 
   """

@@ -69,6 +69,9 @@ class InMemoryFile(BaseModel):
     else:
       return obj
 
+  def __str__(self):
+    return f"Filename: {self.filename}, content size: {sys.getsizeof(self.content)/1e6} MB."
+
 
 
 class InMemoryZipHolder(InMemoryFile):

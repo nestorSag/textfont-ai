@@ -22,9 +22,10 @@ from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandle
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
 from fontai.config.training import TrainingConfig, Config as ModelConfig, ConfigHandler as ModelConfigHandler
 
-from fontai.preprocessing.mappings import PipelineExecutor, OneToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer
+from fontai.preprocessing.mappings import PipelineExecutor, ManyToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer, BeamCompatibleWrapper
 
 #from fontai.pipeline.base import MLPipelineTransform
+from fontai.io.storage import BytestreamPath
 from fontai.io.readers import ScrapperReader
 from fontai.io.records import ScoredLabeledExample, LabeledExample
 from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFDatasetWrapper
@@ -61,13 +62,10 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
   def run_from_config_file(cls, path: str):
     
     config = cls.parse_config_file(path)
-    ingestor = cls.from_config_object(config)
-    writer = ingestor.writer_class(ingestor.config.output_path)
-    for file in ingestor.reader_class(config.scrappers).get_files():
-      writer.write(file)
+    cls.run_from_config(config)
 
   @classmethod
-  def run_from_config(cls, config: IngestionConfig):
+  def run_from_config_object(cls, config: IngestionConfig):
     
     ingestor = cls.from_config_object(config)
     writer = ingestor.writer_class(ingestor.config.output_path)
@@ -106,20 +104,18 @@ class LabeledExampleExtractor(ConfigurableTransform):
 
     self.pipeline = PipelineExecutor(
       stages = [
-      OneToManyMapper(
-        mapper = InputToFontFiles()
-      ),
-      OneToManyMapper(
+      InputToFontFiles(),
+      ManyToManyMapper(
         mapper = FontFileToLabeledExamples(
           charset = charset,
           font_extraction_size = font_extraction_size,
           canvas_size = canvas_size,
           canvas_padding = canvas_padding)
       ),
-      OneToManyMapper(
+      ManyToManyMapper(
         mapper = FeatureCropper()
       ),
-      OneToManyMapper(
+      ManyToManyMapper(
         mapper = FeatureResizer(output_size = output_array_size)
       )]
     )
@@ -138,7 +134,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
   def transform(self, data):
     return self.pipeline.map(data)
 
-  def transform_batch(self, input_path: str, output_path: str):
+  def transform_batch(self, input_path: str, output_path: str, max_output_file_size: float = 128.0):
 
     """
       Runs Beam preprocessing pipeline as defined in the config object.
@@ -147,19 +143,19 @@ class LabeledExampleExtractor(ConfigurableTransform):
 
     # if output is locally persisted, create parent folders
     reader = self.reader_class(input_path)
-    writer = self.writer_class(output_path)
+    writer = self.writer_class(output_path, max_output_file_size = max_output_file_size)
 
-    if not output_path.is_gcs:
+    if not BytestreamPath(output_path).is_gcs:
       Path(str(output_path)).mkdir(parents=True, exist_ok=True)
 
-    pipeline_options = PipelineOptions(self.config.beam_cmd_line_args)
+    pipeline_options = PipelineOptions(self.beam_cmd_line_args)
     pipeline_options.view_as(SetupOptions).save_main_session = True
 
     with beam.Pipeline(options=pipeline_options) as p:
 
       # execute pipeline
       (p 
-      | 'Read from storage' >> beam.Create(reader.read_files()) 
+      | 'Read from storage' >> beam.Create(reader.get_files()) 
       | 'get labeled exampes from zip files' >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = self.pipeline
@@ -179,7 +175,10 @@ class LabeledExampleExtractor(ConfigurableTransform):
   def run_from_config_object(cls, config: ProcessingConfig):
     
     processor = cls.from_config_object(config)
-    processor.transform_batch(input_path=config.input_path, output_path=config.output_path)
+    processor.transform_batch(
+      input_path=config.input_path, 
+      output_path=config.output_path, 
+      max_output_file_size = config.max_output_file_size)
 
 
   @classmethod

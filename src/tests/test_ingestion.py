@@ -18,8 +18,9 @@ logger = logging.getLogger(__name__)
 
 def test_ingestion():
   config = FontIngestion.parse_config_str(TEST_INGESTION_CONFIG)
-  FontIngestion.run_from_config(config)
+  FontIngestion.run_from_config_object(config)
 
   assert [obj.name for obj in list(Path(config.output_path).iterdir())] == [obj.name for obj in list(Path(config.scrappers[0].folder).iterdir())]
+
 
 

@@ -54,16 +54,12 @@ class Transform(ABC):
     """
     pass
 
-  @abstractmethod
-  def process(self, data: t.Any):
-    pass
-
 class IdentityTransform(Transform):
 
   """This class applies an identity transformation to its inputs; it is useful for ML stages that are only active in thetraining stage and not on the deployment stage.
   """
 
-  def process(self, data: t.Any):
+  def transform(self, data: t.Any):
 
     return data
 
@@ -80,7 +76,7 @@ class IdentityTransform(Transform):
   #       logger.exception(f"Error reading file: {e}")
 
 
-class ConfigurableTransform(ABC):
+class ConfigurableTransform(Transform):
 
   """Interface for configurable tranformations; they can be instantiated and run from YAML configuration files.
   """
@@ -152,7 +148,7 @@ class ConfigurableTransform(ABC):
 
   @classmethod
   @abstractmethod
-  def run_from_config(cls, config: BasePipelineTransformConfig) -> None:
+  def run_from_config_object(cls, config: BasePipelineTransformConfig) -> None:
 
     pass
     #cls.from_config_file(path).run_from_config()
@@ -169,7 +165,7 @@ class ConfigurableTransform(ABC):
     pass
 
 
-class FittableTransform(ConfigurableTransform,ABC):
+class FittableTransform(ConfigurableTransform):
 
   """Interface for pipeline transforms that can be fitted. Scoring is done using the 'transform' method.
   """

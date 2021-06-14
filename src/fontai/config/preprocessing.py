@@ -5,7 +5,7 @@ import inspect
 import string
 from argparse import Namespace
 
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, PositiveInt, PositiveFloat
 import strictyaml as yml
 
 from fontai.config.core import BaseConfigHandler, BasePipelineTransformConfig
@@ -46,6 +46,7 @@ class Config(BasePipelineTransformConfig):
 
   """
   output_array_size: PositiveInt
+  max_output_file_size: PositiveFloat
   font_to_array_config: FontExtractionConfig
   beam_cmd_line_args: t.List[str]
 
@@ -62,12 +63,11 @@ class ConfigHandler(BaseConfigHandler):
       yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
       yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
       "output_array_size": yml.Int(),
-      "font_extraction_config": yml.Map({
       "font_extraction_size": yml.Int(), 
       "canvas_size": yml.Int(), 
       "canvas_padding": yml.Int(),
-      yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str()
-      }),
+      yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
+      yml.Optional("max_output_file_size", default = 64.0): yml.Float(),
       yml.Optional("beam_cmd_line_args", default = ["--runner", "DirectRunner"]): yml.Seq(yml.Str())
        })
 
@@ -85,6 +85,7 @@ class ConfigHandler(BaseConfigHandler):
 
     beam_cmd_line_args = config.data["beam_cmd_line_args"]
     output_array_size = config.get("output_array_size").data
+    max_output_file_size = config.get("max_output_file_size").data
     f2a_config = FontExtractionConfig(
       charset = config.get("charset").data,
       font_extraction_size = config.get("font_extraction_size").data,
@@ -99,6 +100,7 @@ class ConfigHandler(BaseConfigHandler):
       input_path = input_path, 
       output_path = output_path, 
       output_array_size = output_array_size,
+      max_output_file_size = max_output_file_size,
       font_to_array_config = f2a_config,
       beam_cmd_line_args = beam_cmd_line_args,
       yaml = config)

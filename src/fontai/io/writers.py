@@ -16,6 +16,8 @@ import logging
 from fontai.io.storage import BytestreamPath
 from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, TFDatasetWrapper
 
+from tensorflow.io import TFRecordWriter
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,19 +71,19 @@ class ZipWriter(BatchWriter):
   Attributes:
       bundle (InMemoryZipBundler): In-memory zip file to be persisted when it's closed
       shard_id (int): Written files counter
-      shard_size_limit (float): maximum allowed pre-compression size for individual zip files
+      max_output_file_size (float): maximum allowed pre-compression size for individual zip files
       output_path (BytestreamPath): Interface to storage.
   
   """
 
-  def __init__(self, output_path: str, size_limit: float = 128.0):
+  def __init__(self, output_path: str, max_output_file_size: float = 128.0):
     """
       
     Args:
         output_path (str): Path to the path in which to save the zip files
-        size_limit (float, optional): Mximum allowed  pre-compression size in MB for individual output zip files
+        max_output_file_size (float, optional): Mximum allowed  pre-compression size in MB for individual output zip files
     """
-    self.shard_size_limit = size_limit
+    self.max_output_file_size = max_output_file_size
     self.output_path = BytestreamPath(output_path)
 
     self.bundle = InMemoryZipBundler()
@@ -106,7 +108,7 @@ class ZipWriter(BatchWriter):
       file = file.to_in_memory_file()
 
     file_size = sys.getsizeof(file.content)
-    if self.bundle.size + file_size > 1e6 * self.shard_size_limit:
+    if self.bundle.size + file_size > 1e6 * self.max_output_file_size:
       self.close()
       self.open()
 
@@ -122,7 +124,7 @@ class ZipWriter(BatchWriter):
 
   def open(self):
     self.shard_id += 1
-    self.bundle = InMemoryZipFile()
+    self.bundle = InMemoryZipBundler()
 
   def __enter__(self):
     return self
@@ -147,15 +149,23 @@ class TfrWriter(BatchWriter):
         writer (tf.io.TFRecordWriter): writer object
   """
 
-  def __init__(self, output_path: str, size_limit: float = 128.0):
+  def __init__(self, output_path: str, max_output_file_size: float = 128.0):
+    """
+    
+    Args:
+        output_path (str): Output folder path
+        max_output_file_size (float, optional): Maximum individual file size
+    """
+    
     self.output_path = BytestreamPath(output_path)
-
+    self.max_output_file_size = max_output_file_size
 
     #file prefix avoids file write collitions between workers
     self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
     self.shard_id = 0
     #self.writer = tf.io.TFRecordWriter(str(output_path))
-    self.open()
+    self.writer = None
+    #self.open()
 
   def shard_name(self):
     """Returns the shard name from the file preffix and written shard counter
@@ -163,8 +173,8 @@ class TfrWriter(BatchWriter):
     """
     return f"{self.file_preffix}-{self.shard_id}.tfr"
 
-  def open(self, filename: str):
-    self.writer = tf.io.TFRecordWriter(str(output_path / self.shard_name()))
+  def open(self):
+    self.writer = TFRecordWriter(str(self.output_path / self.shard_name()))
     self.shard_size = 0
     self.shard_objs = 0
 
@@ -174,10 +184,13 @@ class TfrWriter(BatchWriter):
     self.shard_id += 1
 
   def write(self, obj: TfrWritable) -> None:
-    tf_example = obj.to_tfr()
-    obj_size = sys.sizeof(tf_example)
+    if self.writer is None:
+      self.open()
 
-    if obj_size + self.shard_size > self.size_limit * 1e6:
+    tf_example = obj.to_tfr()
+    obj_size = sys.getsizeof(tf_example)
+
+    if obj_size + self.shard_size > self.max_output_file_size * 1e6:
       self.close()
       self.open()
 
