@@ -2,8 +2,10 @@ from pathlib import Path
 import logging
 import typing as t
 import inspect
+import traceback
 import string
 from argparse import Namespace
+import copy
 from functools import reduce
 
 from pydantic import BaseModel, PositiveInt, PositiveFloat, validator
@@ -94,7 +96,7 @@ class ModelFactory(object):
       "class": yml.Str(),
       "kwargs": yml.MapPattern(
         yml.Str(), 
-        self.SEQUENTIAL_MODEL_SCHEMA | self.yaml_to_obj.ANY_PRIMITIVES,
+        self.yaml_to_obj.ANY_PRIMITIVES | self.SEQUENTIAL_MODEL_SCHEMA,
         )
       })
 
@@ -108,7 +110,7 @@ class ModelFactory(object):
 
     #self.MODEL_CONFIG_SCHEMA = reduce(lambda schema1, schema2: schema1 | schema2, list(self.schema_constructors.keys()))
 
-  def from_yaml(self, model_yaml: yml.YAML):
+  def from_yaml(self, yaml: yml.YAML):
     """
     Instantiate a ML model from a YAML object that contains the model's specification
 
@@ -120,13 +122,14 @@ class ModelFactory(object):
     for schema in self.schema_constructors:
       name, constructor = self.schema_constructors[schema]
       try:
-        model_yaml.revalidate(schema)
+        model_yaml = yml.load(yaml.as_yaml(), schema)
         logger.info(f"Model schema matched to: {name}")
         model = constructor(model_yaml)
         return model
       except Exception as e:
         print(f"name: {name}, error: {e}")
         logger.debug(f"Model schema did not match {name}; {e}")
+        print(traceback.format_exc())
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
   def from_path(self,model_yaml):
@@ -167,14 +170,13 @@ class ModelFactory(object):
     """
     args = model_yaml.get("kwargs")
     materialised_kwargs = copy.deepcopy(args.data)
-    for named_param in materialised_kwargs:
+    for arg in args:
       try:
-        args.get(named_param).revalidate(self.SEQUENTIAL_MODEL_SCHEMA)
-        materialised_kwargs[named_param] = self.from_keras_sequential(self,args.get(named_param))
+        yml.load(args.get(arg).as_yaml(), self.SEQUENTIAL_MODEL_SCHEMA)
+        materialised_kwargs[arg] = self.from_keras_sequential(args.get(arg))
       except Exception as e:
-        logger.debug(f"Parameter {named_param} does not match Sequential model schema.")
-    return self.yaml_to_obj(yaml = args.get("class").text, scope = custom_models)(**materialised_kwargs)
-
+        logger.debug(f"Parameter {arg} does not match Sequential model schema.")
+    return getattr(custom_models, model_yaml.get("class").text)(**materialised_kwargs)
 
 
 class ConfigHandler(BaseConfigHandler):
