@@ -148,72 +148,69 @@ class SAAE(tf.keras.Model):
     """
     return [self.mse_metric, self.accuracy_metric]
 
-  def get_config(self):
+  # def get_config(self):
 
-    config = {
-      "reconstruction_loss_weight":self.rec_loss_weight,
-      "prior_batch_size": self.prior_batch_size
-    }
+  #   config = {
+  #     "reconstruction_loss_weight":self.rec_loss_weight,
+  #     "prior_batch_size": self.prior_batch_size
+  #   }
 
-    config["encoder"] = self.encoder.get_config()
-    config["decoder"] = self.decoder.get_config()
-    config["discriminator"] = self.discriminator.get_config()
+  #   config["encoder"] = self.encoder.get_config()
+  #   config["decoder"] = self.decoder.get_config()
+  #   config["discriminator"] = self.discriminator.get_config()
 
-    return config
+  #   return config
 
-  @classmethod
-  def from_config(cls, config):
-    encoder = tf.keras.Sequential.from_config(config.pop("encoder"))
-    decoder = tf.keras.Sequential.from_config(config.pop("decoder"))
-    discriminator = tf.keras.Sequential.from_config(config.pop("discriminator"))
+  # @classmethod
+  # def from_config(cls, config):
+  #   encoder = tf.keras.Sequential.from_config(config.pop("encoder"))
+  #   decoder = tf.keras.Sequential.from_config(config.pop("decoder"))
+  #   discriminator = tf.keras.Sequential.from_config(config.pop("discriminator"))
 
-    return SAAE(
-      encoder = encoder, 
-      decoder = decoder, 
-      discriminator = discriminator,**config)
+  #   return SAAE(
+  #     encoder = encoder, 
+  #     decoder = decoder, 
+  #     discriminator = discriminator,**config)
 
   def predict(self, *args, **kwargs):
     return self.encoder.predict(*args,**kwargs)
 
 
-  # def save(self,output_dir: str):
-  #   """Save the model to an output folder
+  def save(self,output_dir: str):
+    """Save the model to an output folder
     
-  #   Args:
-  #       output_dir (str): Target output folder
-  #   """
-  #   self.encoder.save(output_dir + "encoder")
-  #   self.decoder.save(output_dir + "decoder")
-  #   self.discriminator.save(output_dir + "discriminator")
+    Args:
+        output_dir (str): Target output folder
+    """
+    self.encoder.save(output_dir + "encoder")
+    self.decoder.save(output_dir + "decoder")
+    self.discriminator.save(output_dir + "discriminator")
 
-  #   d = {
-  #     "reconstruction_loss_weight":self.rec_loss_weight,
-  #     "input_dim": self.input_dim,
-  #     "n_classes": self.n_classes,
-  #     "code_dim": self.code_dim,
-  #     "prior_batch_size": self.prior_batch_size
-  #   }
+    d = {
+      "reconstruction_loss_weight":self.rec_loss_weight,
+      "prior_batch_size": self.prior_batch_size
+    }
 
-  #   with open(output_dir + "aae-params.json","w") as f:
-  #     json.dump(d,f)
+    with open(output_dir + "aae-params.json","w") as f:
+      json.dump(d,f)
 
-  # @classmethod
-  # def load(cls,folder: str):
-  #   """Loads a saved instance of this class
+  @classmethod
+  def load(cls, folder: str):
+    """Loads a saved instance of this class
     
-  #   Args:
-  #       folder (str): Target input folder
+    Args:
+        folder (str): Target input folder
     
-  #   Returns:
-  #       SupervisedAdversarialAutoEncoder: Loaded model
-  #   """
-  #   encoder = tf.keras.models.load_model(folder + "encoder")
-  #   decoder = tf.keras.models.load_model(folder + "decoder")
-  #   discriminator = tf.keras.models.load_model(folder + "discriminator")
+    Returns:
+        SupervisedAdversarialAutoEncoder: Loaded model
+    """
+    encoder = tf.keras.models.load_model(folder + "encoder")
+    decoder = tf.keras.models.load_model(folder + "decoder")
+    discriminator = tf.keras.models.load_model(folder + "discriminator")
 
-  #   with open(folder + "aae-params.json","r") as f:
-  #     d = json.loads(f.read())
+    with open(folder + "aae-params.json","r") as f:
+      d = json.loads(f.read())
 
-  #   return SupervisedAdversarialAutoEncoder(encoder = encoder,decoder = decoder,discriminator = discriminator,**d)
+    return SupervisedAdversarialAutoEncoder(encoder = encoder,decoder = decoder,discriminator = discriminator, **d)
 
 

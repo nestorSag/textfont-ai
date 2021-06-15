@@ -142,9 +142,10 @@ class ModelFactory(object):
 
     """
     model_class = model_yaml.get("custom_class")
-    custom_objects = {model_class.text: getattr(custom_models, model_class.text)} if model_class is not None else None
-
-    return keras.models.load_model(model_yaml.get("path").text, custom_objects = custom_objects)
+    if model_class.data is None:
+      return keras.model.load_model(model_yaml.get("path").text)
+    else:
+      return getattr(custom_models, model_class.text).load(model_yaml.get("path").text)
 
   def from_keras_sequential(self, model_yaml):
     """

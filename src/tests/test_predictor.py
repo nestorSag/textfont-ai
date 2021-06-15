@@ -67,7 +67,6 @@ model:
         - class: Dense
           kwargs: 
             units: 10
-            activation
     decoder:
       class: Sequential
       kwargs:
@@ -95,11 +94,9 @@ model:
             - 10
         - class: Dense
           kwargs: 
-            units: 10
+            units: 1
             activation: sigmoid
-    code_dim: 10,
-    reconstruction_loss_weight:float: 0.5,
-    n_classes: 62,
+    reconstruction_loss_weight: 0.5
     prior_batch_size: 32
 """
 
