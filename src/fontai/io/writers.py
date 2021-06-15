@@ -17,6 +17,8 @@ from fontai.io.storage import BytestreamPath
 from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, TFDatasetWrapper
 
 from tensorflow.io import TFRecordWriter
+from tensorflow.data import TFRecordDataset
+
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +254,7 @@ class WriterClassFactory(object):
         file_format (InMemoryFile): Expected input file format.
     
     """
-    if file_format == TFDatasetWrapper:
+    if file_format == TFRecordDataset:
       return TfrWriter
     else:
       logger.info(f"Writer class defaulted to FileWriter; writing individual files.")

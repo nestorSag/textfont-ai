@@ -2,8 +2,8 @@ from fontai.pipeline.stages import Predictor
 
 SEQUENTIAL_PREDICTOR_CONFIG = """
 input_path: src/tests/data/preprocessing/output
-output_path: src/tests/data/training/output
-model_path: src/tests/data/training/model
+output_path: src/tests/data/prediction/output
+model_path: src/tests/data/prediction/model
 training:
   batch_size: 32
   epochs: 10
@@ -18,6 +18,7 @@ model:
   class: Sequential
   kwargs:
     layers:
+    - class: Flatten
     - class: Dense
       kwargs: 
         units: 10
@@ -27,8 +28,8 @@ model:
 
 AAE_PREDICTOR_CONFIG = """
 input_path: src/tests/data/preprocessing/output
-output_path: src/tests/data/training/output
-model_path: src/tests/data/training/model
+output_path: src/tests/data/prediction/output
+model_path: src/tests/data/prediction/model
 training:
   batch_size: 32
   epochs: 10
@@ -46,6 +47,7 @@ model:
       class: Sequential
       kwargs:
         layers:
+        - class: Flatten
         - class: Dense
           kwargs: 
             units: 10
@@ -76,6 +78,9 @@ model:
 def test_predictor():
   config = Predictor.parse_config_str(SEQUENTIAL_PREDICTOR_CONFIG)
   predictor = Predictor.from_config_object(config)
+
+  ## try training
+  predictor.fit()
 
 
 

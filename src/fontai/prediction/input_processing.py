@@ -20,7 +20,9 @@ import imageio
 import tensorflow as tf
 from  tensorflow.python.data.ops.dataset_ops import MapDataset
 
-from fontai.io.formats import TFDatasetWrapper
+from tensorflow.data import TFRecordDataset
+
+from fontai.io.records import LabeledExample
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +42,11 @@ class LabeledExamplePreprocessor(object):
     charset: str,
     filters: t.List[t.Callable] = []):
 
+    self.batch_size = batch_size
+
     self.CHARSET_OPTIONS = {
       "uppercase": string.ascii_letters[26::],
-      "lowercase": string.ascii_letters[0,26],
+      "lowercase": string.ascii_letters[0:26],
       "digits": string.digits,
       "all": string.ascii_letters + string.digits
     }
@@ -55,22 +59,25 @@ class LabeledExamplePreprocessor(object):
       logger.warning(f"Charset string is not one from {list(self.CHARSET_OPTIONS.keys())}; creating custom charset from provided string instead.")
       self.charset = "".join(list(set(charset)))
 
-    self.charset_encoding = tf.convert_to_tensor(list(self.charset))
+    self.num_classes = len(self.charset)
+    self.charset_tensor = tf.convert_to_tensor(list(self.charset))
 
 
-  def fetch_tfr_files(self, dataset: TFDatasetWrapper, drop_fontname=True):
+  def fetch_and_parse(self, dataset: TFRecordDataset, drop_fontname=True):
     """
       Fetches a list of input Tensorflow record files and prepares them for training
 
-      input_files: List of input files
+      dataset: List of input files
+
+      drop_fontname: if True, drops fontname from examples in order to pass examples to model
 
       Returns a MapDataset object
     """
 
     dataset = dataset\
       .map(LabeledExample.from_tfr)\
-      .map(self.parse_tf_records)\
-      .filter(self.filter_charset)
+      .filter(self.filter_charset)\
+      .map(self.parse_tf_records)
 
     dataset = self.batch_dataset(dataset)
 
@@ -82,12 +89,20 @@ class LabeledExamplePreprocessor(object):
 
     return dataset
 
-  def batch_dataset(self, dataset):
+  def batch_dataset(self, dataset, buffered_batches = 10):
     """
-      Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
+    Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
+    
+    Args:
+        dataset (TFRecordDataset): Input dataset
+        buffered_batches (int, optional): Number of batches to fetch in memory buffer
+    
+    Returns:
+        TFRecordDataset
     """
+
     dataset = dataset\
-      .shuffle(buffer_size=2*self.batch_size)\
+      .shuffle(buffer_size=buffered_batches*self.batch_size)\
       .repeat()\
       .batch(self.batch_size)
 
@@ -95,7 +110,7 @@ class LabeledExamplePreprocessor(object):
 
   def parse_tf_records(self, record):
     """
-      Parses a serialised Tensorflow record to retrieve image tensors, one-hot-encoded labels and metadata
+      Parses a serialised Tensorflow record to retrieve image tensors, one-hot-encoded labels and fontname
 
       record: Serialised Tensorflow record
 
@@ -103,43 +118,43 @@ class LabeledExamplePreprocessor(object):
     """
     img = tf.image.decode_png(record["features"])
     img = tf.cast(img,dtype=tf.float32)
-    one_hot_label = tf.cast(tf.where(self.charset_encoding == record["label"]),dtype=tf.int32)
+    one_hot_label = tf.cast(tf.where(self.charset_tensor == record["label"]),dtype=tf.int32)
     label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=self.num_classes),(self.num_classes,))#.reshape((num_classes,))
     return img, label, record["fontname"]
 
-  def filter_charset(self, img, label, metadata):
+  def filter_charset(self, record):
     """
       Filters out triplet examples not containing characters in the charset
     """
-    return tf.reduce_any(self.tf_classes == parsed["label"])
+    return tf.reduce_any(self.charset_tensor == record["label"])
 
   def drop_fontname(self, features, label, fontname):
     """
-      Drops the metadata from the triplet sothe remaining tuple can be passed to a Tensorflow model.
+      Drops the fontname from the triplet sothe remaining tuple can be passed to a Tensorflow model.
     """
     return features, label
 
 
 
-def supervised_filter(model_path: str, threshold=0.5) -> t.Callable:
-  """Returns a filtering function to filter out misclassfied examples or correctly classified examples that are not unambiguous enough. This is useful to filter out 'hard' examples for generative models
+# def supervised_filter(model_path: str, threshold=0.5) -> t.Callable:
+#   """Returns a filtering function to filter out misclassfied examples or correctly classified examples that are not unambiguous enough. This is useful to filter out 'hard' examples for generative models
   
-  Args:
-      threshold (float, optional): Probability theshold below which correctly classified examples are also filtered out
-      model_path (str): Path from which to load the scoring model
+#   Args:
+#       threshold (float, optional): Probability theshold below which correctly classified examples are also filtered out
+#       model_path (str): Path from which to load the scoring model
   
-  Returns:
-      t.Callable: Filtering function.
-  """
-  model = Model.load(model_path)
+#   Returns:
+#       t.Callable: Filtering function.
+#   """
+#   model = Model.load(model_path)
 
-  def filter(features,labels,fontnames):
-    # filters a batch using a trained model
-    pred = model.predict(features)
-    condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1) and tf.max(pred,axis=-1) > threshold
-    return features[condition], labels[condition], fontnames[condition]
+#   def filter(features,labels,fontnames):
+#     # filters a batch using a trained model
+#     pred = model.predict(features)
+#     condition = tf.argmax(pred,axis=-1) == tf.argmax(labels,axis=-1) and tf.max(pred,axis=-1) > threshold
+#     return features[condition], labels[condition], fontnames[condition]
 
-  return filter_func
+#   return filter_func
 
 def fontname_filter(regex: str) -> t.Callable:
   """Filter out examples whose filename foesn't match the provided regex. This is useful to isolate examples of differnet font types, e.g. bold, italic and 3D.

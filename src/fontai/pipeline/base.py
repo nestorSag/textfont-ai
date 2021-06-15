@@ -188,7 +188,7 @@ class FittableTransform(ConfigurableTransform):
 
   @classmethod
   @abstractmethod
-  def fit_from_config(self) -> FittableTransform:
+  def fit_from_config_object(self) -> FittableTransform:
     """
     Fits the stage to the passed data
 

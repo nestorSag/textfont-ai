@@ -54,7 +54,7 @@ class TfrReader(BatchReader):
 
     str_sources = [str(src) for src in self.input_path.list_sources()]
 
-    return TFDatasetWrapper(filenames=str_sources)
+    return TFRecordDataset(filenames=str_sources)
 
 
 class FileReader(BatchReader):
@@ -121,7 +121,7 @@ class ReaderClassFactory(object):
         file_format (InMemoryFile): Expected input file format.
     
     """
-    if file_format == TFDatasetWrapper:
+    if file_format == TFRecordDataset:
       return TfrReader
     elif file_format == InMemoryZipHolder:
       return ZipReader

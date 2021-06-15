@@ -119,7 +119,7 @@ class InMemoryFontfileHolder(InMemoryFile):
 
 
 
-class TFDatasetWrapper(TFRecordDataset, InMemoryFile):
+class TFDatasetWrapper(TFRecordDataset):
 
   def to_format(self, file_format: type):
     if file_format != TFDatasetWrapper:

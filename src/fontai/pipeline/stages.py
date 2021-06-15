@@ -12,6 +12,8 @@ from numpy import ndarray
 from tensorflow import Tensor
 from strictyaml import as_document
 import tensorflow as tf
+from tensorflow.data import TFRecordDataset
+
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -22,13 +24,15 @@ from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandle
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
 from fontai.config.prediction import TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
 
+
+from fontai.prediction.input_processing import LabeledExamplePreprocessor
 from fontai.preprocessing.mappings import PipelineExecutor, ManyToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer, BeamCompatibleWrapper
 
 #from fontai.pipeline.base import MLPipelineTransform
 from fontai.io.storage import BytestreamPath
 from fontai.io.readers import ScrapperReader
 from fontai.io.records import ScoredLabeledExample, LabeledExample
-from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFDatasetWrapper
+from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFRecordDataset
 from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
 
@@ -89,7 +93,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
   """
 
   input_file_format = InMemoryZipHolder
-  output_file_format = TFDatasetWrapper
+  output_file_format = TFRecordDataset
 
   def __init__(
     self, 
@@ -197,22 +201,21 @@ class Predictor(FittableTransform):
 
     """
 
-  input_file_format = TFDatasetWrapper
-  output_file_format = TFDatasetWrapper
+  input_file_format = TFRecordDataset
+  output_file_format = TFRecordDataset
 
   def __init__(self, model: tf.keras.Model, training_config: TrainingConfig = None):
     self.model = model
     self.training_config = training_config
 
-  @classmethod
-  def fit(self):
+  def fit(self, data: TFRecordDataset):
 
     if self.training_config is None:
       raise ValueError("Training configuration not provided at instantiation time.")
 
     data_fetcher = LabeledExamplePreprocessor(
       batch_size = self.training_config.batch_size,
-      charset = self.training_config.char_set,
+      charset = self.training_config.charset,
       filters = self.training_config.filters)
     
     self.model.compile(
@@ -220,9 +223,9 @@ class Predictor(FittableTransform):
       optimizer = self.training_config.optimizer)
 
     self.model.fit(
-      data=data_fetcher.fetch_tfr_files(config.input_path),
-      steps_per_epoch = predictor.training_config.steps_per_epoch, 
-      epochs = predictor.training_config.n_epochs)
+      data_fetcher.fetch_and_parse(data),
+      steps_per_epoch = self.training_config.steps_per_epoch, 
+      epochs = self.training_config.epochs)
 
     return self
 
@@ -275,7 +278,7 @@ class Predictor(FittableTransform):
     predictor = cls.from_config_object(config)
     writer = self.writer_class(config.output_path)
 
-    for example in data_fetcher.fetch_tfr_files(config.input_path):
+    for example in data_fetcher.fetch_and_parse(config.input_path):
       predicted = predictor.predict(example)
       writer.write(predicted)
 
@@ -286,7 +289,8 @@ class Predictor(FittableTransform):
     cls.fit_from_config(config)
 
   @classmethod
-  def fit_from_config(cls, config: PredictorConfig):
+  def fit_from_config_object(cls, config: PredictorConfig):
     
-    predictor = cls.from_config_object(config).fit()
+    predictor = cls.from_config_object(config)
+    predictor.fit(data = predictor.reader_class(config.input_path).get_files())
     predictor.model.save(config.model_path)

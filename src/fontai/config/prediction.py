@@ -127,9 +127,7 @@ class ModelFactory(object):
         model = constructor(model_yaml)
         return model
       except Exception as e:
-        print(f"name: {name}, error: {e}")
         logger.debug(f"Model schema did not match {name}; {e}")
-        print(traceback.format_exc())
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
   def from_path(self,model_yaml):
