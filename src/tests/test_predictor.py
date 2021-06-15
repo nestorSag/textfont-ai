@@ -18,11 +18,21 @@ model:
   class: Sequential
   kwargs:
     layers:
+    - class: Input
+      kwargs:
+        shape:
+        - 64
+        - 64
+        - 1
     - class: Flatten
     - class: Dense
       kwargs: 
         units: 10
         activation: elu
+    - class: Dense
+      kwargs: 
+        units: 62
+        activation: sigmoid
 """
 
 
@@ -47,30 +57,48 @@ model:
       class: Sequential
       kwargs:
         layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 64
+            - 64
+            - 1
         - class: Flatten
         - class: Dense
           kwargs: 
             units: 10
-            activation: elu
+            activation
     decoder:
       class: Sequential
       kwargs:
         layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 72
         - class: Dense
           kwargs: 
-            units: 10
-            activation: elu
+            units: 4096
+        - class: Reshape
+          kwargs:
+            target_shape:
+            - 64
+            - 64
+            - 1
     discriminator:
       class: Sequential
       kwargs:
         layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 10
         - class: Dense
           kwargs: 
             units: 10
-            activation: elu
+            activation: sigmoid
     code_dim: 10,
     reconstruction_loss_weight:float: 0.5,
-    input_dim: 64,
     n_classes: 62,
     prior_batch_size: 32
 """

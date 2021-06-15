@@ -3,6 +3,7 @@ import re
 import io
 import tensorflow as tf
 import json
+import copy
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -19,7 +20,6 @@ class SAAE(tf.keras.Model):
   
   Attributes:
       accuracy_metric (tf.keras.metrics.Accuracy): Accuracy metric
-      code_dim (int): Dimensionality of encoded representation
       cross_entropy (tf.keras.losses.BinaryCrossentropy): Cross entropy loss
       decoder (tf.keras.Model): Decoder model
       discriminator (tf.keras.Model): Discriminator model
@@ -27,7 +27,6 @@ class SAAE(tf.keras.Model):
       input_dim (t.Tuple[int]): Input dimension
       mse_loss (TYPE): Description
       mse_metric (tf.keras.losses.MSE): MSE loss
-      n_classes (int): number of labeled classes
       prior_batch_size (int): Batch size from prior distribution at training time
       prior_sampler : Object from which prior samples are generated
       rec_loss_weight (float): Weight of reconstruction loss at training time. Should be between 0 and 1.
@@ -38,10 +37,7 @@ class SAAE(tf.keras.Model):
     encoder: tf.keras.Model,
     decoder: tf.keras.Model,
     discriminator: tf.keras.Model,
-    code_dim: int,
     reconstruction_loss_weight:float=0.5,
-    input_dim=(64,64,1),
-    n_classes:int = 62,
     prior_batch_size:int=32):
     """Summary
     
@@ -49,9 +45,7 @@ class SAAE(tf.keras.Model):
         decoder (tf.keras.Model): Decoder model
         discriminator (tf.keras.Model): Discriminator model
         encoder (tf.keras.Model): Encoder model
-        code_dim (int): Dimensionality of encoded representation
         reconstruction_loss_weight (float, optional): Weight of reconstruction loss at training time. Should be between 0 and 1.
-        input_dim (t.Tuple[int]): Input dimension
         n_classes (int): number of labeled classes
         prior_batch_size (int): Batch size from prior distribution at training time
     """
@@ -61,20 +55,40 @@ class SAAE(tf.keras.Model):
     #decoder.build(input_shape=(None,n_classes+code_dim))
     #discriminator.build(input_shape=(None,code_dim))
 
-    self.input_dim = input_dim
-    self.n_classes = n_classes
     self.encoder = encoder
     self.decoder = decoder
     self.discriminator = discriminator
-    self.code_dim = code_dim
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
     self.prior_batch_size = prior_batch_size
 
-    self.prior_sampler = tf.random.uniform
+    self.prior_sampler = tf.random.normal
     self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     self.mse_loss = tf.keras.losses.MSE
     self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
     self.accuracy_metric = tf.keras.metrics.Accuracy(name="Adversarial error")
+
+  def compile(self,
+    optimizer='rmsprop',
+    loss=None,
+    metrics=None,
+    loss_weights=None,
+    weighted_metrics=None,
+    run_eagerly=None,
+    **kwargs):
+
+    self.encoder.compile(optimizer = copy.deepcopy(optimizer))
+    self.decoder.compile(optimizer = copy.deepcopy(optimizer))
+    self.discriminator.compile(optimizer = copy.deepcopy(optimizer))
+
+    super().compile(
+      optimizer=optimizer,
+      loss=loss,
+      metrics=metrics,
+      loss_weights=loss_weights,
+      weighted_metrics=weighted_metrics,
+      run_eagerly=run_eagerly,
+      **kwargs)
+
 
   def decoder_loss(self,original,decoded):
     return self.mse_loss(original,decoded)
@@ -91,7 +105,7 @@ class SAAE(tf.keras.Model):
 
     x, labels = inputs
 
-    prior_samples = self.prior_sampler(shape=(self.prior_batch_size,self.code_dim),maxval=1.0)
+  
     with tf.GradientTape() as tape1, tf.GradientTape() as tape2, tf.GradientTape() as tape3:
 
       # Forward pass
@@ -99,6 +113,7 @@ class SAAE(tf.keras.Model):
       extended_code = tf.concat([code,labels],axis=-1)
       decoded = self.decoder(extended_code,training=True)  
 
+      prior_samples = self.prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
       real = self.discriminator(prior_samples,training=True)
       fake = self.discriminator(code,training=True)
 
@@ -137,9 +152,6 @@ class SAAE(tf.keras.Model):
 
     config = {
       "reconstruction_loss_weight":self.rec_loss_weight,
-      "input_dim": self.input_dim,
-      "n_classes": self.n_classes,
-      "code_dim": self.code_dim,
       "prior_batch_size": self.prior_batch_size
     }
 

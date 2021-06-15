@@ -220,7 +220,8 @@ class Predictor(FittableTransform):
     
     self.model.compile(
       loss = self.training_config.loss, 
-      optimizer = self.training_config.optimizer)
+      optimizer = self.training_config.optimizer,
+      metrics = self.training_config.metrics)
 
     self.model.fit(
       data_fetcher.fetch_and_parse(data),
@@ -286,7 +287,7 @@ class Predictor(FittableTransform):
   def fit_from_config_file(cls, path: str):
     
     config = cls.parse_config_file(path)
-    cls.fit_from_config(config)
+    return cls.fit_from_config(config)
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig):
@@ -294,3 +295,4 @@ class Predictor(FittableTransform):
     predictor = cls.from_config_object(config)
     predictor.fit(data = predictor.reader_class(config.input_path).get_files())
     predictor.model.save(config.model_path)
+    return predictor

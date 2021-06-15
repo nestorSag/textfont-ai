@@ -32,6 +32,7 @@ class TrainingConfig(BaseModel):
   charset: str = "all"
   filters: t.List[t.Callable] = []
   seed: int = 1
+  metrics: t.Optional[t.List[str]]
 
   @validator("charset")
   def allowed_charsets(charset):
@@ -128,6 +129,7 @@ class ModelFactory(object):
         return model
       except Exception as e:
         logger.debug(f"Model schema did not match {name}; {e}")
+        print(traceback.format_exc())
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
   def from_path(self,model_yaml):
@@ -193,7 +195,7 @@ class ConfigHandler(BaseConfigHandler):
     self.TRAINING_CONFIG_SCHEMA = yml.Map({
       "batch_size": yml.Int(),
       "epochs": yml.Int(),
-      "metrics": yml.Seq(yml.Str()),
+      yml.Optional("metrics", default = None): yml.Seq(yml.Str() | yml.EmptyNone()),
       "loss": self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA,
       yml.Optional(
         "steps_per_epoch", 
