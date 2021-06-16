@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 from pathlib import Path
 import typing
 import zipfile
@@ -19,10 +20,9 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
-
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
-from fontai.config.prediction import TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
+from fontai.config.prediction import ModelFactory, TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
 
 
 from fontai.prediction.input_processing import LabeledExamplePreprocessor
@@ -251,14 +251,15 @@ class Predictor(FittableTransform):
 
 
   @classmethod
-  def from_config_object(cls, config: PredictorConfig, training_stage = True):
-    if training_stage:
-      model = config.model
-    else:
+  def from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
+    if load_from_model_path:
       model_class_name = config.model.__class__.__name__
       classname_tuple = ("custom_class", model_class_name if model_class_name != "Sequential" else None)
       model_yaml = as_document(OrderedDict([("path", config.model_path), classname_tuple]))
-      model = ModelFactory().from_path(model_yaml)
+      logger.info(f"Training flag set to False; loading model from model_path {config.model_path} of class {model_class_name}")
+      model = ModelFactory().from_yaml(model_yaml)
+    else:
+      model = config.model
     predictor = Predictor(model = model, training_config = config.training_config)
     return predictor
 
@@ -287,12 +288,13 @@ class Predictor(FittableTransform):
   def fit_from_config_file(cls, path: str):
     
     config = cls.parse_config_file(path)
-    return cls.fit_from_config(config)
+    return cls.fit_from_config_object(config)
 
   @classmethod
-  def fit_from_config_object(cls, config: PredictorConfig):
+  def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
     
-    predictor = cls.from_config_object(config)
+    predictor = cls.from_config_object(config, load_from_model_path)
     predictor.fit(data = predictor.reader_class(config.input_path).get_files())
+    logger.info(f"Saving trained model to {config.model_path}")
     predictor.model.save(config.model_path)
     return predictor

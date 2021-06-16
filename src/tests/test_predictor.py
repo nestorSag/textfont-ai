@@ -100,12 +100,35 @@ model:
     prior_batch_size: 32
 """
 
-def test_predictor():
-  config = Predictor.parse_config_str(SEQUENTIAL_PREDICTOR_CONFIG)
-  predictor = Predictor.from_config_object(config)
+SAVED_PREDICTOR_CONFIG = """
+input_path: src/tests/data/preprocessing/output
+output_path: src/tests/data/prediction/output
+model_path: src/tests/data/prediction/model
+training:
+  batch_size: 32
+  epochs: 10
+  steps_per_epoch: 10
+  optimizer:
+    class: Adam
+  loss:
+    class: CategoricalCrossentropy
+  metrics:
+  - accuracy
+model:
+  path: src/tests/data/prediction/model
+  custom_class: SAAE
+"""
 
-  ## try training
-  predictor.fit()
+@pytest.mark.parametrize("config_string", [SEQUENTIAL_PREDICTOR_CONFIG, AAE_PREDICTOR_CONFIG, SAVED_PREDICTOR_CONFIG])
+def test_predictor(config_string):
+  config = Predictor.parse_config_str(config_string)
+  Predictor.fit_from_config_object(config)
+  Predictor.fit_from_config_object(config, load_from_model_path = True)
+
+  assert True
+
+
+
 
 
 

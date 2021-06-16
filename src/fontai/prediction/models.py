@@ -211,6 +211,6 @@ class SAAE(tf.keras.Model):
     with open(folder + "aae-params.json","r") as f:
       d = json.loads(f.read())
 
-    return SupervisedAdversarialAutoEncoder(encoder = encoder,decoder = decoder,discriminator = discriminator, **d)
+    return cls(encoder = encoder,decoder = decoder,discriminator = discriminator, **d)
 
 

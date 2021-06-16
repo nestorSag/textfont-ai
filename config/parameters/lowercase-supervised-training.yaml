@@ -1,11 +1,10 @@
-input:
-  path: data/preprocessed
-  file_format: tfr
+input_path: data/preprocessed
+output_path: data/scored
 model_path: data/model
 training:
   batch_size: 64
-  epochs: 10
-  steps_per_epoch: 2000
+  epochs: 10 
+  steps_per_epoch: 125000
   optimizer:
     class: Adam
   loss:
@@ -22,42 +21,16 @@ model:
         kernel_size: 3
         activation: elu
         padding: same
-    - class: MaxPooling2D
-    - class: BatchNormalization
-      kwargs: 
-        pool_size: 2
     - class: Conv2D
       kwargs: 
-        filters: 96
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 96
+        filters: 64
         kernel_size: 3
         activation: elu
         padding: same
     - class: MaxPooling2D
-      kwargs: 
+      kwargs:
         pool_size: 2
     - class: BatchNormalization
-    - class: Conv2D
-      kwargs: 
-        filters: 96
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 96
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
-      kwargs: 
-        pool_size: 2
-    -  class: BatchNormalization
     - class: Conv2D
       kwargs: 
         filters: 96
@@ -74,7 +47,26 @@ model:
       kwargs: 
         pool_size: 2
     - class: BatchNormalization
+    - class: Conv2D
+      kwargs: 
+        filters: 64
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: Conv2D
+      kwargs: 
+        filters: 64
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: MaxPooling2D
+      kwargs: 
+        pool_size: 2
+    - class: BatchNormalization
     - class: Flatten
     - class: Dropout
       kwargs: 
         rate: 0.5
+    - class: Dense
+      kwargs:
+        units: 26

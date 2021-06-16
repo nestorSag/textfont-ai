@@ -17,6 +17,7 @@ import fontai.prediction.models as custom_models
 
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.random import set_seed
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class TrainingConfig(BaseModel):
   loss: keras.losses.Loss
   charset: str = "all"
   filters: t.List[t.Callable] = []
-  seed: int = 1
+  seed: PositiveInt = 1
   metrics: t.Optional[t.List[str]]
 
   @validator("charset")
@@ -196,6 +197,7 @@ class ConfigHandler(BaseConfigHandler):
     self.TRAINING_CONFIG_SCHEMA = yml.Map({
       "batch_size": yml.Int(),
       "epochs": yml.Int(),
+      yml.Optional("seed", default = 1): yml.Int(),
       yml.Optional("metrics", default = None): yml.Seq(yml.Str() | yml.EmptyNone()),
       "loss": self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA,
       yml.Optional(
@@ -230,8 +232,9 @@ class ConfigHandler(BaseConfigHandler):
     input_path, output_path = config.get("input_path").text, config.get("output_path").text
 
     model_path = config.get("model_path").text
-    model = self.model_factory.from_yaml(config.get("model"))
     training_config = TrainingConfig.from_yaml(config.get("training"))
+    set_seed(training_config.seed)
+    model = self.model_factory.from_yaml(config.get("model"))
 
     return Config(
       input_path = input_path, 

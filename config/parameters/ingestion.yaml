@@ -1,13 +1,13 @@
 scrappers:
 - class: LocalScrapper
   kwargs: 
-    folder: /font-zipfiles/1001free
+    folder: data/font-zipfiles/1001free
 - class: LocalScrapper
   kwargs: 
-    folder: /font-zipfiles/dafont
+    folder: data/font-zipfiles/dafont
 - class: LocalScrapper
   kwargs: 
-    folder: /font-zipfiles/google
+    folder: data/font-zipfiles/google
 output_path: data/raw
 
 
