@@ -1,3 +1,7 @@
+"""
+  This module contains the definitions of high-level ML lifecycle stage classes; at the moment this includes ingestion, preprocessing and training.
+"""
+
 import logging
 from collections import OrderedDict
 from pathlib import Path
@@ -41,7 +45,7 @@ logger = logging.Logger(__name__)
 
 class FontIngestion(ConfigurableTransform, IdentityTransform):
 
-  """Ingestor class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers from which it downloads files to storage.
+  """Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers from which it downloads files to storage.
   """
   input_file_format = InMemoryFile
   output_file_format = InMemoryFile
@@ -63,12 +67,6 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
     return cls(config)
 
   @classmethod
-  def run_from_config_file(cls, path: str):
-    
-    config = cls.parse_config_file(path)
-    cls.run_from_config(config)
-
-  @classmethod
   def run_from_config_object(cls, config: IngestionConfig):
     
     ingestor = cls.from_config_object(config)
@@ -86,7 +84,7 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
 
 class LabeledExampleExtractor(ConfigurableTransform):
   """
-  File preprocessing pipeline that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
+  File preprocessing executable stage that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
 
   config: A Config instance
 
@@ -185,31 +183,47 @@ class LabeledExampleExtractor(ConfigurableTransform):
       max_output_file_size = config.max_output_file_size)
 
 
-  @classmethod
-  def run_from_config_file(cls, path: str):
-    
-    config = cls.parse_config_file(path)
-    cls.run_from_config_object(config)
-
-
-
 class Predictor(FittableTransform):
   """
-      Base class for ML pipeline stages
-
-      config: Configuration object inheriting from BaseConfig
-
-    """
+  This class trains a prediction model or scores new exaples with an existing prediction model.
+  
+  model: Keras model
+  
+  training_config: training configurat
+  
+  Attributes:
+      input_file_format (TFRecordDataset): Hardcoded input file format
+      model (keras.Model): Scoring model
+      output_file_format (TFRecordDataset): Hardcoded output file format
+      training_config (TrainingConfig): training configuration wrapper
+  
+  """
 
   input_file_format = TFRecordDataset
   output_file_format = TFRecordDataset
 
   def __init__(self, model: tf.keras.Model, training_config: TrainingConfig = None):
+    """
+    
+    Args:
+        model (tf.keras.Model): Scoring model
+        training_config (TrainingConfig, optional): Training configuration wrapper
+    """
     self.model = model
     self.training_config = training_config
 
   def fit(self, data: TFRecordDataset):
-
+    """Fits the scoring model with the passed data
+    
+    Args:
+        data (TFRecordDataset): training data
+    
+    Returns:
+        Predictor: Predictor with trained model
+    
+    Raises:
+        ValueError: If training_config is None (not provided).
+    """
     if self.training_config is None:
       raise ValueError("Training configuration not provided at instantiation time.")
 
@@ -230,14 +244,24 @@ class Predictor(FittableTransform):
 
     return self
 
-  def transform(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Generator[t.Any, None, None]:
+  def transform(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Union[Tensor, ndarray, ScoredLabeledExample]:
     """
     Process a single instance
+    
+    Args:
+        input_data (t.Union[ndarray, Tensor, LabeledExample]): Input instance
+    
+    Returns:
+        t.Union[Tensor, ndarray, ScoredLabeledExample]: Scored example in the corresponding format, depending on the input type.
+    
+    Raises:
+        TypeError: If input type is not allowed.
+    
     """
     if isinstance(input_data, (ndarray, Tensor)):
       return self.model.predict(input_data)
     elif isinstance(input_data, LabeledExample):
-      return ScoredLaebeledExample(labeled_example = input_data, score = self.model.predict(input_data.features))
+      return ScoredLabeledExample(labeled_example = input_data, score = self.model.predict(input_data.features))
     else:
       raise TypeError("Input type is not one of ndarray, Tensor or LabeledExample")
 
@@ -252,6 +276,15 @@ class Predictor(FittableTransform):
 
   @classmethod
   def from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
+    """Initialises a Predictor instance from a configuration object
+    
+    Args:
+        config (PredictorConfig): COnfiguration object
+        load_from_model_path (bool, optional): If True, the model is loaded from the model_path argument in the configuration object.
+    
+    Returns:
+        Predictor: Instantiated Predictor object.
+    """
     if load_from_model_path:
       model_class_name = config.model.__class__.__name__
       classname_tuple = ("custom_class", model_class_name if model_class_name != "Sequential" else None)
@@ -264,31 +297,27 @@ class Predictor(FittableTransform):
     return predictor
 
   @classmethod
-  def run_from_config_file(cls, path: str):
-    
-    config = cls.parse_config_file(path)
-    self.run_from_config(config)
-
-  @classmethod
   def run_from_config_object(cls, config: PredictorConfig):
     
     data_fetcher = LabeledExamplePreprocessor(
-      batch_size = self.training_config.batch_size,
+      batch_size = config.training_config.batch_size,
       charset = "all",
       filters = [])
 
     predictor = cls.from_config_object(config)
-    writer = self.writer_class(config.output_path)
+    writer = predictor.writer_class(config.output_path)
 
-    for example in data_fetcher.fetch_and_parse(config.input_path):
-      predicted = predictor.predict(example)
-      writer.write(predicted)
+    data = predictor.reader_class(config.input_path).get_files()
+    for batch in data_fetcher.fetch_and_parse(data, drop_fontname=False):
+      features, labeles, fontnames = batch
+      score = predictor.model.predict(features) #first element of example are the features
 
-  @classmethod
-  def fit_from_config_file(cls, path: str):
-    
-    config = cls.parse_config_file(path)
-    return cls.fit_from_config_object(config)
+      for k in range(config.training_config.batch_size):
+        writer.write(
+          ScoredLabeledExample(
+            labeled_example = LabeledExample(
+              features = features[k].numpy(),
+              label = ), score = predicted))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
@@ -298,3 +327,4 @@ class Predictor(FittableTransform):
     logger.info(f"Saving trained model to {config.model_path}")
     predictor.model.save(config.model_path)
     return predictor
+

@@ -15,114 +15,120 @@ model:
   class: SAAE
   kwargs:
     encoder:
-    - class: Conv2D
-      kwargs: 
-        filters: 32
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 64
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
+      class: Sequential
       kwargs:
-        pool_size: 2
-    - class: BatchNormalization
-    - class: Conv2D
-      kwargs: 
-        filters: 96
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 128
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
-      kwargs: 
-        pool_size: 2
-    - class: BatchNormalization
-    - class: Conv2D
-      kwargs: 
-        filters: 64
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 64
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
-      kwargs: 
-        pool_size: 2
-    - class: BatchNormalization
-    - class: Flatten
-    - class: Dropout
-      kwargs: 
-        rate: 0.5
-    - class: Dense
-      kwargs:
-        units: 26
+        layers:
+        - class: Conv2D
+          kwargs: 
+            filters: 32
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs:
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 128
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Flatten
+        - class: Dropout
+          kwargs: 
+            rate: 0.5
+        - class: Dense
+          kwargs:
+            units: 26
     decoder:
-    - class: Conv2D
-      kwargs: 
-        filters: 32
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 64
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
+      class: Sequential
       kwargs:
-        pool_size: 2
-    - class: BatchNormalization
-    - class: Conv2D
-      kwargs: 
-        filters: 96
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 128
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
-      kwargs: 
-        pool_size: 2
-    - class: BatchNormalization
-    - class: Conv2D
-      kwargs: 
-        filters: 64
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: Conv2D
-      kwargs: 
-        filters: 64
-        kernel_size: 3
-        activation: elu
-        padding: same
-    - class: MaxPooling2D
-      kwargs: 
-        pool_size: 2
-    - class: BatchNormalization
-    - class: Flatten
-    - class: Dropout
-      kwargs: 
-        rate: 0.5
-    - class: Dense
-      kwargs:
-        units: 26
+        layers:
+        - class: Conv2D
+          kwargs: 
+            filters: 32
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs:
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 128
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Flatten
+        - class: Dropout
+          kwargs: 
+            rate: 0.5
+        - class: Dense
+          kwargs:
+            units: 26

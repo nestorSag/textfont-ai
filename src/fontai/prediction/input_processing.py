@@ -63,13 +63,15 @@ class LabeledExamplePreprocessor(object):
     self.charset_tensor = tf.convert_to_tensor(list(self.charset))
 
 
-  def fetch_and_parse(self, dataset: TFRecordDataset, drop_fontname=True):
+  def fetch_and_parse(self, dataset: TFRecordDataset, drop_fontname=True, features_only=False):
     """
       Fetches a list of input Tensorflow record files and prepares them for training
 
       dataset: List of input files
 
       drop_fontname: if True, drops fontname from examples in order to pass examples to model
+
+      features_only: if True, returns only the features
 
       Returns a MapDataset object
     """
@@ -86,6 +88,9 @@ class LabeledExamplePreprocessor(object):
 
     if drop_fontname:
       dataset = dataset.map(self.drop_fontname)
+
+    if features_only:
+      dataset = dataset.map(self.features_only)
 
     return dataset
 
@@ -133,6 +138,12 @@ class LabeledExamplePreprocessor(object):
       Drops the fontname from the triplet sothe remaining tuple can be passed to a Tensorflow model.
     """
     return features, label
+
+  def features_only(self, features, *args, **kwargs):
+    """
+      Drops everything except the features
+    """
+    return features
 
 
 
