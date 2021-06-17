@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
-from numpy import ndarray
+from numpy import ndarray, uint8
 import imageio
 
 from tensorflow import string as tf_str, Tensor, executing_eagerly
@@ -111,7 +111,7 @@ class LabeledExample(TfrWritable):
   @classmethod
   def img_to_png_bytes(cls, img):
     bf = io.BytesIO()
-    imageio.imwrite(bf,img,"png")
+    imageio.imwrite(bf,img.astype(uint8),"png")
     val = bf.getvalue()
     bf.close()
     return val
@@ -131,7 +131,7 @@ class LabeledExample(TfrWritable):
 class ScoredExample(TfrWritable):
   # wrapper that holds a scored ML example and raw features
   features: ndarray
-  score: Tensor 
+  score: ndarray 
 
   _tfr_schema: t.Dict = {
     'features': FixedLenFeature([], tf_str),
@@ -156,14 +156,14 @@ class ScoredExample(TfrWritable):
 
 
   def serialise(self) -> t.Dict:
-    t = serialize_tensor(self.score)
-    if executing_eagerly():
-      t_ = t.numpy()
-    else:
-      t_ = t.eval()
+    # t = serialize_tensor(self.score)
+    # if executing_eagerly():
+    #   t_ = t.numpy()
+    # else:
+    #   t_ = t.eval()
 
     return {
-    "score": self.bytes_feature(t_),
+    "score": self.bytes_feature(self.score.tobytes()),
     "features": self.bytes_feature(LabeledExample.img_to_png_bytes(self.features))
     }
 
@@ -172,7 +172,7 @@ class ScoredExample(TfrWritable):
 class ScoredLabeledExample(TfrWritable):
   # wrapper that holds a scored, labeled ML example. Useful for model evaluation
   labeled_example: LabeledExample
-  score: Tensor
+  score: ndarray
 
   _tfr_schema: t.Dict = {**LabeledExample._tfr_schema, **{'score': FixedLenFeature([], tf_str)}}
 
@@ -188,14 +188,14 @@ class ScoredLabeledExample(TfrWritable):
 
   def serialise(self) -> t.Dict:
 
-    t = serialize_tensor(self.score)
-    if executing_eagerly():
-      t_ = t.numpy()
-    else:
-      t_ = t.eval()
+    # t = serialize_tensor(self.score)
+    # if executing_eagerly():
+    #   t_ = t.numpy()
+    # else:
+    #   t_ = t.eval()
 
     return {
-    **{"score": self.bytes_feature(t_)},
+    **{"score": self.bytes_feature(self.score.tobytes())},
     **self.labeled_example.serialise()
     }
 

@@ -147,7 +147,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
     reader = self.reader_class(input_path)
     writer = self.writer_class(output_path, max_output_file_size = max_output_file_size)
 
-    if not BytestreamPath(output_path).is_gcs:
+    if not BytestreamPath(output_path).is_url():
       Path(str(output_path)).mkdir(parents=True, exist_ok=True)
 
     pipeline_options = PipelineOptions(self.beam_cmd_line_args)
@@ -238,7 +238,7 @@ class Predictor(FittableTransform):
       metrics = self.training_config.metrics)
 
     self.model.fit(
-      data_fetcher.fetch_and_parse(data),
+      data_fetcher.fetch(data, training_format=True),
       steps_per_epoch = self.training_config.steps_per_epoch, 
       epochs = self.training_config.epochs)
 
@@ -308,16 +308,21 @@ class Predictor(FittableTransform):
     writer = predictor.writer_class(config.output_path)
 
     data = predictor.reader_class(config.input_path).get_files()
-    for batch in data_fetcher.fetch_and_parse(data, drop_fontname=False):
-      features, labeles, fontnames = batch
+    for batch in data_fetcher.fetch(data, training_format=False):
+      features, labels, fontnames = batch
       score = predictor.model.predict(features) #first element of example are the features
 
-      for k in range(config.training_config.batch_size):
+      #print(score)
+      #print(type(score))
+      current_batch_size = features.shape[0]
+      for k in range(current_batch_size):
         writer.write(
           ScoredLabeledExample(
             labeled_example = LabeledExample(
               features = features[k].numpy(),
-              label = ), score = predicted))
+              label = labels[k].numpy()[0],
+              fontname = fontnames[k].numpy()[0]), 
+            score = score))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):

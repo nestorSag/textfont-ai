@@ -160,11 +160,16 @@ class TfrWriter(BatchWriter):
     """
     
     self.output_path = BytestreamPath(output_path)
+    # make sure that output directory exists
+    if not BytestreamPath(self.output_path).is_url():
+      Path(str(self.output_path)).mkdir(parents=True, exist_ok=True)
+      
     self.max_output_file_size = max_output_file_size
 
     #file prefix avoids file write collitions between workers
     self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
     self.shard_id = 0
+
     #self.writer = tf.io.TFRecordWriter(str(output_path))
     self.writer = None
     #self.open()
