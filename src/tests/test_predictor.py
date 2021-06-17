@@ -119,11 +119,18 @@ model:
   custom_class: SAAE
 """
 
-@pytest.mark.parametrize("config_string", [SEQUENTIAL_PREDICTOR_CONFIG, AAE_PREDICTOR_CONFIG, SAVED_PREDICTOR_CONFIG])
+@pytest.mark.parametrize(
+  "config_string", 
+  [
+    (SEQUENTIAL_PREDICTOR_CONFIG,), 
+    (AAE_PREDICTOR_CONFIG,), 
+    (SAVED_PREDICTOR_CONFIG,)
+  ])
 def test_predictor(config_string):
   config = Predictor.parse_config_str(config_string)
   Predictor.fit_from_config_object(config)
   Predictor.fit_from_config_object(config, load_from_model_path = True)
+  Predictor.run_from_config_object(config)
 
   assert True
 
