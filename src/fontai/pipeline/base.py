@@ -143,27 +143,31 @@ class ConfigurableTransform(Transform):
 
 
   @classmethod
-  def run_from_config_file(cls, path: str) -> None:
+  def run_from_config_file(cls, path: str, **kwargs) -> None:
 
     """Instantiate and run transform oject from a YAML file
     
     Args:
         path (str): Path to the YAML file
+    
+        **kwargs: Additional arguments pased to run_from_config_object
+    
     """
     
     config = cls.parse_config_file(path)
-    cls.run_from_config(config)
+    cls.run_from_config_object(config, **kwargs)
 
   @classmethod
   @abstractmethod
-  def run_from_config_object(cls, config: BasePipelineTransformConfig) -> None:
+  def run_from_config_object(cls, config: BasePipelineTransformConfig, **kwargs) -> None:
     """Instantiate and run transform from configuration object
     
     Args:
         config (BasePipelineTransformConfig): Configuration object.
+        **kwargs: Additional parameters passed to the implementation of this function
     """
     pass
-    #cls.from_config_file(path).run_from_config()
+    #cls.from_config_file(path).run_from_config_object()
 
 
   @classmethod
@@ -191,25 +195,30 @@ class FittableTransform(ConfigurableTransform):
     pass
 
   @classmethod
-  def fit_from_config_file(cls, path: str) -> FittableTransform:
+  def fit_from_config_file(cls, path: str, **kwargs) -> FittableTransform:
     """
     Fits the transform's model according to a YAML configuration file
     
     Args:
         path (str): Path to YAML file
+        **kwargs: Additional parameters passed to fit_from_config_object
+    
+    Returns:
+        FittableTransform: Description
     
     """
     config = cls.parse_config_file(path)
-    return cls.fit_from_config_object(config)
+    return cls.fit_from_config_object(config, **kwargs)
 
   @classmethod
   @abstractmethod
-  def fit_from_config_object(self, config: BasePipelineTransformConfig) -> FittableTransform:
+  def fit_from_config_object(self, config: BasePipelineTransformConfig, **kwargs) -> FittableTransform:
     """
     Fits the transform's model according to a configuration object
     
     Args:
         config (BasePipelineTransformConfig): Configuration object.
+        **kwargs: Additional parameters passed to the implementation of this function
     
     """
     pass

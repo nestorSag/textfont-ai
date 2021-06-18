@@ -319,14 +319,14 @@ class Predictor(FittableTransform):
     return predictor
 
   @classmethod
-  def run_from_config_object(cls, config: PredictorConfig):
+  def run_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
     
     data_fetcher = LabeledExamplePreprocessor(
       batch_size = config.training_config.batch_size,
       charset = "all",
       filters = [])
 
-    predictor = cls.from_config_object(config)
+    predictor = cls.from_config_object(config, load_from_model_path)
     writer = predictor.writer_class(config.output_path)
 
     data = predictor.reader_class(config.input_path).get_files()
