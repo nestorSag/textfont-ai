@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 import logging
 
 from fontai.io.storage import BytestreamPath
-from fontai.io.formats import InMemoryFile, TFDatasetWrapper, InMemoryZipHolder, InMemoryFontfileHolder
+from fontai.io.formats import InMemoryFile, InMemoryZipHolder, InMemoryFontfileHolder
 from fontai.io.scrappers import Scrapper
 
 from tensorflow.data import TFRecordDataset
@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
   "TfrReader",
-  "ZipReder"]
+  "ZipReder",
+  "ReaderClassFactory"]
   
 class BatchReader(ABC):
 

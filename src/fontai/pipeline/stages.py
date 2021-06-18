@@ -46,6 +46,7 @@ logger = logging.Logger(__name__)
 class FontIngestion(ConfigurableTransform, IdentityTransform):
 
   """Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers from which it downloads files to storage.
+  
   """
   input_file_format = InMemoryFile
   output_file_format = InMemoryFile
@@ -86,8 +87,6 @@ class LabeledExampleExtractor(ConfigurableTransform):
   """
   File preprocessing executable stage that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
 
-  config: A Config instance
-
   """
 
   input_file_format = InMemoryZipHolder
@@ -101,7 +100,16 @@ class LabeledExampleExtractor(ConfigurableTransform):
     canvas_padding: int,
     output_array_size: int,
     beam_cmd_line_args: t.List[str] = []):
-
+    """Summary
+    
+    Args:
+        charset (str): String with characters to be extracted
+        font_extraction_size (int): Font size to use when extracting font images
+        canvas_size (int): Image canvas size in which fonts will be extracted
+        canvas_padding (int): Padding in the image extraction canvas
+        output_array_size (int): Final character image size
+        beam_cmd_line_args (t.List[str], optional): List of Apache Beam command line arguments for distributed processing
+    """
     self.beam_cmd_line_args = beam_cmd_line_args
 
     self.pipeline = PipelineExecutor(
@@ -139,7 +147,12 @@ class LabeledExampleExtractor(ConfigurableTransform):
   def transform_batch(self, input_path: str, output_path: str, max_output_file_size: float = 128.0):
 
     """
-      Runs Beam preprocessing pipeline as defined in the config object.
+    Runs Beam preprocessing pipeline as defined in the config object.
+    
+    Args:
+        input_path (str): Input folder path
+        output_path (str): Output folder path
+        max_output_file_size (float, optional): maximum single-file output size
     
     """
 
@@ -240,7 +253,8 @@ class Predictor(FittableTransform):
     self.model.fit(
       data_fetcher.fetch(data, training_format=True),
       steps_per_epoch = self.training_config.steps_per_epoch, 
-      epochs = self.training_config.epochs)
+      epochs = self.training_config.epochs,
+      callbacks=self.training_config.callbacks)
 
     return self
 
@@ -288,8 +302,14 @@ class Predictor(FittableTransform):
     if load_from_model_path:
       model_class_name = config.model.__class__.__name__
       classname_tuple = ("custom_class", model_class_name if model_class_name != "Sequential" else None)
-      model_yaml = as_document(OrderedDict([("path", config.model_path), classname_tuple]))
-      logger.info(f"Training flag set to False; loading model from model_path {config.model_path} of class {model_class_name}")
+      
+      # dict -> YAML -> Model
+      input_dict = {"path": config.model_path}
+      if model_class_name != "Sequential":
+        input_dict["custom_class"] = model_class_name
+      model_yaml = as_document(input_dict)
+
+      logger.info(f"load_from_model_path flag set to False; loading model from model_path {config.model_path} of class {model_class_name}")
       model = ModelFactory().from_yaml(model_yaml)
     else:
       model = config.model
@@ -312,8 +332,6 @@ class Predictor(FittableTransform):
       features, labels, fontnames = batch
       score = predictor.model.predict(features) #first element of example are the features
 
-      #print(score)
-      #print(type(score))
       current_batch_size = features.shape[0]
       for k in range(current_batch_size):
         writer.write(

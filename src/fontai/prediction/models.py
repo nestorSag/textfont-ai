@@ -7,12 +7,7 @@ import copy
 import matplotlib.pyplot as plt
 import numpy as np
 
-# def rescaled_sigmoid_activation(factor):
-#   def f(x):
-#     return factor * tf.keras.activations.sigmoid(x)
-
-#   return f
-
+from fontai.io.storage import BytestreamPath
 
 class SAAE(tf.keras.Model):
 
@@ -66,7 +61,7 @@ class SAAE(tf.keras.Model):
     self.mse_loss = tf.keras.losses.MSE
     self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
     self.accuracy_metric = tf.keras.metrics.Accuracy(name="Adversarial error")
-
+  
   def compile(self,
     optimizer='rmsprop',
     loss=None,
@@ -182,33 +177,33 @@ class SAAE(tf.keras.Model):
     Args:
         output_dir (str): Target output folder
     """
-    self.encoder.save(output_dir + "encoder")
-    self.decoder.save(output_dir + "decoder")
-    self.discriminator.save(output_dir + "discriminator")
+    self.encoder.save(str(BytestreamPath(output_dir) / "encoder"))
+    self.decoder.save(str(BytestreamPath(output_dir) / "decoder"))
+    self.discriminator.save(str(BytestreamPath(output_dir) / "discriminator"))
 
     d = {
       "reconstruction_loss_weight":self.rec_loss_weight,
       "prior_batch_size": self.prior_batch_size
     }
 
-    with open(output_dir + "aae-params.json","w") as f:
+    with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
       json.dump(d,f)
 
   @classmethod
-  def load(cls, folder: str):
+  def load(cls, input_dir: str):
     """Loads a saved instance of this class
     
     Args:
-        folder (str): Target input folder
+        input_dir (str): Target input folder
     
     Returns:
         SupervisedAdversarialAutoEncoder: Loaded model
     """
-    encoder = tf.keras.models.load_model(folder + "encoder")
-    decoder = tf.keras.models.load_model(folder + "decoder")
-    discriminator = tf.keras.models.load_model(folder + "discriminator")
+    encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "encoder"))
+    decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))
+    discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "discriminator"))
 
-    with open(folder + "aae-params.json","r") as f:
+    with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
       d = json.loads(f.read())
 
     return cls(encoder = encoder,decoder = decoder,discriminator = discriminator, **d)

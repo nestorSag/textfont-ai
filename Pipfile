@@ -15,6 +15,7 @@ seaborn = "*"
 tensorflow-gpu = "==2.3.0"
 strictyaml = "*"
 pytest = "*"
+pdoc = "*"
 
 [dev-packages]
 

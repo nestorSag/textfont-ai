@@ -55,13 +55,13 @@ class Pipeline(ConfigurableTransform):
     self.configs = configs
 
     self.streaming_pipeline = [
-      ManyToManyTransform(transform = transform.from_config_object(config)) for transform, config in zip(transforms, configs)]
+      ManyToManyTransform(transform = transform.from_config_object(config)) for transform, config in zip(self.transforms, self.configs)]
 
   def transform(self, data: t.Any) -> t.Any:
     
     out = data
     for streaming_transform in self.streaming_pipeline:
-      out = streaming_transform(out)
+      out = streaming_transform.transform(out)
 
     return out
 

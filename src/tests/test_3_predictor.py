@@ -1,9 +1,15 @@
+import os
+from pathlib import Path
+
+import pytest
 from fontai.pipeline.stages import Predictor
 
-SEQUENTIAL_PREDICTOR_CONFIG = """
+outpath = "src/tests/data/prediction"
+
+SEQUENTIAL_PREDICTOR_CONFIG = f"""
 input_path: src/tests/data/preprocessing/output
-output_path: src/tests/data/prediction/output
-model_path: src/tests/data/prediction/model
+output_path: {outpath}/output
+model_path: {outpath}/model
 training:
   batch_size: 32
   epochs: 10
@@ -36,10 +42,10 @@ model:
 """
 
 
-AAE_PREDICTOR_CONFIG = """
+AAE_PREDICTOR_CONFIG = f"""
 input_path: src/tests/data/preprocessing/output
-output_path: src/tests/data/prediction/output
-model_path: src/tests/data/prediction/model
+output_path: {outpath}/output
+model_path: {outpath}/model
 training:
   batch_size: 32
   epochs: 10
@@ -100,10 +106,10 @@ model:
     prior_batch_size: 32
 """
 
-SAVED_PREDICTOR_CONFIG = """
+SAVED_PREDICTOR_CONFIG = f"""
 input_path: src/tests/data/preprocessing/output
-output_path: src/tests/data/prediction/output
-model_path: src/tests/data/prediction/model
+output_path: {outpath}/output
+model_path: {outpath}/model
 training:
   batch_size: 32
   epochs: 10
@@ -122,11 +128,15 @@ model:
 @pytest.mark.parametrize(
   "config_string", 
   [
-    (SEQUENTIAL_PREDICTOR_CONFIG,), 
-    (AAE_PREDICTOR_CONFIG,), 
-    (SAVED_PREDICTOR_CONFIG,)
+    SEQUENTIAL_PREDICTOR_CONFIG, 
+    AAE_PREDICTOR_CONFIG, 
+    SAVED_PREDICTOR_CONFIG
   ])
 def test_predictor(config_string):
+  # preemtively clean output folder
+  # for file in list(Path(outpath).iterdir()):
+  #   os.remove(str(file))
+  #print(config_string)
   config = Predictor.parse_config_str(config_string)
   Predictor.fit_from_config_object(config)
   Predictor.fit_from_config_object(config, load_from_model_path = True)

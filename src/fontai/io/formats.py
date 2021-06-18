@@ -119,16 +119,16 @@ class InMemoryFontfileHolder(InMemoryFile):
 
 
 
-class TFDatasetWrapper(TFRecordDataset):
+# class TFDatasetWrapper(TFRecordDataset):
 
-  def to_format(self, file_format: type):
-    if file_format != TFDatasetWrapper:
-      raise TypeError("Tensorflow datasets cannot be converted to other custom file types.")
+#   def to_format(self, file_format: type):
+#     if file_format != TFDatasetWrapper:
+#       raise TypeError("Tensorflow datasets cannot be converted to other custom file types.")
 
-    return self
+#     return self
 
-  def deserialise(self):
-    return self
+#   def deserialise(self):
+#     return self
 
 
 class InMemoryZipBundler(object):

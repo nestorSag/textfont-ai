@@ -17,8 +17,10 @@ import fontai.prediction.models as custom_models
 
 from tensorflow import keras
 from tensorflow.keras import layers
+import tensorflow.keras.callbacks as tf_callbacks
 from tensorflow.random import set_seed
 
+import fontai.prediction.callbacks as custom_callbacks
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,8 @@ class TrainingConfig(BaseModel):
   charset: str = "all"
   filters: t.List[t.Callable] = []
   seed: PositiveInt = 1
-  metrics: t.Optional[t.List[str]]
+  metrics: t.Optional[t.List[str]] = None
+  callbacks: t.Optional[t.List[tf_callbacks.Callback]] = None
 
   @validator("charset")
   def allowed_charsets(charset):
@@ -46,8 +49,19 @@ class TrainingConfig(BaseModel):
 
   @classmethod
   def from_yaml(cls, yaml):
+    """Instantiate from a yml.YAML object
+    
+    Args:
+        yaml (yml.YAML): Input YAML object following the schema given by ConfigHandler.training_config_schema
+    
+    Returns:
+        TrainingConfig: Initialised object
+    """
     schema_handler = SimpleClassInstantiator()
+    callback_factory = CallbackFactory()
     args = yaml.data
+
+    # the following objects are not primitive types and need to be instantiated from YAML definitions
     args["optimizer"] = schema_handler.get_instance(yaml=yaml.get("optimizer"), scope=keras.optimizers)
     args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=keras.losses)
     if  yaml.get("filters") is not None:
@@ -55,6 +69,11 @@ class TrainingConfig(BaseModel):
     else:
       args["filters"] = []
     
+    if  yaml.get("callbacks") is not None:
+      args["callbacks"] = [CallbackFactory.create(yaml) for yaml in yaml.get("callbacks")]
+    else:
+      args["callbacks"] = None
+
     return TrainingConfig(**args)
 
   class Config:
@@ -102,7 +121,7 @@ class ModelFactory(object):
         )
       })
 
-    self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str(), yml.Optional("custom_class", default = None): yml.Str() | yml.EmptyNone()})
+    self.PATH_TO_SAVED_MODEL_SCHEMA = yml.Map({"path": yml.Str(), yml.Optional("custom_class"): yml.Str()})
 
     self.schema_constructors = {
       self.PATH_TO_SAVED_MODEL_SCHEMA: ("SAVED MODEL PATH", self.from_path),
@@ -142,11 +161,11 @@ class ModelFactory(object):
     Returns an instance of class Model
 
     """
-    model_class = model_yaml.get("custom_class")
-    if model_class.data is None:
-      return keras.model.load_model(model_yaml.get("path").text)
+    if "custom_class" in model_yaml:
+      model_class = model_yaml.get("custom_class").text
+      return getattr(custom_models, model_class).load(model_yaml.get("path").text)
     else:
-      return getattr(custom_models, model_class.text).load(model_yaml.get("path").text)
+      return keras.models.load_model(model_yaml.get("path").text)
 
   def from_keras_sequential(self, model_yaml):
     """
@@ -181,6 +200,31 @@ class ModelFactory(object):
     return getattr(custom_models, model_yaml.get("class").text)(**materialised_kwargs)
 
 
+class CallbackFactory(object):
+
+  """Factory class for instantiating Tensorflow callback objects
+  """
+  
+  @classmethod
+  def create(cls, yaml: yml.YAML) -> tf_callbacks.Callback:
+    """Create callback from YAML object
+    
+    Args:
+        yaml (yml.YAML): Input YAML object
+    
+    Raises:
+        ValueError: When YAML does not match any known callback class
+    """
+    yaml_to_obj = SimpleClassInstantiator()
+
+    for module in [tf_callbacks, custom_callbacks]:
+      try:
+        callback = yaml_to_obj.get_instance(yaml, scope=module)
+      except AttributeError as e:
+        logging.debug(f"error loading callback from YAML {yaml.dict} from module {module}: {e}")
+    raise ValueError("Provided YAML did not match any known callback.")
+
+
 class ConfigHandler(BaseConfigHandler):
   """
   Wrapper for training configuration processing logic.
@@ -192,13 +236,15 @@ class ConfigHandler(BaseConfigHandler):
 
   def get_config_schema(self):
 
-    self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyNone()
+    self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
 
     self.TRAINING_CONFIG_SCHEMA = yml.Map({
       "batch_size": yml.Int(),
       "epochs": yml.Int(),
       yml.Optional("seed", default = 1): yml.Int(),
-      yml.Optional("metrics", default = None): yml.Seq(yml.Str() | yml.EmptyNone()),
+      yml.Optional(
+        "metrics", 
+        default = None): yml.Seq(yml.Str()) | yml.EmptyNone(),
       "loss": self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA,
       yml.Optional(
         "steps_per_epoch", 
@@ -207,8 +253,11 @@ class ConfigHandler(BaseConfigHandler):
         "optimizer", 
         default = {"class": "Adam", "kwargs": {}}): self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA,
       yml.Optional(
+        "callbacks", 
+        default = None): yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)| yml.EmptyNone(),
+      yml.Optional(
         "filters",
-        default = None): self.DATA_PREPROCESSING_SCHEMA
+        default = []): self.DATA_PREPROCESSING_SCHEMA
     })
 
     schema = yml.Map({

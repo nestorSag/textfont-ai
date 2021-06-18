@@ -5,13 +5,15 @@ import io
 from PIL import ImageFont
 
 from fontai.io.storage import BytestreamPath
-from fontai.io.formats import InMemoryFile, InMemoryZipHolder, InMemoryFontfileHolder, TFDatasetWrapper, InMemoryZipBundler
+from fontai.io.formats import InMemoryFile, InMemoryZipHolder, InMemoryFontfileHolder, InMemoryZipBundler
 from fontai.io.records import LabeledExample, ScoredExample, ScoredLabeledExample
 from fontai.io.readers import ReaderClassFactory, TfrReader, FileReader, ZipReader, FontfileReader
 from fontai.io.writers import WriterClassFactory, TfrWriter, ZipWriter, FileWriter
 
 from tensorflow import constant as tf_constant
 from tensorflow.train import Example as TFExample
+from tensorflow.data import TFRecordDataset
+
 
 from numpy import empty as np_empty 
 
@@ -66,7 +68,7 @@ def test_formats():
 
 def test_records():
 
-  sample_record = ScoredExample(features = np_empty((32,32)), score = tf_constant([0.1,0.2,0.7], dtype = 'float32'))
+  sample_record = ScoredExample(features = np_empty((32,32)), score = np_empty((4,)))
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
@@ -74,12 +76,12 @@ def test_records():
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
-  sample_record = ScoredLabeledExample(labeled_example = sample_record, score = tf_constant([0.1,0.2,0.7], dtype = 'float32'))
+  sample_record = ScoredLabeledExample(labeled_example = sample_record, score = np_empty((4,)))
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
 def test_readers():
-  reader_class = ReaderClassFactory.get(TFDatasetWrapper)
+  reader_class = ReaderClassFactory.get(TFRecordDataset)
   assert reader_class == TfrReader
 
   reader_class = ReaderClassFactory.get(InMemoryFile)
@@ -102,7 +104,7 @@ def test_readers():
 
 
 def test_writers():
-  writer_class = WriterClassFactory.get(TFDatasetWrapper)
+  writer_class = WriterClassFactory.get(TFRecordDataset)
   assert writer_class == TfrWriter
 
   writer_class = WriterClassFactory.get(InMemoryFile)

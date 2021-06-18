@@ -1,7 +1,5 @@
-"""Summary
-
-Attributes:
-    logger (TYPE): Description
+"""
+This module contains input preprocessing logic that happends right before data is ingested by the model to be trained.
 """
 from __future__ import absolute_import
 from collections.abc import Iterable
