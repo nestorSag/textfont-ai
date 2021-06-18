@@ -17,15 +17,13 @@ logger = logging.getLogger(__name__)
 class FontExtractionConfig(BaseModel):
   """
   Data class that holds the runtime parameters to extract image arrays from files
-
-  charset: string containing characters to be extracted from font files
-
-  font_extraction_size: Font size to use when conveting fonts to images
-
-  canvas_size: Height and width of buffer array in which fonts will be extracted before being processed further
-
-  canvas_padding: Padding used in the canvas array when extracting the fonts
-
+  
+  Args:
+      charset (str): string containing characters to be extracted from font files
+      font_extraction_size (int): Font size to use when conveting fonts to images
+      canvas_size (int): Height and width of buffer array in which fonts will be extracted before being processed further
+      canvas_padding (int): Padding used in the canvas array when extracting the fonts
+  
   """
 
   charset: str
@@ -37,12 +35,11 @@ class FontExtractionConfig(BaseModel):
 class Config(BasePipelineTransformConfig):
   """
   Configuration class for the image extraction pipeline stage
-
-  output_array_size: size of the final grayscale image corresponding to each font's characters
-
-  font_to_array_config: Data object with runtime parameters for exctracting image arrays from files
-
-  beam_cmd_line_args: List of command line arguments passed to the Beam pipeline
+  
+  Args:
+      output_array_size (int): size of the final grayscale image corresponding to each font's characters
+      font_to_array_config (int): Data object with runtime parameters for exctracting image arrays from files
+      beam_cmd_line_args (t.List[str]): List of command line arguments passed to the Beam pipeline
 
   """
   output_array_size: PositiveInt
@@ -77,7 +74,8 @@ class ConfigHandler(BaseConfigHandler):
     """
     Processes a YAML instance to produce an Config instance.
 
-    config: YAML object from the strictyaml library
+    Args:
+        config: YAML object from the strictyaml library
 
     """
     

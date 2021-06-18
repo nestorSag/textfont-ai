@@ -100,7 +100,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
     canvas_padding: int,
     output_array_size: int,
     beam_cmd_line_args: t.List[str] = []):
-    """Summary
+    """
     
     Args:
         charset (str): String with characters to be extracted

@@ -39,9 +39,13 @@ class ConfigHandler(BaseConfigHandler):
   def instantiate_config(self, config: yml.YAML) -> Config:
     """
     Processes a YAML instance to produce an Config instance.
-
-    config: YAML object from the strictyaml library
-
+        
+    Args:
+        config (yml.YAML): YAML object from the strictyaml library
+    
+    Returns:
+        Config: Instantiated configuration
+    
     """
     stages = [getattr(stages, stage.get("class").text) for stage in config.get("stages")]
     configs = [getattr(stages, stage.get("class").text).parse_config_file(stage.get("yaml_config_path").text) for stage in config.get("stages")]

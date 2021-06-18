@@ -152,11 +152,16 @@
 <span class="k">class</span> <span class="nc">Transform</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      input_file_format (InMemoryFile): File format expected to be received as input at batch processing</span>
+<span class="sd">      output_file_format (InMemoryFile): FIle format in which output is written at batch processing</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
   <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
 
+  <span class="c1"># reader and writer classes are defined in terms of input and output file formats</span>
   <span class="nd">@property</span>
   <span class="k">def</span> <span class="nf">reader_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">ReaderClassFactory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_file_format</span><span class="p">)</span>
@@ -360,11 +365,16 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Transform</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      input_file_format (InMemoryFile): File format expected to be received as input at batch processing</span>
+<span class="sd">      output_file_format (InMemoryFile): FIle format in which output is written at batch processing</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
   <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
 
+  <span class="c1"># reader and writer classes are defined in terms of input and output file formats</span>
   <span class="nd">@property</span>
   <span class="k">def</span> <span class="nf">reader_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">ReaderClassFactory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_file_format</span><span class="p">)</span>
@@ -385,6 +395,13 @@
         </details>
 
             <div class="docstring"><p>This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</p>
+
+<h6 id="attributes">Attributes</h6>
+
+<ul>
+<li><strong>input_file_format (InMemoryFile):</strong>  File format expected to be received as input at batch processing</li>
+<li><strong>output_file_format (InMemoryFile):</strong>  FIle format in which output is written at batch processing</li>
+</ul>
 </div>
 
 

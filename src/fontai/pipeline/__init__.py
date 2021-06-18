@@ -1,0 +1,3 @@
+"""This module contains high level classes representing ML stages, and a `Pipeline` class that can run multiple stages sequentially. These stages are mean to be instantiated from configuration files through the `from_config_file` method, which can be useful for real-time processing. For batch processing however, it is easier to use the `run_from_config_file` or `fit_from_config_file` methods, the latter fitting any fittable ML stage when ran from the Pipeline class.
+  
+"""

@@ -113,9 +113,13 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Config</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object from the strictyaml library</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Config: Instantiated configuration</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stages&quot;</span><span class="p">)]</span>
     <span class="n">configs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;yaml_config_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stages&quot;</span><span class="p">)]</span>
@@ -241,9 +245,13 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Config</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object from the strictyaml library</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Config: Instantiated configuration</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stages&quot;</span><span class="p">)]</span>
     <span class="n">configs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;yaml_config_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stages&quot;</span><span class="p">)]</span>
@@ -257,6 +265,13 @@
         </details>
 
             <div class="docstring"><p>Interface for creating execution configuration objects for ML pipeline stages</p>
+
+<h6 id="attributes">Attributes</h6>
+
+<ul>
+<li><strong>IO_CONFIG_SCHEMA (yml.validators.Validator):</strong>  schema for I/O parameters</li>
+<li><strong>yaml_to_obj (SimpleClassInstantiator):</strong>  Helper class to instantiate some Python objects from a YAML definition</li>
+</ul>
 </div>
 
 
@@ -304,9 +319,13 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Config</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object from the strictyaml library</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Config: Instantiated configuration</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stages&quot;</span><span class="p">)]</span>
     <span class="n">configs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;yaml_config_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stages&quot;</span><span class="p">)]</span>
@@ -321,7 +340,17 @@
 
             <div class="docstring"><p>Processes a YAML instance to produce an Config instance.</p>
 
-<p>config: YAML object from the strictyaml library</p>
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config (yml.YAML):</strong>  YAML object from the strictyaml library</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>Config: Instantiated configuration</p>
+</blockquote>
 </div>
 
 
@@ -332,7 +361,6 @@
                                     <div><dt><a href="core.html#BaseConfigHandler">fontai.config.core.BaseConfigHandler</a></dt>
                                 <dd id="ConfigHandler.__init__" class="function"><a href="core.html#BaseConfigHandler.__init__">BaseConfigHandler</a></dd>
                 <dd id="ConfigHandler.CONFIG_SCHEMA" class="variable"><a href="core.html#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a></dd>
-                <dd id="ConfigHandler.instantiate_io_handlers" class="function"><a href="core.html#BaseConfigHandler.instantiate_io_handlers">instantiate_io_handlers</a></dd>
                 <dd id="ConfigHandler.from_string" class="function"><a href="core.html#BaseConfigHandler.from_string">from_string</a></dd>
                 <dd id="ConfigHandler.from_file" class="function"><a href="core.html#BaseConfigHandler.from_file">from_file</a></dd>
                 <dd id="ConfigHandler.other_setup" class="function"><a href="core.html#BaseConfigHandler.other_setup">other_setup</a></dd>

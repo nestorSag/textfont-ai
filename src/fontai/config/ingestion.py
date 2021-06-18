@@ -20,7 +20,7 @@ class Config(BasePipelineTransformConfig):
 class ConfigHandler(BaseConfigHandler):
   """
   Wrapper for ingestion's configuration processing logic.
-
+  
   """
   
   def get_config_schema(self):
@@ -35,9 +35,13 @@ class ConfigHandler(BaseConfigHandler):
   def instantiate_config(self, config: yml.YAML) -> Config:
     """
     Processes a YAML instance to produce an Config instance.
-
-    config: YAML object from the strictyaml library
-
+        
+    Args:
+        config (yml.YAML): YAML object from the strictyaml library
+    
+    Returns:
+        Config: Configuration object
+    
     """
     output_path = config.get("output_path").text
 

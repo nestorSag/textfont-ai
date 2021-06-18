@@ -197,7 +197,7 @@ class SAAE(tf.keras.Model):
         input_dir (str): Target input folder
     
     Returns:
-        SupervisedAdversarialAutoEncoder: Loaded model
+        SAAE: Loaded model
     """
     encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "encoder"))
     decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))

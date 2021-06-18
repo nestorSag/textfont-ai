@@ -76,9 +76,6 @@
                                 <a class="variable" href="#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a>
                         </li>
                         <li>
-                                <a class="function" href="#BaseConfigHandler.instantiate_io_handlers">instantiate_io_handlers</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#BaseConfigHandler.from_string">from_string</a>
                         </li>
                         <li>
@@ -130,14 +127,13 @@
 <span class="k">class</span> <span class="nc">BasePipelineTransformConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Base class for ML pipelane stage configuration objects</span>
-
-<span class="sd">    input_path: object to list and retrieve input files to be processed</span>
-
-<span class="sd">    output_path: object to persist output bojects</span>
-
-<span class="sd">    yaml: parsed YAML from supplied configuration file</span>
-
+<span class="sd">  Base class for ML pipelane stage configuration objects</span>
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      input_path (str, optional): object to list and retrieve input files to be processed</span>
+<span class="sd">      output_path (str, optional): object to persist output bojects</span>
+<span class="sd">      yaml (yml.YAML): parsed YAML from supplied configuration file</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">input_path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
   <span class="n">output_path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -148,7 +144,7 @@
   
 <span class="k">class</span> <span class="nc">SimpleClassInstantiator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper for some useful schema definitions and simple class instantiations.</span>
+<span class="sd">  Wrapper for some useful schema definitions and simple class instantiations.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -163,10 +159,6 @@
   <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.</span>
-<span class="sd">    </span>
-<span class="sd">    yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</span>
-<span class="sd">    </span>
-<span class="sd">    scope: module namespace from which the object is to be instantiated.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        yaml (yml.YAML): AML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</span>
@@ -186,7 +178,11 @@
 <span class="k">class</span> <span class="nc">BaseConfigHandler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Interface for creating execution configuration objects for ML pipeline stages</span>
-
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      IO_CONFIG_SCHEMA (yml.validators.Validator): schema for I/O parameters</span>
+<span class="sd">      yaml_to_obj (SimpleClassInstantiator): Helper class to instantiate some Python objects from a YAML definition</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -199,25 +195,29 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_schema</span><span class="p">()</span>
 
 
-  <span class="k">def</span> <span class="nf">instantiate_io_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reader&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">reader</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reader&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">](</span><span class="n">input_path</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+  <span class="c1"># def instantiate_io_handlers(self, yaml: yml.YAML):</span>
+  <span class="c1">#   if yaml.get(&quot;input_path&quot;).data is not None and yaml.get(&quot;reader&quot;).data is not None:</span>
+  <span class="c1">#     reader = globals()[yaml.get(&quot;reader&quot;).data](input_path = yaml.get(&quot;input_path&quot;).data)</span>
+  <span class="c1">#   else:</span>
+  <span class="c1">#     reader = None</span>
 
-    <span class="k">if</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">writer</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">](</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">writer</span> <span class="o">=</span> <span class="kc">None</span>
+  <span class="c1">#   if yaml.get(&quot;output_path&quot;).data is not None and yaml.get(&quot;writer&quot;).data is not None:</span>
+  <span class="c1">#     writer = globals()[yaml.get(&quot;writer&quot;).data](output_path = yaml.get(&quot;output_path&quot;).data)</span>
+  <span class="c1">#   else:</span>
+  <span class="c1">#     writer = None</span>
 
-    <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
+  <span class="c1">#   return reader, writer</span>
 
   <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML file and maps it to an Config instance</span>
-
-<span class="sd">    file: contents of YAML configuration file</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (str): contents of YAML configuration file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        BasePipelineTransformConfig: Configuration object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">conf_yaml</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">)</span>
@@ -226,9 +226,13 @@
   <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML file and maps it to an Config instance</span>
-
-<span class="sd">    file: Path object pointing to configuration YAML file</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (str): Path object pointing to configuration YAML file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        BasePipelineTransformConfig: Configuration object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">conf_yaml</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">BytestreamPath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
@@ -238,9 +242,10 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object from the strictyaml library</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
 
@@ -269,14 +274,13 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">BasePipelineTransformConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Base class for ML pipelane stage configuration objects</span>
-
-<span class="sd">    input_path: object to list and retrieve input files to be processed</span>
-
-<span class="sd">    output_path: object to persist output bojects</span>
-
-<span class="sd">    yaml: parsed YAML from supplied configuration file</span>
-
+<span class="sd">  Base class for ML pipelane stage configuration objects</span>
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      input_path (str, optional): object to list and retrieve input files to be processed</span>
+<span class="sd">      output_path (str, optional): object to persist output bojects</span>
+<span class="sd">      yaml (yml.YAML): parsed YAML from supplied configuration file</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">input_path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
   <span class="n">output_path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -290,11 +294,13 @@
 
             <div class="docstring"><p>Base class for ML pipelane stage configuration objects</p>
 
-<p>input_path: object to list and retrieve input files to be processed</p>
+<h6 id="args">Args</h6>
 
-<p>output_path: object to persist output bojects</p>
-
-<p>yaml: parsed YAML from supplied configuration file</p>
+<ul>
+<li><strong>input_path (str, optional):</strong>  object to list and retrieve input files to be processed</li>
+<li><strong>output_path (str, optional):</strong>  object to persist output bojects</li>
+<li><strong>yaml (yml.YAML):</strong>  parsed YAML from supplied configuration file</li>
+</ul>
 </div>
 
 
@@ -400,7 +406,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">SimpleClassInstantiator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper for some useful schema definitions and simple class instantiations.</span>
+<span class="sd">  Wrapper for some useful schema definitions and simple class instantiations.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -415,10 +421,6 @@
   <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.</span>
-<span class="sd">    </span>
-<span class="sd">    yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</span>
-<span class="sd">    </span>
-<span class="sd">    scope: module namespace from which the object is to be instantiated.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        yaml (yml.YAML): AML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</span>
@@ -479,10 +481,6 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.</span>
 <span class="sd">    </span>
-<span class="sd">    yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</span>
-<span class="sd">    </span>
-<span class="sd">    scope: module namespace from which the object is to be instantiated.</span>
-<span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        yaml (yml.YAML): AML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</span>
 <span class="sd">        scope (module): module namespace from which the object is to be instantiated.</span>
@@ -500,10 +498,6 @@
         </details>
 
             <div class="docstring"><p>This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.</p>
-
-<p>yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</p>
-
-<p>scope: module namespace from which the object is to be instantiated.</p>
 
 <h6 id="args">Args</h6>
 
@@ -536,7 +530,11 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">BaseConfigHandler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Interface for creating execution configuration objects for ML pipeline stages</span>
-
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      IO_CONFIG_SCHEMA (yml.validators.Validator): schema for I/O parameters</span>
+<span class="sd">      yaml_to_obj (SimpleClassInstantiator): Helper class to instantiate some Python objects from a YAML definition</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -549,25 +547,29 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_schema</span><span class="p">()</span>
 
 
-  <span class="k">def</span> <span class="nf">instantiate_io_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reader&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">reader</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reader&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">](</span><span class="n">input_path</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+  <span class="c1"># def instantiate_io_handlers(self, yaml: yml.YAML):</span>
+  <span class="c1">#   if yaml.get(&quot;input_path&quot;).data is not None and yaml.get(&quot;reader&quot;).data is not None:</span>
+  <span class="c1">#     reader = globals()[yaml.get(&quot;reader&quot;).data](input_path = yaml.get(&quot;input_path&quot;).data)</span>
+  <span class="c1">#   else:</span>
+  <span class="c1">#     reader = None</span>
 
-    <span class="k">if</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">writer</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">](</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">writer</span> <span class="o">=</span> <span class="kc">None</span>
+  <span class="c1">#   if yaml.get(&quot;output_path&quot;).data is not None and yaml.get(&quot;writer&quot;).data is not None:</span>
+  <span class="c1">#     writer = globals()[yaml.get(&quot;writer&quot;).data](output_path = yaml.get(&quot;output_path&quot;).data)</span>
+  <span class="c1">#   else:</span>
+  <span class="c1">#     writer = None</span>
 
-    <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
+  <span class="c1">#   return reader, writer</span>
 
   <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML file and maps it to an Config instance</span>
-
-<span class="sd">    file: contents of YAML configuration file</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (str): contents of YAML configuration file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        BasePipelineTransformConfig: Configuration object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">conf_yaml</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">)</span>
@@ -576,9 +578,13 @@
   <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML file and maps it to an Config instance</span>
-
-<span class="sd">    file: Path object pointing to configuration YAML file</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (str): Path object pointing to configuration YAML file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        BasePipelineTransformConfig: Configuration object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">conf_yaml</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">BytestreamPath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
@@ -588,9 +594,10 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object from the strictyaml library</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
 
@@ -605,6 +612,13 @@
         </details>
 
             <div class="docstring"><p>Interface for creating execution configuration objects for ML pipeline stages</p>
+
+<h6 id="attributes">Attributes</h6>
+
+<ul>
+<li><strong>IO_CONFIG_SCHEMA (yml.validators.Validator):</strong>  schema for I/O parameters</li>
+<li><strong>yaml_to_obj (SimpleClassInstantiator):</strong>  Helper class to instantiate some Python objects from a YAML definition</li>
+</ul>
 </div>
 
 
@@ -613,35 +627,6 @@
 
         <span class="name">CONFIG_SCHEMA</span><span class="annotation">: Union[strictyaml.compound.Map, NoneType]</span>
     </div>
-
-    
-
-                            </div>
-                            <div id="BaseConfigHandler.instantiate_io_handlers" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#BaseConfigHandler.instantiate_io_handlers">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">instantiate_io_handlers</span><span class="signature">(self, yaml: strictyaml.representation.YAML)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">instantiate_io_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reader&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">reader</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reader&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">](</span><span class="n">input_path</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">if</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">writer</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">](</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">writer</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
-</pre></div>
-
-        </details>
 
     
 
@@ -659,9 +644,13 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML file and maps it to an Config instance</span>
-
-<span class="sd">    file: contents of YAML configuration file</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (str): contents of YAML configuration file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        BasePipelineTransformConfig: Configuration object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">conf_yaml</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">)</span>
@@ -672,7 +661,17 @@
 
             <div class="docstring"><p>Processes a YAML file and maps it to an Config instance</p>
 
-<p>file: contents of YAML configuration file</p>
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config (str):</strong>  contents of YAML configuration file</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>BasePipelineTransformConfig: Configuration object</p>
+</blockquote>
 </div>
 
 
@@ -690,9 +689,13 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML file and maps it to an Config instance</span>
-
-<span class="sd">    file: Path object pointing to configuration YAML file</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (str): Path object pointing to configuration YAML file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        BasePipelineTransformConfig: Configuration object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">conf_yaml</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">BytestreamPath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
@@ -703,7 +706,17 @@
 
             <div class="docstring"><p>Processes a YAML file and maps it to an Config instance</p>
 
-<p>file: Path object pointing to configuration YAML file</p>
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>path (str):</strong>  Path object pointing to configuration YAML file</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>BasePipelineTransformConfig: Configuration object</p>
+</blockquote>
 </div>
 
 
@@ -726,9 +739,10 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object from the strictyaml library</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
 </pre></div>
@@ -737,7 +751,11 @@
 
             <div class="docstring"><p>Processes a YAML instance to produce an Config instance.</p>
 
-<p>config: YAML object from the strictyaml library</p>
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config (yml.YAML):</strong>  YAML object from the strictyaml library</li>
+</ul>
 </div>
 
 

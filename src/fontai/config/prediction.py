@@ -27,6 +27,22 @@ logger = logging.getLogger(__name__)
 
 class TrainingConfig(BaseModel):
 
+  """
+  Training configuration wrapper for a Predictor ML stage
+  
+  Args:
+      batch_size (int): batch size
+      epochs (int): epochs
+      steps_per_epoch (int): batches per epoch
+      optimizer (keras.optimizers.Optimizer): optimizer
+      loss (keras.losses.Loss): loss function
+      charset (str, optional): one of 'all', 'lowercase', 'uppercase' and 'digits'
+      filters t.List[t.Callable]: list of model input filter functions from `input_processing` module
+      seed (int) Tensorflow global random seed
+      metrics (t.List[str], optional): list of metrics to display
+      callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.
+  """
+
   batch_size: PositiveInt
   epochs: PositiveInt
   steps_per_epoch: PositiveInt
@@ -39,7 +55,18 @@ class TrainingConfig(BaseModel):
   callbacks: t.Optional[t.List[tf_callbacks.Callback]] = None
 
   @validator("charset")
-  def allowed_charsets(charset):
+  def allowed_charsets(charset: str):
+    """Vlidator for charset attribute
+    
+    Args:
+        charset (str): charset attribute
+    
+    Returns:
+        str: validated charset
+    
+    Raises:
+        ValueError: If charset is invalid
+    """
     allowed_vals = ["all","uppercase","lowercase","digits"]
     if charset in allowed_vals:
       return charset
@@ -83,11 +110,11 @@ class TrainingConfig(BaseModel):
 class Config(BasePipelineTransformConfig):
   """
   Wrapper class for the configuration of the ModelTrainingStage class
-
-  training_config: Runtime configuration for training routine
-
-  model: Model instance that's going to be trained
-
+  
+  Args:
+      training_config (TrainingConfig): Runtime configuration for training routine
+      model (keras.Model): Model instance that's going to be trained
+  
   """
   training_config: TrainingConfig
   model_path: str
@@ -100,9 +127,9 @@ class Config(BasePipelineTransformConfig):
 
 class ModelFactory(object):
   """
-    Factory class for ML models that takes YAML configuration objects
-
-    """
+  Factory class for ML models that takes YAML configuration objects
+  
+  """
 
   def __init__(self):
 
@@ -134,11 +161,16 @@ class ModelFactory(object):
   def from_yaml(self, yaml: yml.YAML):
     """
     Instantiate a ML model from a YAML object that contains the model's specification
-
-    model_yaml: YAML object
-
-    Returns an instance of class Model
-
+    
+    Args:
+        yaml (yml.YAML): YAML object
+    
+    Returns:
+        keras.Model: instantiated model
+    
+    Raises:
+        Exception: If no matching schema is found.
+    
     """
     for schema in self.schema_constructors:
       name, constructor = self.schema_constructors[schema]
@@ -152,14 +184,16 @@ class ModelFactory(object):
         print(traceback.format_exc())
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
-  def from_path(self,model_yaml):
+  def from_path(self,model_yaml: yml.YAML):
     """
     Loads a saved model 
-
-    model_yaml: YAML object
-
-    Returns an instance of class Model
-
+            
+    Args:
+        model_yaml (yml.YAML): YAML object
+    
+    Returns:
+        keras.Model: instantiated model
+    
     """
     if "custom_class" in model_yaml:
       model_class = model_yaml.get("custom_class").text
@@ -167,26 +201,32 @@ class ModelFactory(object):
     else:
       return keras.models.load_model(model_yaml.get("path").text)
 
-  def from_keras_sequential(self, model_yaml):
+  def from_keras_sequential(self, model_yaml: yml.YAML):
     """
     Instantiate a ML model of Keras' Sequential class
+    
+    Args:
+        model_yaml (yml.YAML): YAML object
 
-    model_yaml: YAML object
+    Returns:
 
-    Returns an instance of class Model
+        keras.Model: an instance of class Model
 
     """
     model_layers = model_yaml.get("kwargs").get("layers")
     layer_instances = [self.yaml_to_obj.get_instance(layer_yaml, layers) for layer_yaml in model_layers]
     return keras.Sequential(layer_instances)
 
-  def from_multi_sequential(self, model_yaml):
+  def from_multi_sequential(self, model_yaml: yml.YAML):
     """
     Instantiate a ML model that uses multiple Keras Sequential models internally
+    
+    Args:
+        model_yaml (yml.YAML): YAML object
 
-    model_yaml: YAML object
+    Returns:
 
-    Returns an instance of class Model
+        keras.Model: an instance of class Model
 
     """
     args = model_yaml.get("kwargs")
@@ -274,9 +314,13 @@ class ConfigHandler(BaseConfigHandler):
   def instantiate_config(self, config: yml.YAML) -> Config:
     """
     Processes a YAML instance to produce an Config instance.
-
-    config: YAML object from the strictyaml library
-
+        
+    Args:
+        config (yml.YAML): YAML object
+    
+    Returns:
+        Config: Instantiated configuration for a Predictor ML stage
+    
     """
     input_path, output_path = config.get("input_path").text, config.get("output_path").text
 

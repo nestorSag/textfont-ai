@@ -14,14 +14,13 @@ logger = logging.getLogger(__name__)
 class BasePipelineTransformConfig(BaseModel):
 
   """
-    Base class for ML pipelane stage configuration objects
-
-    input_path: object to list and retrieve input files to be processed
-
-    output_path: object to persist output bojects
-
-    yaml: parsed YAML from supplied configuration file
-
+  Base class for ML pipelane stage configuration objects
+  
+  Args:
+      input_path (str, optional): object to list and retrieve input files to be processed
+      output_path (str, optional): object to persist output bojects
+      yaml (yml.YAML): parsed YAML from supplied configuration file
+  
   """
   input_path: t.Optional[str] = None
   output_path: t.Optional[str] = None
@@ -32,7 +31,7 @@ class BasePipelineTransformConfig(BaseModel):
   
 class SimpleClassInstantiator(object):
   """
-    Wrapper for some useful schema definitions and simple class instantiations.
+  Wrapper for some useful schema definitions and simple class instantiations.
   """
   def __init__(self):
 
@@ -47,10 +46,6 @@ class SimpleClassInstantiator(object):
   def get_instance(self, yaml: yml.YAML, scope) -> object:
     """
     This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.
-    
-    yaml: YAML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute
-    
-    scope: module namespace from which the object is to be instantiated.
     
     Args:
         yaml (yml.YAML): AML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute
@@ -70,7 +65,11 @@ class SimpleClassInstantiator(object):
 class BaseConfigHandler(ABC):
   """
   Interface for creating execution configuration objects for ML pipeline stages
-
+  
+  Attributes:
+      IO_CONFIG_SCHEMA (yml.validators.Validator): schema for I/O parameters
+      yaml_to_obj (SimpleClassInstantiator): Helper class to instantiate some Python objects from a YAML definition
+  
   """
   def __init__(self):
 
@@ -83,25 +82,29 @@ class BaseConfigHandler(ABC):
     self.CONFIG_SCHEMA: t.Optional[yml.Map] = self.get_config_schema()
 
 
-  def instantiate_io_handlers(self, yaml: yml.YAML):
-    if yaml.get("input_path").data is not None and yaml.get("reader").data is not None:
-      reader = globals()[yaml.get("reader").data](input_path = yaml.get("input_path").data)
-    else:
-      reader = None
+  # def instantiate_io_handlers(self, yaml: yml.YAML):
+  #   if yaml.get("input_path").data is not None and yaml.get("reader").data is not None:
+  #     reader = globals()[yaml.get("reader").data](input_path = yaml.get("input_path").data)
+  #   else:
+  #     reader = None
 
-    if yaml.get("output_path").data is not None and yaml.get("writer").data is not None:
-      writer = globals()[yaml.get("writer").data](output_path = yaml.get("output_path").data)
-    else:
-      writer = None
+  #   if yaml.get("output_path").data is not None and yaml.get("writer").data is not None:
+  #     writer = globals()[yaml.get("writer").data](output_path = yaml.get("output_path").data)
+  #   else:
+  #     writer = None
 
-    return reader, writer
+  #   return reader, writer
 
   def from_string(self, config: str) -> BasePipelineTransformConfig:
     """
     Processes a YAML file and maps it to an Config instance
-
-    file: contents of YAML configuration file
-
+        
+    Args:
+        config (str): contents of YAML configuration file
+    
+    Returns:
+        BasePipelineTransformConfig: Configuration object
+    
     """
 
     conf_yaml = yml.load(config, self.CONFIG_SCHEMA)
@@ -110,9 +113,13 @@ class BaseConfigHandler(ABC):
   def from_file(self, path: str) -> BasePipelineTransformConfig:
     """
     Processes a YAML file and maps it to an Config instance
-
-    file: Path object pointing to configuration YAML file
-
+        
+    Args:
+        path (str): Path object pointing to configuration YAML file
+    
+    Returns:
+        BasePipelineTransformConfig: Configuration object
+    
     """
 
     conf_yaml = self.from_string(BytestreamPath(path).read_bytes().decode("utf-8"))
@@ -122,9 +129,10 @@ class BaseConfigHandler(ABC):
   def instantiate_config(self, config: yml.YAML) -> BasePipelineTransformConfig:
     """
     Processes a YAML instance to produce an Config instance.
-
-    config: YAML object from the strictyaml library
-
+        
+    Args:
+        config (yml.YAML): YAML object from the strictyaml library
+    
     """
     pass
 

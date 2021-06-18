@@ -115,15 +115,13 @@
 <span class="k">class</span> <span class="nc">FontExtractionConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Data class that holds the runtime parameters to extract image arrays from files</span>
-
-<span class="sd">  charset: string containing characters to be extracted from font files</span>
-
-<span class="sd">  font_extraction_size: Font size to use when conveting fonts to images</span>
-
-<span class="sd">  canvas_size: Height and width of buffer array in which fonts will be extracted before being processed further</span>
-
-<span class="sd">  canvas_padding: Padding used in the canvas array when extracting the fonts</span>
-
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      charset (str): string containing characters to be extracted from font files</span>
+<span class="sd">      font_extraction_size (int): Font size to use when conveting fonts to images</span>
+<span class="sd">      canvas_size (int): Height and width of buffer array in which fonts will be extracted before being processed further</span>
+<span class="sd">      canvas_padding (int): Padding used in the canvas array when extracting the fonts</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span>
@@ -135,12 +133,11 @@
 <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Configuration class for the image extraction pipeline stage</span>
-
-<span class="sd">  output_array_size: size of the final grayscale image corresponding to each font&#39;s characters</span>
-
-<span class="sd">  font_to_array_config: Data object with runtime parameters for exctracting image arrays from files</span>
-
-<span class="sd">  beam_cmd_line_args: List of command line arguments passed to the Beam pipeline</span>
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      output_array_size (int): size of the final grayscale image corresponding to each font&#39;s characters</span>
+<span class="sd">      font_to_array_config (int): Data object with runtime parameters for exctracting image arrays from files</span>
+<span class="sd">      beam_cmd_line_args (t.List[str]): List of command line arguments passed to the Beam pipeline</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">output_array_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
@@ -175,7 +172,8 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
 
-<span class="sd">    config: YAML object from the strictyaml library</span>
+<span class="sd">    Args:</span>
+<span class="sd">        config: YAML object from the strictyaml library</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     
@@ -221,15 +219,13 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FontExtractionConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Data class that holds the runtime parameters to extract image arrays from files</span>
-
-<span class="sd">  charset: string containing characters to be extracted from font files</span>
-
-<span class="sd">  font_extraction_size: Font size to use when conveting fonts to images</span>
-
-<span class="sd">  canvas_size: Height and width of buffer array in which fonts will be extracted before being processed further</span>
-
-<span class="sd">  canvas_padding: Padding used in the canvas array when extracting the fonts</span>
-
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      charset (str): string containing characters to be extracted from font files</span>
+<span class="sd">      font_extraction_size (int): Font size to use when conveting fonts to images</span>
+<span class="sd">      canvas_size (int): Height and width of buffer array in which fonts will be extracted before being processed further</span>
+<span class="sd">      canvas_padding (int): Padding used in the canvas array when extracting the fonts</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span>
@@ -242,13 +238,14 @@
 
             <div class="docstring"><p>Data class that holds the runtime parameters to extract image arrays from files</p>
 
-<p>charset: string containing characters to be extracted from font files</p>
+<h6 id="args">Args</h6>
 
-<p>font_extraction_size: Font size to use when conveting fonts to images</p>
-
-<p>canvas_size: Height and width of buffer array in which fonts will be extracted before being processed further</p>
-
-<p>canvas_padding: Padding used in the canvas array when extracting the fonts</p>
+<ul>
+<li><strong>charset (str):</strong>  string containing characters to be extracted from font files</li>
+<li><strong>font_extraction_size (int):</strong>  Font size to use when conveting fonts to images</li>
+<li><strong>canvas_size (int):</strong>  Height and width of buffer array in which fonts will be extracted before being processed further</li>
+<li><strong>canvas_padding (int):</strong>  Padding used in the canvas array when extracting the fonts</li>
+</ul>
 </div>
 
 
@@ -325,12 +322,11 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Configuration class for the image extraction pipeline stage</span>
-
-<span class="sd">  output_array_size: size of the final grayscale image corresponding to each font&#39;s characters</span>
-
-<span class="sd">  font_to_array_config: Data object with runtime parameters for exctracting image arrays from files</span>
-
-<span class="sd">  beam_cmd_line_args: List of command line arguments passed to the Beam pipeline</span>
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      output_array_size (int): size of the final grayscale image corresponding to each font&#39;s characters</span>
+<span class="sd">      font_to_array_config (int): Data object with runtime parameters for exctracting image arrays from files</span>
+<span class="sd">      beam_cmd_line_args (t.List[str]): List of command line arguments passed to the Beam pipeline</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">output_array_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
@@ -343,11 +339,13 @@
 
             <div class="docstring"><p>Configuration class for the image extraction pipeline stage</p>
 
-<p>output_array_size: size of the final grayscale image corresponding to each font's characters</p>
+<h6 id="args">Args</h6>
 
-<p>font_to_array_config: Data object with runtime parameters for exctracting image arrays from files</p>
-
-<p>beam_cmd_line_args: List of command line arguments passed to the Beam pipeline</p>
+<ul>
+<li><strong>output_array_size (int):</strong>  size of the final grayscale image corresponding to each font's characters</li>
+<li><strong>font_to_array_config (int):</strong>  Data object with runtime parameters for exctracting image arrays from files</li>
+<li><strong>beam_cmd_line_args (t.List[str]):</strong>  List of command line arguments passed to the Beam pipeline</li>
+</ul>
 </div>
 
 
@@ -453,7 +451,8 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
 
-<span class="sd">    config: YAML object from the strictyaml library</span>
+<span class="sd">    Args:</span>
+<span class="sd">        config: YAML object from the strictyaml library</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     
@@ -537,7 +536,8 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
 
-<span class="sd">    config: YAML object from the strictyaml library</span>
+<span class="sd">    Args:</span>
+<span class="sd">        config: YAML object from the strictyaml library</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     
@@ -570,7 +570,11 @@
 
             <div class="docstring"><p>Processes a YAML instance to produce an Config instance.</p>
 
-<p>config: YAML object from the strictyaml library</p>
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config:</strong>  YAML object from the strictyaml library</li>
+</ul>
 </div>
 
 
@@ -581,7 +585,6 @@
                                     <div><dt><a href="core.html#BaseConfigHandler">fontai.config.core.BaseConfigHandler</a></dt>
                                 <dd id="ConfigHandler.__init__" class="function"><a href="core.html#BaseConfigHandler.__init__">BaseConfigHandler</a></dd>
                 <dd id="ConfigHandler.CONFIG_SCHEMA" class="variable"><a href="core.html#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a></dd>
-                <dd id="ConfigHandler.instantiate_io_handlers" class="function"><a href="core.html#BaseConfigHandler.instantiate_io_handlers">instantiate_io_handlers</a></dd>
                 <dd id="ConfigHandler.from_string" class="function"><a href="core.html#BaseConfigHandler.from_string">from_string</a></dd>
                 <dd id="ConfigHandler.from_file" class="function"><a href="core.html#BaseConfigHandler.from_file">from_file</a></dd>
                 <dd id="ConfigHandler.other_setup" class="function"><a href="core.html#BaseConfigHandler.other_setup">other_setup</a></dd>

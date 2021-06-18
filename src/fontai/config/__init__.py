@@ -1,0 +1,3 @@
+"""The configuration module is the middle man between the provided YAML configuration files and instantiated ML stages ready to be executed. Submodules correspond to different ML stages (or the overarching `Pipeline` class) and provide the schema for configuration files. Each of these submodules consist of a `Config` class that when instantiated contain all the necessary parameters and Python object dependencies to completely configure an ML pipeline stage. They also contain a `ConfigHandler` class that map YAML files to instantiated `Config` objects. These are in turn passed to ML stages.
+  
+"""

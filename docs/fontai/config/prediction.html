@@ -224,6 +224,22 @@
 
 <span class="k">class</span> <span class="nc">TrainingConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Training configuration wrapper for a Predictor ML stage</span>
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      batch_size (int): batch size</span>
+<span class="sd">      epochs (int): epochs</span>
+<span class="sd">      steps_per_epoch (int): batches per epoch</span>
+<span class="sd">      optimizer (keras.optimizers.Optimizer): optimizer</span>
+<span class="sd">      loss (keras.losses.Loss): loss function</span>
+<span class="sd">      charset (str, optional): one of &#39;all&#39;, &#39;lowercase&#39;, &#39;uppercase&#39; and &#39;digits&#39;</span>
+<span class="sd">      filters t.List[t.Callable]: list of model input filter functions from `input_processing` module</span>
+<span class="sd">      seed (int) Tensorflow global random seed</span>
+<span class="sd">      metrics (t.List[str], optional): list of metrics to display</span>
+<span class="sd">      callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
   <span class="n">batch_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">epochs</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">steps_per_epoch</span><span class="p">:</span> <span class="n">PositiveInt</span>
@@ -236,7 +252,18 @@
   <span class="n">callbacks</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">tf_callbacks</span><span class="o">.</span><span class="n">Callback</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
   <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
-  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Vlidator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">charset</span>
@@ -280,11 +307,11 @@
 <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
-
-<span class="sd">  training_config: Runtime configuration for training routine</span>
-
-<span class="sd">  model: Model instance that&#39;s going to be trained</span>
-
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
+<span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
@@ -297,9 +324,9 @@
 
 <span class="k">class</span> <span class="nc">ModelFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Factory class for ML models that takes YAML configuration objects</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">  Factory class for ML models that takes YAML configuration objects</span>
+<span class="sd">  </span>
+<span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -331,11 +358,16 @@
   <span class="k">def</span> <span class="nf">from_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model from a YAML object that contains the model&#39;s specification</span>
-
-<span class="sd">    model_yaml: YAML object</span>
-
-<span class="sd">    Returns an instance of class Model</span>
-
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        yaml (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: instantiated model</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If no matching schema is found.</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">schema</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_constructors</span><span class="p">:</span>
       <span class="n">name</span><span class="p">,</span> <span class="n">constructor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_constructors</span><span class="p">[</span><span class="n">schema</span><span class="p">]</span>
@@ -349,14 +381,16 @@
         <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No valid schema matched provided model YAML; look at DEBUG log level for more info.&quot;</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Loads a saved model </span>
-
-<span class="sd">    model_yaml: YAML object</span>
-
-<span class="sd">    Returns an instance of class Model</span>
-
+<span class="sd">            </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: instantiated model</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="s2">&quot;custom_class&quot;</span> <span class="ow">in</span> <span class="n">model_yaml</span><span class="p">:</span>
       <span class="n">model_class</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
@@ -364,26 +398,32 @@
     <span class="k">else</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">from_keras_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_keras_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model of Keras&#39; Sequential class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
 
-<span class="sd">    model_yaml: YAML object</span>
+<span class="sd">    Returns:</span>
 
-<span class="sd">    Returns an instance of class Model</span>
+<span class="sd">        keras.Model: an instance of class Model</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_layers</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;layers&quot;</span><span class="p">)</span>
     <span class="n">layer_instances</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">layer_yaml</span><span class="p">,</span> <span class="n">layers</span><span class="p">)</span> <span class="k">for</span> <span class="n">layer_yaml</span> <span class="ow">in</span> <span class="n">model_layers</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">layer_instances</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">from_multi_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_multi_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model that uses multiple Keras Sequential models internally</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
 
-<span class="sd">    model_yaml: YAML object</span>
+<span class="sd">    Returns:</span>
 
-<span class="sd">    Returns an instance of class Model</span>
+<span class="sd">        keras.Model: an instance of class Model</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span>
@@ -471,9 +511,13 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Config</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Config: Instantiated configuration for a Predictor ML stage</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
 
@@ -507,6 +551,22 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TrainingConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Training configuration wrapper for a Predictor ML stage</span>
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      batch_size (int): batch size</span>
+<span class="sd">      epochs (int): epochs</span>
+<span class="sd">      steps_per_epoch (int): batches per epoch</span>
+<span class="sd">      optimizer (keras.optimizers.Optimizer): optimizer</span>
+<span class="sd">      loss (keras.losses.Loss): loss function</span>
+<span class="sd">      charset (str, optional): one of &#39;all&#39;, &#39;lowercase&#39;, &#39;uppercase&#39; and &#39;digits&#39;</span>
+<span class="sd">      filters t.List[t.Callable]: list of model input filter functions from `input_processing` module</span>
+<span class="sd">      seed (int) Tensorflow global random seed</span>
+<span class="sd">      metrics (t.List[str], optional): list of metrics to display</span>
+<span class="sd">      callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
   <span class="n">batch_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">epochs</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">steps_per_epoch</span><span class="p">:</span> <span class="n">PositiveInt</span>
@@ -519,7 +579,18 @@
   <span class="n">callbacks</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">tf_callbacks</span><span class="o">.</span><span class="n">Callback</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
   <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
-  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Vlidator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">charset</span>
@@ -562,7 +633,24 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Training configuration wrapper for a Predictor ML stage</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>batch_size (int):</strong>  batch size</li>
+<li><strong>epochs (int):</strong>  epochs</li>
+<li><strong>steps_per_epoch (int):</strong>  batches per epoch</li>
+<li><strong>optimizer (keras.optimizers.Optimizer):</strong>  optimizer</li>
+<li><strong>loss (keras.losses.Loss):</strong>  loss function</li>
+<li><strong>charset (str, optional):</strong>  one of 'all', 'lowercase', 'uppercase' and 'digits'</li>
+<li><strong>filters t.List[t.Callable]:</strong>  list of model input filter functions from <code>input_processing</code> module</li>
+<li>seed (int) Tensorflow global random seed</li>
+<li><strong>metrics (t.List[str], optional):</strong>  list of metrics to display</li>
+<li><strong>callbacks (t.List[tf_callbacks.Callback], optional):</strong>  list of callbakcs to use at training time.</li>
+</ul>
+</div>
+
 
                             <div id="TrainingConfig.batch_size" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#TrainingConfig.batch_size">#&nbsp;&nbsp</a>
@@ -660,13 +748,24 @@
                 <div class="decorator">@validator(&#39;charset&#39;)</div>
 
             <span class="def">def</span>
-            <span class="name">allowed_charsets</span><span class="signature">(charset)</span>:
+            <span class="name">allowed_charsets</span><span class="signature">(charset: str)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
-  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Vlidator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">charset</span>
@@ -676,7 +775,27 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Vlidator for charset attribute</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>charset (str):</strong>  charset attribute</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>str: validated charset</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError:</strong>  If charset is invalid</li>
+</ul>
+</div>
+
 
                             </div>
                             <div id="TrainingConfig.from_yaml" class="classattr">
@@ -775,11 +894,11 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
-
-<span class="sd">  training_config: Runtime configuration for training routine</span>
-
-<span class="sd">  model: Model instance that&#39;s going to be trained</span>
-
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
+<span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
@@ -856,11 +975,11 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
-
-<span class="sd">  training_config: Runtime configuration for training routine</span>
-
-<span class="sd">  model: Model instance that&#39;s going to be trained</span>
-
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
+<span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
@@ -875,9 +994,12 @@
 
             <div class="docstring"><p>Wrapper class for the configuration of the ModelTrainingStage class</p>
 
-<p>training_config: Runtime configuration for training routine</p>
+<h6 id="args">Args</h6>
 
-<p>model: Model instance that's going to be trained</p>
+<ul>
+<li><strong>training_config (TrainingConfig):</strong>  Runtime configuration for training routine</li>
+<li><strong>model (keras.Model):</strong>  Model instance that's going to be trained</li>
+</ul>
 </div>
 
 
@@ -950,11 +1072,11 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
-
-<span class="sd">  training_config: Runtime configuration for training routine</span>
-
-<span class="sd">  model: Model instance that&#39;s going to be trained</span>
-
+<span class="sd">  </span>
+<span class="sd">  Args:</span>
+<span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
+<span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
+<span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
@@ -1030,9 +1152,9 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">ModelFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Factory class for ML models that takes YAML configuration objects</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">  Factory class for ML models that takes YAML configuration objects</span>
+<span class="sd">  </span>
+<span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -1064,11 +1186,16 @@
   <span class="k">def</span> <span class="nf">from_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model from a YAML object that contains the model&#39;s specification</span>
-
-<span class="sd">    model_yaml: YAML object</span>
-
-<span class="sd">    Returns an instance of class Model</span>
-
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        yaml (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: instantiated model</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If no matching schema is found.</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">schema</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_constructors</span><span class="p">:</span>
       <span class="n">name</span><span class="p">,</span> <span class="n">constructor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_constructors</span><span class="p">[</span><span class="n">schema</span><span class="p">]</span>
@@ -1082,14 +1209,16 @@
         <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No valid schema matched provided model YAML; look at DEBUG log level for more info.&quot;</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Loads a saved model </span>
-
-<span class="sd">    model_yaml: YAML object</span>
-
-<span class="sd">    Returns an instance of class Model</span>
-
+<span class="sd">            </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: instantiated model</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="s2">&quot;custom_class&quot;</span> <span class="ow">in</span> <span class="n">model_yaml</span><span class="p">:</span>
       <span class="n">model_class</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
@@ -1097,26 +1226,32 @@
     <span class="k">else</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">from_keras_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_keras_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model of Keras&#39; Sequential class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
 
-<span class="sd">    model_yaml: YAML object</span>
+<span class="sd">    Returns:</span>
 
-<span class="sd">    Returns an instance of class Model</span>
+<span class="sd">        keras.Model: an instance of class Model</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_layers</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;layers&quot;</span><span class="p">)</span>
     <span class="n">layer_instances</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">layer_yaml</span><span class="p">,</span> <span class="n">layers</span><span class="p">)</span> <span class="k">for</span> <span class="n">layer_yaml</span> <span class="ow">in</span> <span class="n">model_layers</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">layer_instances</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">from_multi_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_multi_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model that uses multiple Keras Sequential models internally</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
 
-<span class="sd">    model_yaml: YAML object</span>
+<span class="sd">    Returns:</span>
 
-<span class="sd">    Returns an instance of class Model</span>
+<span class="sd">        keras.Model: an instance of class Model</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span>
@@ -1189,11 +1324,16 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model from a YAML object that contains the model&#39;s specification</span>
-
-<span class="sd">    model_yaml: YAML object</span>
-
-<span class="sd">    Returns an instance of class Model</span>
-
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        yaml (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: instantiated model</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If no matching schema is found.</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">schema</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_constructors</span><span class="p">:</span>
       <span class="n">name</span><span class="p">,</span> <span class="n">constructor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_constructors</span><span class="p">[</span><span class="n">schema</span><span class="p">]</span>
@@ -1212,9 +1352,23 @@
 
             <div class="docstring"><p>Instantiate a ML model from a YAML object that contains the model's specification</p>
 
-<p>model_yaml: YAML object</p>
+<h6 id="args">Args</h6>
 
-<p>Returns an instance of class Model</p>
+<ul>
+<li><strong>yaml (yml.YAML):</strong>  YAML object</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>keras.Model: instantiated model</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>Exception:</strong>  If no matching schema is found.</li>
+</ul>
 </div>
 
 
@@ -1224,19 +1378,21 @@
 
         
             <span class="def">def</span>
-            <span class="name">from_path</span><span class="signature">(self, model_yaml)</span>:
+            <span class="name">from_path</span><span class="signature">(self, model_yaml: strictyaml.representation.YAML)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Loads a saved model </span>
-
-<span class="sd">    model_yaml: YAML object</span>
-
-<span class="sd">    Returns an instance of class Model</span>
-
+<span class="sd">            </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: instantiated model</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="s2">&quot;custom_class&quot;</span> <span class="ow">in</span> <span class="n">model_yaml</span><span class="p">:</span>
       <span class="n">model_class</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
@@ -1249,9 +1405,17 @@
 
             <div class="docstring"><p>Loads a saved model </p>
 
-<p>model_yaml: YAML object</p>
+<h6 id="args">Args</h6>
 
-<p>Returns an instance of class Model</p>
+<ul>
+<li><strong>model_yaml (yml.YAML):</strong>  YAML object</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>keras.Model: instantiated model</p>
+</blockquote>
 </div>
 
 
@@ -1261,18 +1425,21 @@
 
         
             <span class="def">def</span>
-            <span class="name">from_keras_sequential</span><span class="signature">(self, model_yaml)</span>:
+            <span class="name">from_keras_sequential</span><span class="signature">(self, model_yaml: strictyaml.representation.YAML)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_keras_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_keras_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model of Keras&#39; Sequential class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
 
-<span class="sd">    model_yaml: YAML object</span>
+<span class="sd">    Returns:</span>
 
-<span class="sd">    Returns an instance of class Model</span>
+<span class="sd">        keras.Model: an instance of class Model</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_layers</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;layers&quot;</span><span class="p">)</span>
@@ -1284,9 +1451,17 @@
 
             <div class="docstring"><p>Instantiate a ML model of Keras' Sequential class</p>
 
-<p>model_yaml: YAML object</p>
+<h6 id="args">Args</h6>
 
-<p>Returns an instance of class Model</p>
+<ul>
+<li><strong>model_yaml (yml.YAML):</strong>  YAML object</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>keras.Model: an instance of class Model</p>
+</blockquote>
 </div>
 
 
@@ -1296,18 +1471,21 @@
 
         
             <span class="def">def</span>
-            <span class="name">from_multi_sequential</span><span class="signature">(self, model_yaml)</span>:
+            <span class="name">from_multi_sequential</span><span class="signature">(self, model_yaml: strictyaml.representation.YAML)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_multi_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">from_multi_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Instantiate a ML model that uses multiple Keras Sequential models internally</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        model_yaml (yml.YAML): YAML object</span>
 
-<span class="sd">    model_yaml: YAML object</span>
+<span class="sd">    Returns:</span>
 
-<span class="sd">    Returns an instance of class Model</span>
+<span class="sd">        keras.Model: an instance of class Model</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span>
@@ -1325,9 +1503,17 @@
 
             <div class="docstring"><p>Instantiate a ML model that uses multiple Keras Sequential models internally</p>
 
-<p>model_yaml: YAML object</p>
+<h6 id="args">Args</h6>
 
-<p>Returns an instance of class Model</p>
+<ul>
+<li><strong>model_yaml (yml.YAML):</strong>  YAML object</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>keras.Model: an instance of class Model</p>
+</blockquote>
 </div>
 
 
@@ -1500,9 +1686,13 @@
   <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Config</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Config: Instantiated configuration for a Predictor ML stage</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
 
@@ -1614,9 +1804,13 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">instantiate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Config</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes a YAML instance to produce an Config instance.</span>
-
-<span class="sd">    config: YAML object from the strictyaml library</span>
-
+<span class="sd">        </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (yml.YAML): YAML object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Config: Instantiated configuration for a Predictor ML stage</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
 
@@ -1638,7 +1832,17 @@
 
             <div class="docstring"><p>Processes a YAML instance to produce an Config instance.</p>
 
-<p>config: YAML object from the strictyaml library</p>
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>config (yml.YAML):</strong>  YAML object</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>Config: Instantiated configuration for a Predictor ML stage</p>
+</blockquote>
 </div>
 
 
@@ -1649,7 +1853,6 @@
                                     <div><dt><a href="core.html#BaseConfigHandler">fontai.config.core.BaseConfigHandler</a></dt>
                                 <dd id="ConfigHandler.__init__" class="function"><a href="core.html#BaseConfigHandler.__init__">BaseConfigHandler</a></dd>
                 <dd id="ConfigHandler.CONFIG_SCHEMA" class="variable"><a href="core.html#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a></dd>
-                <dd id="ConfigHandler.instantiate_io_handlers" class="function"><a href="core.html#BaseConfigHandler.instantiate_io_handlers">instantiate_io_handlers</a></dd>
                 <dd id="ConfigHandler.from_string" class="function"><a href="core.html#BaseConfigHandler.from_string">from_string</a></dd>
                 <dd id="ConfigHandler.from_file" class="function"><a href="core.html#BaseConfigHandler.from_file">from_file</a></dd>
 
