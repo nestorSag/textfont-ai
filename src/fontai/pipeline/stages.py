@@ -139,8 +139,8 @@ class LabeledExampleExtractor(ConfigurableTransform):
       beam_cmd_line_args = config.beam_cmd_line_args,
       **config.font_to_array_config.dict())
 
-
     return cls()
+
   def transform(self, data):
     return self.pipeline.map(data)
 
@@ -164,7 +164,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
       Path(str(output_path)).mkdir(parents=True, exist_ok=True)
 
     pipeline_options = PipelineOptions(self.beam_cmd_line_args)
-    pipeline_options.view_as(SetupOptions).save_main_session = True
+    pipeline_options.view_as(SetupOptions).save_main_session = False
 
     with beam.Pipeline(options=pipeline_options) as p:
 
@@ -275,7 +275,9 @@ class Predictor(FittableTransform):
     if isinstance(input_data, (ndarray, Tensor)):
       return self.model.predict(input_data)
     elif isinstance(input_data, LabeledExample):
-      return ScoredLabeledExample(labeled_example = input_data, score = self.model.predict(input_data.features))
+      return ScoredLabeledExample(
+        labeled_example = input_data, 
+        score = self.model.predict(input_data.features.reshape((1,) + input_data.features.shape + (1,)))) #images have to be reshaped to 4 dimensions to be scored
     else:
       raise TypeError("Input type is not one of ndarray, Tensor or LabeledExample")
 

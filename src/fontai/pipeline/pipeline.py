@@ -1,12 +1,43 @@
 """
   This module contains a basic orchestrator for the execution of sequential data transformation stages.
 """
-
+from __future__ import annotations
 import typing as t
 import types
 from fontai.config.pipeline import Config as PipelineConfig, ConfigHandler as PipelineConfigHandler
 from fontai.pipeline.base import ConfigurableTransform, FittableTransform
+from fontai.config.core import BasePipelineTransformConfig
 
+
+class ManyToManyTransform(object):
+
+  """Helper class to execute one-to-many many-to-many transformations in the pipeline
+  
+  Attributes:
+      core_transform (ConfigurableTransform): Core transformer class
+  """
+
+  def __init__(self, core_transform):
+    self.core_transform = core_transform
+
+  def transform(self, data: t.Any):
+    """Outputs a generator of transformed elements
+    
+    Args:
+        data (t.Any): Input data
+    
+    Yields:
+        t.Any: individual outputs
+    """
+    for elem in self.to_generator(data):
+      for out in self.to_generator(self.core_transform.transform(elem)):
+        yield out
+
+  def to_generator(self, data):
+    if not isinstance(data, types.GeneratorType):
+      return iter((data,))
+    else:
+      return data
 
 class Pipeline(ConfigurableTransform):
 
@@ -17,32 +48,6 @@ class Pipeline(ConfigurableTransform):
       streaming_pipeline (t.List[ConfigurableTransform]): List of instantiated transforms
       transforms (type): types of transforms in the pipeline, in order
   """
-  
-  class ManyToManyTransform(object):
-
-    """Helper class to execute one-to-many many-to-many transformations in the pipeline
-    
-    Attributes:
-        transform (ConfigurableTransform): Core transformer class
-    """
-
-    def __init__(self, transform):
-      self.transform = transform
-
-    def transform(self, data: t.Any):
-      """Outputs a generator of transformed elements
-      
-      Args:
-          data (t.Any): Input data
-      
-      Yields:
-          t.Any: individual outputs
-      """
-      if not isinstance(data, types.GeneratorType):
-        data = iter(data)
-      for elem in data:
-        for out in self.transform.transform(elem):
-          yield out
 
   def __init__(self, transforms: t.List[type], configs: t.List[BasePipelineTransformConfig]):
     """Summary
@@ -55,7 +60,7 @@ class Pipeline(ConfigurableTransform):
     self.configs = configs
 
     self.streaming_pipeline = [
-      ManyToManyTransform(transform = transform.from_config_object(config)) for transform, config in zip(self.transforms, self.configs)]
+      ManyToManyTransform(core_transform = transform.from_config_object(config)) for transform, config in zip(self.transforms, self.configs)]
 
   def transform(self, data: t.Any) -> t.Any:
     
@@ -66,24 +71,24 @@ class Pipeline(ConfigurableTransform):
     return out
 
   @classmethod
-  def from_config_object(self, config: PipelineConfig) -> MultiTransform:
-    return cls(config.transforms, config.configs)
+  def from_config_object(cls, config: PipelineConfig) -> Pipeline:
+    return cls(config.stages, config.configs)
 
   @classmethod
-  def run_from_config_object(self, config: PipelineConfig) -> None:
+  def run_from_config_object(cls, config: PipelineConfig) -> None:
     pipeline = cls.from_config_object(config)
     for t, config in zip(pipeline.transforms, pipeline.configs):
       t.run_from_config_object(config)
 
   @classmethod
-  def get_config_parser(cls) -> BasePipelineTransformConfigHandler:
-    return PipelineConfigHandler
+  def get_config_parser(cls) -> PipelineConfigHandler:
+    return PipelineConfigHandler()
 
   def fit(self, data: t.Any) -> FittableTransform:
     raise NotImplementedError("This class does not implement a fit() method")
 
   @classmethod
-  def fit_from_config_object(self, config: PipelineConfig) -> FittableTransform:
+  def fit_from_config_object(cls, config: PipelineConfig) -> FittableTransform:
     pipeline = cls.from_config_object(config)
     for t, config in zip(pipeline.transforms, pipeline.configs):
       if issubclass(t, FittableTransform):

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
   "TfrReader",
-  "ZipReder",
+  "ZipReader",
   "ReaderClassFactory"]
   
 class BatchReader(ABC):

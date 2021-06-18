@@ -88,7 +88,7 @@ class InMemoryZipHolder(InMemoryFile):
     return zipfile.ZipFile(io.BytesIO(self.content),"r")
 
   @classmethod
-  def serialise(self, obj: t.zipfile.ZipFile):
+  def serialise(self, obj: zipfile.ZipFile):
     raise NotImplementError("Serialisation to InMemoryZipHolder is not implemented.")
     # bf = io.BytesIO()
     # zipped = zipfile.ZipFile(bf,"w")

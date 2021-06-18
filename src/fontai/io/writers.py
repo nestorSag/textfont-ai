@@ -14,7 +14,8 @@ from abc import ABC, abstractmethod
 import logging
 
 from fontai.io.storage import BytestreamPath
-from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder
+from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
+from fontai.io.records import TfrWritable
 
 from tensorflow.io import TFRecordWriter
 from tensorflow.data import TFRecordDataset

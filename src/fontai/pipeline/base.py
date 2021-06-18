@@ -9,7 +9,7 @@ import typing as t
 from abc import ABC, abstractmethod
 
 
-from fontai.config.core import BasePipelineTransformConfig
+from fontai.config.core import BasePipelineTransformConfig, BaseConfigHandler
 from fontai.io.formats import InMemoryFile
 from fontai.io.readers import ReaderClassFactory
 from fontai.io.writers import WriterClassFactory
@@ -80,7 +80,7 @@ class ConfigurableTransform(Transform):
 
   @classmethod
   @abstractmethod
-  def from_config_object(cls, config: BasePipelineTransformConfig) -> ConfigurableTransform:
+  def from_config_object(cls, config: BasePipelineTransformConfig, **kwargs) -> ConfigurableTransform:
     """Instantiate class from a configuration object
     
     Args:
@@ -163,7 +163,7 @@ class ConfigurableTransform(Transform):
 
   @classmethod
   @abstractmethod
-  def get_config_parser(cls) -> BasePipelineTransformConfigHandler:
+  def get_config_parser(cls) -> BaseConfigHandler:
 
     """
     Returns an instance of the transform's configuration parser class
