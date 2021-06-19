@@ -137,5 +137,5 @@ from fontai.pipeline.pipeline import Pipeline
 # this will train the model
 Pipeline.fit_from_config_file("path/to/pipeline-config.yaml")
 ```
-That's it. Virtually any parameter in the entire pipeline can be changed through YAML files
+That's it. Virtually any parameter in the entire pipeline can be changed through YAML files. Arbitrary sequential Keras models can be used out of the box; custom models need to be defined in `fontai.prediction.models` in order to be found by the YAML parsers. At the moment there is only an adversarial autoencoder custom model in the mentioned module.
 

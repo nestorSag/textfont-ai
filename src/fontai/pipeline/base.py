@@ -127,7 +127,7 @@ class ConfigurableTransform(Transform):
     Returns:
         BasePipelineTransformConfig: Instantiated Config instance
     """
-    return self.get_config_parser().from_file(path)
+    return cls.get_config_parser().from_file(path)
 
   @classmethod
   def parse_config_str(cls, config_str: str) -> BasePipelineTransformConfig:

@@ -20,7 +20,7 @@ import apache_beam as beam
 
 
 from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
-from fontai.io.writers import BatchWriter
+from fontai.io.writers import BatchWriter, TfrWriter
 from fontai.io.storage import BytestreamPath
 from fontai.io.records import LabeledExample
 
@@ -103,7 +103,6 @@ class PipelineExecutor(ObjectMapper):
   def __init__(self, stages: t.List[ObjectMapper]):
 
     self.stages = stages
-
   def raw_map(self, data: t.Any) -> t.Generator[t.Any, None, None]:
 
     for stage in self.stages:
@@ -328,7 +327,7 @@ class Writer(beam.DoFn):
   Takes instances of LabeledExamples and writes them to a tensorflow record file.
   
   Attributes:
-      writer (BatchWriter): An instance inheriting from the BatchWriter class
+      output_path (str): Output path
   
   """
   def __init__(self, writer: BatchWriter):

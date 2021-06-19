@@ -168,7 +168,8 @@ class TfrWriter(BatchWriter):
     self.max_output_file_size = max_output_file_size
 
     #file prefix avoids file write collitions between workers
-    self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
+    #self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
+    self.file_preffix = None
     self.shard_id = 0
 
     #self.writer = tf.io.TFRecordWriter(str(output_path))
@@ -182,14 +183,19 @@ class TfrWriter(BatchWriter):
     return f"{self.file_preffix}-{self.shard_id}.tfr"
 
   def open(self):
+    if self.file_preffix is None:
+      self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
+
     self.writer = TFRecordWriter(str(self.output_path / self.shard_name()))
     self.shard_size = 0
     self.shard_objs = 0
 
   def close(self):
-    logger.info(f"Persisting {self.shard_objs} examples in tfr file with id {self.shard_id} ({self.shard_size/1e6} MB)")
-    self.writer.close()
-    self.shard_id += 1
+
+    if self.writer is not None:
+      logger.info(f"Persisting {self.shard_objs} examples in tfr file with id {self.shard_id} ({self.shard_size/1e6} MB)")
+      self.writer.close()
+      self.shard_id += 1
 
   def write(self, obj: TfrWritable) -> None:
     if self.writer is None:
@@ -215,6 +221,10 @@ class TfrWriter(BatchWriter):
 
 class FileWriter(BatchWriter):
 
+  """Class that writes individual files to storage.
+  
+  """
+  
   def __init__(self, output_path: str):
     self.output_path = BytestreamPath(output_path)
 
@@ -232,7 +242,6 @@ class FileWriter(BatchWriter):
 
   def write(self, file: InMemoryFile) -> None:
     x = BytestreamPath(file.filename).filename
-    print(f"x: {x}, file.filename: {file.filename}, filename from Path: {Path(file.filename).name}")
     (self.output_path / x).write_bytes(file.content)
     self.shard_id += 1
 
@@ -240,13 +249,13 @@ class FileWriter(BatchWriter):
     """Open a new output file 
     
     """
-    pass
+    raise NotImplementedError("This writer does not implement an open() method (it does not batch files together)")
 
   def close(self, file: t.Any):
     """Closes the current output file 
     
     """
-    pass
+    raise NotImplementedError("This writer does not implement a close() method (it does not batch files together)")
 
 
 class WriterClassFactory(object):

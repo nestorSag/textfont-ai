@@ -21,6 +21,7 @@ from PIL import ImageFont
 from tensorflow.data import TFRecordDataset
 
 from tensorflow.io import FixedLenFeature, parse_single_example
+from fontai.io.storage import BytestreamPath
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,28 @@ class InMemoryFile(BaseModel):
     
     """
     return self
+
+  @classmethod
+  def from_file(cls, filepath: str) -> InMemoryFile:
+    """Instantiate from file path
+    
+    Args:
+        filepath (str): FIle path
+    
+    Returns:
+        InMemoryFile: instantiated object
+    """
+    return cls(filename = filepath, content = BytestreamPath(filepath).read_bytes())
+
+  @classmethod
+  def from_bytestream_path(cls, bsp: BytestreamPath) -> InMemoryFile:
+    """Instantiate from bytestream path
+    
+    Returns:
+        InMemoryFile: instantiated object
+    
+    """
+    return cls(filename = str(bsp), content = bsp.read_bytes())
 
   @classmethod
   def serialise(cls, obj: t.Any):

@@ -112,7 +112,34 @@ class LabeledExampleExtractor(ConfigurableTransform):
     """
     self.beam_cmd_line_args = beam_cmd_line_args
 
-    self.pipeline = PipelineExecutor(
+    self.pipeline = self.build_pipeline(
+      charset = charset,
+      font_extraction_size = font_extraction_size,
+      canvas_size = canvas_size,
+      canvas_padding = canvas_padding,
+      output_array_size = output_array_size)
+
+
+  def build_pipeline(
+    self, 
+    charset: str,
+    font_extraction_size: int,
+    canvas_size: int,
+    canvas_padding: int,
+    output_array_size: int) -> PipelineExecutor:
+    """Build file processing pipeline object
+    
+    Args:
+        charset (str): String with characters to be extracted
+        font_extraction_size (int): Font size to use when extracting font images
+        canvas_size (int): Image canvas size in which fonts will be extracted
+        canvas_padding (int): Padding in the image extraction canvas
+        output_array_size (int): Final character image size
+    
+    Returns:
+        PipelineExecutor: Procesing transformation object
+    """
+    return PipelineExecutor(
       stages = [
       InputToFontFiles(),
       ManyToManyMapper(
@@ -130,7 +157,6 @@ class LabeledExampleExtractor(ConfigurableTransform):
       )]
     )
 
-
   @classmethod
   def from_config_object(cls, config: ProcessingConfig, **kwargs):
 
@@ -144,40 +170,6 @@ class LabeledExampleExtractor(ConfigurableTransform):
   def transform(self, data):
     return self.pipeline.map(data)
 
-  def transform_batch(self, input_path: str, output_path: str, max_output_file_size: float = 128.0):
-
-    """
-    Runs Beam preprocessing pipeline as defined in the config object.
-    
-    Args:
-        input_path (str): Input folder path
-        output_path (str): Output folder path
-        max_output_file_size (float, optional): maximum single-file output size
-    
-    """
-
-    # if output is locally persisted, create parent folders
-    reader = self.reader_class(input_path)
-    writer = self.writer_class(output_path, max_output_file_size = max_output_file_size)
-
-    if not BytestreamPath(output_path).is_url():
-      Path(str(output_path)).mkdir(parents=True, exist_ok=True)
-
-    pipeline_options = PipelineOptions(self.beam_cmd_line_args)
-    pipeline_options.view_as(SetupOptions).save_main_session = False
-
-    with beam.Pipeline(options=pipeline_options) as p:
-
-      # execute pipeline
-      (p 
-      | 'Read from storage' >> beam.Create(reader.get_files()) 
-      | 'get labeled exampes from zip files' >> beam.ParDo(
-        BeamCompatibleWrapper(
-          mapper = self.pipeline
-        )
-      )
-      | "write to storage" >> beam.ParDo(Writer(writer)))
-
   @classmethod
   def get_config_parser(cls):
     return ProcessingConfigHandler()
@@ -188,12 +180,33 @@ class LabeledExampleExtractor(ConfigurableTransform):
 
   @classmethod
   def run_from_config_object(cls, config: ProcessingConfig):
-    
+
+    output_path, input_path = config.output_path, config.input_path
+
     processor = cls.from_config_object(config)
-    processor.transform_batch(
-      input_path=config.input_path, 
-      output_path=config.output_path, 
-      max_output_file_size = config.max_output_file_size)
+    reader = processor.reader_class(input_path)
+
+    # if output is locally persisted, create parent folders
+    if not BytestreamPath(output_path).is_url():
+      Path(str(output_path)).mkdir(parents=True, exist_ok=True)
+
+    pipeline_options = PipelineOptions(processor.beam_cmd_line_args)
+    pipeline_options.view_as(SetupOptions).save_main_session = True
+
+    with beam.Pipeline(options=pipeline_options) as p:
+
+      # execute pipeline
+      (p
+      | 'create source list' >> beam.Create(reader.list_sources()) #create list of sources as strings
+      | 'read files' >> beam.Map(lambda filepath: processor.input_file_format.from_bytestream_path(filepath)) #line needed to load files lazily and not overwhelm memory
+      | 'get labeled exampes from zip files' >> beam.ParDo(
+        BeamCompatibleWrapper(
+          mapper = processor.build_pipeline(
+            output_array_size = config.output_array_size,
+            **config.font_to_array_config.dict())
+        )
+      )
+      | "write to storage" >> beam.ParDo(Writer(processor.writer_class(output_path))))
 
 
 class Predictor(FittableTransform):

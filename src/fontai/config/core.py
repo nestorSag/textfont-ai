@@ -122,8 +122,7 @@ class BaseConfigHandler(ABC):
     
     """
 
-    conf_yaml = self.from_string(BytestreamPath(path).read_bytes().decode("utf-8"))
-    return self.instantiate_config(conf_yaml)
+    return self.from_string(BytestreamPath(path).read_bytes().decode("utf-8"))
 
   @abstractmethod
   def instantiate_config(self, config: yml.YAML) -> BasePipelineTransformConfig:

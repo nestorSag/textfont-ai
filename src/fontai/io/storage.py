@@ -10,6 +10,7 @@ import zipfile
 import sys
 import re
 import typing as t
+import requests
 from abc import ABC, abstractmethod
 import logging
 
@@ -118,7 +119,7 @@ class UrlBytestreamHandler(BytestreamHandler):
     r = requests.get(url, stream=True)
     bf = io.BytesIO()
     with io.BytesIO() as bf:
-      for chunk in r.iter_content(chunk_size=chunk_size):
+      for chunk in r.iter_content(chunk_size=1024*1024):
         bf.write(chunk)
       content = bf.getvalue()
     return content

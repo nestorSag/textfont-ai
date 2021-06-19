@@ -1,0 +1,3 @@
+scrappers:
+- class: GoogleFontsScrapper
+output_path: data/raw
