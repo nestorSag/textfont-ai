@@ -199,7 +199,11 @@
 
 
   <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="sd">&quot;&quot;&quot;Add file to the zip file&#39;s in-memory buffer</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        file (InMemoryFile): File object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Casting file to InMemoryFile instance before zipping.&quot;</span><span class="p">)</span>
       <span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">to_in_memory_file</span><span class="p">()</span>
@@ -212,6 +216,8 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;COmpress and close zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">compress</span><span class="p">()</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">n_files</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Persisting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">n_files</span><span class="si">}</span><span class="s2"> files in zip file with id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB)&quot;</span><span class="p">)</span>
@@ -220,6 +226,9 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
   <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open new in-memory zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span> <span class="o">=</span> <span class="n">InMemoryZipBundler</span><span class="p">()</span>
 
@@ -277,6 +286,8 @@
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2">.tfr&quot;</span>
 
   <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open new tfr file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
 
@@ -285,24 +296,30 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span> <span class="o">=</span> <span class="mi">0</span>
 
   <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
+    <span class="sd">&quot;&quot;&quot;Close current tfr file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Persisting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span><span class="si">}</span><span class="s2"> examples in tfr file with id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB)&quot;</span><span class="p">)</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span> <span class="o">+=</span> <span class="mi">1</span>
 
   <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write tfr-serialisable object to tfr file</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        obj (TfrWritable): object with a defined serialisation schema for tfr files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span>
+    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
     <span class="n">obj_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">+=</span> <span class="n">obj_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span> <span class="o">+=</span> <span class="mi">1</span>
 
@@ -335,6 +352,11 @@
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2">&quot;</span>
 
   <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write file to storage</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        file (InMemoryFile): File object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">filename</span>
     <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">/</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -360,7 +382,10 @@
     <span class="sd">&quot;&quot;&quot;Returns a writer type for instantiation at runtime.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Expected input file format.</span>
+<span class="sd">        file_format (type): Expected input file format.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: corresponding writer type</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
@@ -429,6 +454,8 @@
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2">.tfr&quot;</span>
 
   <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open new tfr file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
 
@@ -437,24 +464,30 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span> <span class="o">=</span> <span class="mi">0</span>
 
   <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
+    <span class="sd">&quot;&quot;&quot;Close current tfr file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Persisting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span><span class="si">}</span><span class="s2"> examples in tfr file with id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB)&quot;</span><span class="p">)</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span> <span class="o">+=</span> <span class="mi">1</span>
 
   <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write tfr-serialisable object to tfr file</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        obj (TfrWritable): object with a defined serialisation schema for tfr files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span>
+    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
     <span class="n">obj_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">+=</span> <span class="n">obj_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span> <span class="o">+=</span> <span class="mi">1</span>
 
@@ -563,6 +596,8 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open new tfr file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">file_preffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
 
@@ -573,7 +608,7 @@
 
         </details>
 
-            <div class="docstring"><p>Open a new output file</p>
+            <div class="docstring"><p>Open new tfr file</p>
 </div>
 
 
@@ -589,7 +624,8 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
+    <span class="sd">&quot;&quot;&quot;Close current tfr file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Persisting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span><span class="si">}</span><span class="s2"> examples in tfr file with id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB)&quot;</span><span class="p">)</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -598,7 +634,7 @@
 
         </details>
 
-            <div class="docstring"><p>Closes the current output file</p>
+            <div class="docstring"><p>Close current tfr file</p>
 </div>
 
 
@@ -614,29 +650,34 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write tfr-serialisable object to tfr file</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        obj (TfrWritable): object with a defined serialisation schema for tfr files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span>
+    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
     <span class="n">obj_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">+=</span> <span class="n">obj_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_objs</span> <span class="o">+=</span> <span class="mi">1</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Add object to the file batch to be persisted</p>
+            <div class="docstring"><p>Write tfr-serialisable object to tfr file</p>
 
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>obj (t.Any):</strong>  The data to be persisted</li>
+<li><strong>obj (TfrWritable):</strong>  object with a defined serialisation schema for tfr files</li>
 </ul>
 </div>
 
@@ -693,7 +734,11 @@
 
 
   <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="sd">&quot;&quot;&quot;Add file to the zip file&#39;s in-memory buffer</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        file (InMemoryFile): File object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Casting file to InMemoryFile instance before zipping.&quot;</span><span class="p">)</span>
       <span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">to_in_memory_file</span><span class="p">()</span>
@@ -706,6 +751,8 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;COmpress and close zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">compress</span><span class="p">()</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">n_files</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Persisting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">n_files</span><span class="si">}</span><span class="s2"> files in zip file with id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB)&quot;</span><span class="p">)</span>
@@ -714,6 +761,9 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
   <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open new in-memory zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span> <span class="o">=</span> <span class="n">InMemoryZipBundler</span><span class="p">()</span>
 
@@ -814,7 +864,11 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="sd">&quot;&quot;&quot;Add file to the zip file&#39;s in-memory buffer</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        file (InMemoryFile): File object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Casting file to InMemoryFile instance before zipping.&quot;</span><span class="p">)</span>
       <span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">to_in_memory_file</span><span class="p">()</span>
@@ -829,12 +883,12 @@
 
         </details>
 
-            <div class="docstring"><p>Add object to the file batch to be persisted</p>
+            <div class="docstring"><p>Add file to the zip file's in-memory buffer</p>
 
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>obj (t.Any):</strong>  The data to be persisted</li>
+<li><strong>file (InMemoryFile):</strong>  File object</li>
 </ul>
 </div>
 
@@ -851,6 +905,8 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;COmpress and close zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">compress</span><span class="p">()</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">n_files</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Persisting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">n_files</span><span class="si">}</span><span class="s2"> files in zip file with id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB)&quot;</span><span class="p">)</span>
@@ -861,7 +917,7 @@
 
         </details>
 
-            <div class="docstring"><p>Closes the current output file</p>
+            <div class="docstring"><p>COmpress and close zip file</p>
 </div>
 
 
@@ -877,13 +933,16 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open new in-memory zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span> <span class="o">=</span> <span class="n">InMemoryZipBundler</span><span class="p">()</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Open a new output file</p>
+            <div class="docstring"><p>Open new in-memory zip file</p>
 </div>
 
 

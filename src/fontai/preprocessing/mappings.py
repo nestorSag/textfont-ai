@@ -176,7 +176,7 @@ class InputToFontFiles(ObjectMapper):
         content = zipped.read(file)
         yield InMemoryFontfileHolder(filename=filename, content = content)
       except Exception as e:
-        logger.exception(f"Error while extracting file {file.filename} from zip")
+        logger.exception(f"Error while extracting file {filename} from zip")
 
 
 

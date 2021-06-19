@@ -37,7 +37,7 @@ def process_files(args):
       """)
   args, _ = parser.parse_known_args(args)
 
-  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.INFO, filemode = "w")
+  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.DEBUG, filemode = "w")
 
   print(f"Redirecting logs to logs/{args.stage}.log")
 

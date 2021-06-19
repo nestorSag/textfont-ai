@@ -105,7 +105,11 @@ class ZipWriter(BatchWriter):
 
 
   def write(self, file: InMemoryFile)-> None:
-
+    """Add file to the zip file's in-memory buffer
+    
+    Args:
+        file (InMemoryFile): File object
+    """
     if not isinstance(file, InMemoryFile):
       logger.info(f"Casting file to InMemoryFile instance before zipping.")
       file = file.to_in_memory_file()
@@ -118,6 +122,8 @@ class ZipWriter(BatchWriter):
     self.bundle.add_file(file)
 
   def close(self):
+    """COmpress and close zip file
+    """
     self.bundle.compress()
     if self.bundle.n_files > 0:
       logger.info(f"Persisting {self.bundle.n_files} files in zip file with id {self.shard_id} ({self.bundle.size/1e6} MB)")
@@ -126,6 +132,9 @@ class ZipWriter(BatchWriter):
     self.bundle.close()
 
   def open(self):
+    """Open new in-memory zip file
+    """
+
     self.shard_id += 1
     self.bundle = InMemoryZipBundler()
 
@@ -183,6 +192,8 @@ class TfrWriter(BatchWriter):
     return f"{self.file_preffix}-{self.shard_id}.tfr"
 
   def open(self):
+    """Open new tfr file
+    """
     if self.file_preffix is None:
       self.file_preffix = f"{random.getrandbits(32)}-{str(datetime.datetime.now())}"
 
@@ -191,24 +202,30 @@ class TfrWriter(BatchWriter):
     self.shard_objs = 0
 
   def close(self):
-
+    """Close current tfr file
+    """
     if self.writer is not None:
       logger.info(f"Persisting {self.shard_objs} examples in tfr file with id {self.shard_id} ({self.shard_size/1e6} MB)")
       self.writer.close()
       self.shard_id += 1
 
   def write(self, obj: TfrWritable) -> None:
+    """Write tfr-serialisable object to tfr file
+    
+    Args:
+        obj (TfrWritable): object with a defined serialisation schema for tfr files
+    """
     if self.writer is None:
       self.open()
 
-    tf_example = obj.to_tfr()
+    tf_example = obj.to_tfr().SerializeToString()
     obj_size = sys.getsizeof(tf_example)
 
     if obj_size + self.shard_size > self.max_output_file_size * 1e6:
       self.close()
       self.open()
 
-    self.writer.write(tf_example.SerializeToString())
+    self.writer.write(tf_example)
     self.shard_size += obj_size
     self.shard_objs += 1
 
@@ -241,6 +258,11 @@ class FileWriter(BatchWriter):
     return f"{self.file_preffix}-{self.shard_id}"
 
   def write(self, file: InMemoryFile) -> None:
+    """Write file to storage
+    
+    Args:
+        file (InMemoryFile): File object
+    """
     x = BytestreamPath(file.filename).filename
     (self.output_path / x).write_bytes(file.content)
     self.shard_id += 1
@@ -266,7 +288,10 @@ class WriterClassFactory(object):
     """Returns a writer type for instantiation at runtime.
     
     Args:
-        file_format (InMemoryFile): Expected input file format.
+        file_format (type): Expected input file format.
+    
+    Returns:
+        type: corresponding writer type
     
     """
     if file_format == TFRecordDataset:
