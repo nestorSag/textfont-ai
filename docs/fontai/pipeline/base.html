@@ -260,7 +260,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        BasePipelineTransformConfig: Instantiated Config instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">parse_config_str</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
@@ -276,27 +276,31 @@
 
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">run_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
     <span class="sd">&quot;&quot;&quot;Instantiate and run transform oject from a YAML file</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        path (str): Path to the YAML file</span>
+<span class="sd">    </span>
+<span class="sd">        **kwargs: Additional arguments pased to run_from_config_object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="bp">cls</span><span class="o">.</span><span class="n">run_from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="bp">cls</span><span class="o">.</span><span class="n">run_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="nd">@abstractmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Instantiate and run transform from configuration object</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        config (BasePipelineTransformConfig): Configuration object.</span>
+<span class="sd">        **kwargs: Additional parameters passed to the implementation of this function</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
-    <span class="c1">#cls.from_config_file(path).run_from_config()</span>
+    <span class="c1">#cls.from_config_file(path).run_from_config_object()</span>
 
 
   <span class="nd">@classmethod</span>
@@ -324,25 +328,30 @@
     <span class="k">pass</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">fit_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">fit_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fits the transform&#39;s model according to a YAML configuration file</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        path (str): Path to YAML file</span>
+<span class="sd">        **kwargs: Additional parameters passed to fit_from_config_object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        FittableTransform: Description</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="nd">@abstractmethod</span>
-  <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fits the transform&#39;s model according to a configuration object</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        config (BasePipelineTransformConfig): Configuration object.</span>
+<span class="sd">        **kwargs: Additional parameters passed to the implementation of this function</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
@@ -505,6 +514,28 @@
     <span class="k">return</span> <span class="bp">self</span>
 
   <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        filepath (str): FIle path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+
+  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Serialises a Python object to an instance of InMemoryFile</span>
 <span class="sd">    </span>
@@ -557,6 +588,8 @@
                 <dd id="Transform.input_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
                 <dd id="Transform.input_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
                 <dd id="Transform.input_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
+                <dd id="Transform.input_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="Transform.input_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
                 <dd id="Transform.input_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
 
             </div>
@@ -599,6 +632,28 @@
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">self</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        filepath (str): FIle path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
@@ -653,6 +708,8 @@
                 <dd id="Transform.output_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
                 <dd id="Transform.output_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
                 <dd id="Transform.output_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
+                <dd id="Transform.output_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="Transform.output_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
                 <dd id="Transform.output_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
 
             </div>
@@ -798,7 +855,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        BasePipelineTransformConfig: Instantiated Config instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">parse_config_str</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
@@ -814,27 +871,31 @@
 
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">run_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
     <span class="sd">&quot;&quot;&quot;Instantiate and run transform oject from a YAML file</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        path (str): Path to the YAML file</span>
+<span class="sd">    </span>
+<span class="sd">        **kwargs: Additional arguments pased to run_from_config_object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="bp">cls</span><span class="o">.</span><span class="n">run_from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="bp">cls</span><span class="o">.</span><span class="n">run_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="nd">@abstractmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Instantiate and run transform from configuration object</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        config (BasePipelineTransformConfig): Configuration object.</span>
+<span class="sd">        **kwargs: Additional parameters passed to the implementation of this function</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
-    <span class="c1">#cls.from_config_file(path).run_from_config()</span>
+    <span class="c1">#cls.from_config_file(path).run_from_config_object()</span>
 
 
   <span class="nd">@classmethod</span>
@@ -1005,7 +1066,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        BasePipelineTransformConfig: Instantiated Config instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1079,22 +1140,25 @@
                 <div class="decorator">@classmethod</div>
 
             <span class="def">def</span>
-            <span class="name">run_from_config_file</span><span class="signature">(cls, path: str) -&gt; NoneType</span>:
+            <span class="name">run_from_config_file</span><span class="signature">(cls, path: str, **kwargs) -&gt; NoneType</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">run_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
     <span class="sd">&quot;&quot;&quot;Instantiate and run transform oject from a YAML file</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        path (str): Path to the YAML file</span>
+<span class="sd">    </span>
+<span class="sd">        **kwargs: Additional arguments pased to run_from_config_object</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="bp">cls</span><span class="o">.</span><span class="n">run_from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="bp">cls</span><span class="o">.</span><span class="n">run_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1105,6 +1169,7 @@
 
 <ul>
 <li><strong>path (str):</strong>  Path to the YAML file</li>
+<li><strong>**kwargs:</strong>  Additional arguments pased to run_from_config_object</li>
 </ul>
 </div>
 
@@ -1119,7 +1184,8 @@
             <span class="def">def</span>
             <span class="name">run_from_config_object</span><span class="signature">(
     cls,
-    config: <a href="../config/core.html#BasePipelineTransformConfig">fontai.config.core.BasePipelineTransformConfig</a>
+    config: <a href="../config/core.html#BasePipelineTransformConfig">fontai.config.core.BasePipelineTransformConfig</a>,
+    **kwargs
 ) -&gt; NoneType</span>:
     </div>
 
@@ -1127,11 +1193,12 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="nd">@abstractmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Instantiate and run transform from configuration object</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        config (BasePipelineTransformConfig): Configuration object.</span>
+<span class="sd">        **kwargs: Additional parameters passed to the implementation of this function</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
 </pre></div>
@@ -1144,6 +1211,7 @@
 
 <ul>
 <li><strong>config (BasePipelineTransformConfig):</strong>  Configuration object.</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to the implementation of this function</li>
 </ul>
 </div>
 
@@ -1218,25 +1286,30 @@
     <span class="k">pass</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">fit_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">fit_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fits the transform&#39;s model according to a YAML configuration file</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        path (str): Path to YAML file</span>
+<span class="sd">        **kwargs: Additional parameters passed to fit_from_config_object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        FittableTransform: Description</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="nd">@abstractmethod</span>
-  <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fits the transform&#39;s model according to a configuration object</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        config (BasePipelineTransformConfig): Configuration object.</span>
+<span class="sd">        **kwargs: Additional parameters passed to the implementation of this function</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
@@ -1280,22 +1353,26 @@
                 <div class="decorator">@classmethod</div>
 
             <span class="def">def</span>
-            <span class="name">fit_from_config_file</span><span class="signature">(cls, path: str) -&gt; <a href="#FittableTransform">fontai.pipeline.base.FittableTransform</a></span>:
+            <span class="name">fit_from_config_file</span><span class="signature">(cls, path: str, **kwargs) -&gt; <a href="#FittableTransform">fontai.pipeline.base.FittableTransform</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">fit_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">fit_from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fits the transform&#39;s model according to a YAML configuration file</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        path (str): Path to YAML file</span>
+<span class="sd">        **kwargs: Additional parameters passed to fit_from_config_object</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        FittableTransform: Description</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1306,7 +1383,14 @@
 
 <ul>
 <li><strong>path (str):</strong>  Path to YAML file</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to fit_from_config_object</li>
 </ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>FittableTransform: Description</p>
+</blockquote>
 </div>
 
 
@@ -1320,7 +1404,8 @@
             <span class="def">def</span>
             <span class="name">fit_from_config_object</span><span class="signature">(
     self,
-    config: <a href="../config/core.html#BasePipelineTransformConfig">fontai.config.core.BasePipelineTransformConfig</a>
+    config: <a href="../config/core.html#BasePipelineTransformConfig">fontai.config.core.BasePipelineTransformConfig</a>,
+    **kwargs
 ) -&gt; <a href="#FittableTransform">fontai.pipeline.base.FittableTransform</a></span>:
     </div>
 
@@ -1328,12 +1413,13 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="nd">@abstractmethod</span>
-  <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FittableTransform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fits the transform&#39;s model according to a configuration object</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        config (BasePipelineTransformConfig): Configuration object.</span>
+<span class="sd">        **kwargs: Additional parameters passed to the implementation of this function</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
@@ -1347,6 +1433,7 @@
 
 <ul>
 <li><strong>config (BasePipelineTransformConfig):</strong>  Configuration object.</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to the implementation of this function</li>
 </ul>
 </div>
 

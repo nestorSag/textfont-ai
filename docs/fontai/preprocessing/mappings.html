@@ -183,7 +183,7 @@
 
 
 <span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">InMemoryFontfileHolder</span><span class="p">,</span> <span class="n">InMemoryFile</span>
-<span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">BatchWriter</span>
+<span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">BatchWriter</span><span class="p">,</span> <span class="n">TfrWriter</span>
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
 <span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">LabeledExample</span>
 
@@ -266,7 +266,6 @@
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stages</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">ObjectMapper</span><span class="p">]):</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">stages</span> <span class="o">=</span> <span class="n">stages</span>
-
   <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 
     <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stages</span><span class="p">:</span>
@@ -491,7 +490,7 @@
 <span class="sd">  Takes instances of LabeledExamples and writes them to a tensorflow record file.</span>
 <span class="sd">  </span>
 <span class="sd">  Attributes:</span>
-<span class="sd">      writer (BatchWriter): An instance inheriting from the BatchWriter class</span>
+<span class="sd">      output_path (str): Output path</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">BatchWriter</span><span class="p">):</span>
@@ -791,7 +790,6 @@
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stages</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">ObjectMapper</span><span class="p">]):</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">stages</span> <span class="o">=</span> <span class="n">stages</span>
-
   <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 
     <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stages</span><span class="p">:</span>
@@ -1635,7 +1633,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 <span class="sd">  Takes instances of LabeledExamples and writes them to a tensorflow record file.</span>
 <span class="sd">  </span>
 <span class="sd">  Attributes:</span>
-<span class="sd">      writer (BatchWriter): An instance inheriting from the BatchWriter class</span>
+<span class="sd">      output_path (str): Output path</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">BatchWriter</span><span class="p">):</span>
@@ -1657,7 +1655,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 <h6 id="attributes">Attributes</h6>
 
 <ul>
-<li><strong>writer (BatchWriter):</strong>  An instance inheriting from the BatchWriter class</li>
+<li><strong>output_path (str):</strong>  Output path</li>
 </ul>
 </div>
 

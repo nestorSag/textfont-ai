@@ -206,7 +206,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
             **config.font_to_array_config.dict())
         )
       )
-      | "write to storage" >> beam.ParDo(Writer(processor.writer_class(output_path))))
+      | "write to storage" >> beam.ParDo(Writer(processor.writer_class(output_path, config.max_output_file_size))))
 
 
 class Predictor(FittableTransform):

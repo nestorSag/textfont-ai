@@ -76,13 +76,13 @@
                                 <a class="class" href="#LabeledExampleExtractor.output_file_format">LabeledExampleExtractor.output_file_format</a>
                         </li>
                         <li>
+                                <a class="function" href="#LabeledExampleExtractor.build_pipeline">build_pipeline</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#LabeledExampleExtractor.from_config_object">from_config_object</a>
                         </li>
                         <li>
                                 <a class="function" href="#LabeledExampleExtractor.transform">transform</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#LabeledExampleExtractor.transform_batch">transform_batch</a>
                         </li>
                         <li>
                                 <a class="function" href="#LabeledExampleExtractor.get_config_parser">get_config_parser</a>
@@ -266,7 +266,34 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">beam_cmd_line_args</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+      <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+      <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+      <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">,</span>
+      <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+
+
+  <span class="k">def</span> <span class="nf">build_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): String with characters to be extracted</span>
+<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
+<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
+<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
+<span class="sd">        output_array_size (int): Final character image size</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        PipelineExecutor: Procesing transformation object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
       <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
       <span class="n">InputToFontFiles</span><span class="p">(),</span>
       <span class="n">ManyToManyMapper</span><span class="p">(</span>
@@ -284,7 +311,6 @@
       <span class="p">)]</span>
     <span class="p">)</span>
 
-
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
@@ -298,40 +324,6 @@
   <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">transform_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
-
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Runs Beam preprocessing pipeline as defined in the config object.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        input_path (str): Input folder path</span>
-<span class="sd">        output_path (str): Output folder path</span>
-<span class="sd">        max_output_file_size (float, optional): maximum single-file output size</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># if output is locally persisted, create parent folders</span>
-    <span class="n">reader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">max_output_file_size</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
-      <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="n">pipeline_options</span> <span class="o">=</span> <span class="n">PipelineOptions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">)</span>
-    <span class="n">pipeline_options</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">SetupOptions</span><span class="p">)</span><span class="o">.</span><span class="n">save_main_session</span> <span class="o">=</span> <span class="kc">False</span>
-
-    <span class="k">with</span> <span class="n">beam</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">pipeline_options</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
-
-      <span class="c1"># execute pipeline</span>
-      <span class="p">(</span><span class="n">p</span> 
-      <span class="o">|</span> <span class="s1">&#39;Read from storage&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">get_files</span><span class="p">())</span> 
-      <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
-        <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
-          <span class="n">mapper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span>
-        <span class="p">)</span>
-      <span class="p">)</span>
-      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">writer</span><span class="p">)))</span>
-
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_config_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">ProcessingConfigHandler</span><span class="p">()</span>
@@ -342,12 +334,33 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
-    
+
+    <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
+
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">processor</span><span class="o">.</span><span class="n">transform_batch</span><span class="p">(</span>
-      <span class="n">input_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">,</span> 
-      <span class="n">output_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> 
-      <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">)</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+
+    <span class="c1"># if output is locally persisted, create parent folders</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
+      <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">pipeline_options</span> <span class="o">=</span> <span class="n">PipelineOptions</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">)</span>
+    <span class="n">pipeline_options</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">SetupOptions</span><span class="p">)</span><span class="o">.</span><span class="n">save_main_session</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">with</span> <span class="n">beam</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">pipeline_options</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+
+      <span class="c1"># execute pipeline</span>
+      <span class="p">(</span><span class="n">p</span>
+      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
+      <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
+      <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
+        <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+            <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
+        <span class="p">)</span>
+      <span class="p">)</span>
+      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 
 
 <span class="k">class</span> <span class="nc">Predictor</span><span class="p">(</span><span class="n">FittableTransform</span><span class="p">):</span>
@@ -473,14 +486,14 @@
     <span class="k">return</span> <span class="n">predictor</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
     
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
       <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
       <span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
       <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
 
-    <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
@@ -676,6 +689,7 @@
 
 <ul>
 <li><strong>config (BasePipelineTransformConfig):</strong>  Configuration object.</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to the implementation of this function</li>
 </ul>
 </div>
 
@@ -781,6 +795,28 @@
     <span class="k">return</span> <span class="bp">self</span>
 
   <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        filepath (str): FIle path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+
+  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Serialises a Python object to an instance of InMemoryFile</span>
 <span class="sd">    </span>
@@ -833,6 +869,8 @@
                 <dd id="FontIngestion.input_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
                 <dd id="FontIngestion.input_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
                 <dd id="FontIngestion.input_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
+                <dd id="FontIngestion.input_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="FontIngestion.input_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
                 <dd id="FontIngestion.input_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
 
             </div>
@@ -875,6 +913,28 @@
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">self</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        filepath (str): FIle path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryFile: instantiated object</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
@@ -929,6 +989,8 @@
                 <dd id="FontIngestion.output_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
                 <dd id="FontIngestion.output_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
                 <dd id="FontIngestion.output_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
+                <dd id="FontIngestion.output_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="FontIngestion.output_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
                 <dd id="FontIngestion.output_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
 
             </div>
@@ -975,7 +1037,34 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">beam_cmd_line_args</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+      <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+      <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+      <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">,</span>
+      <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+
+
+  <span class="k">def</span> <span class="nf">build_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): String with characters to be extracted</span>
+<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
+<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
+<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
+<span class="sd">        output_array_size (int): Final character image size</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        PipelineExecutor: Procesing transformation object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
       <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
       <span class="n">InputToFontFiles</span><span class="p">(),</span>
       <span class="n">ManyToManyMapper</span><span class="p">(</span>
@@ -993,7 +1082,6 @@
       <span class="p">)]</span>
     <span class="p">)</span>
 
-
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
@@ -1007,40 +1095,6 @@
   <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">transform_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
-
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Runs Beam preprocessing pipeline as defined in the config object.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        input_path (str): Input folder path</span>
-<span class="sd">        output_path (str): Output folder path</span>
-<span class="sd">        max_output_file_size (float, optional): maximum single-file output size</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># if output is locally persisted, create parent folders</span>
-    <span class="n">reader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">max_output_file_size</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
-      <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="n">pipeline_options</span> <span class="o">=</span> <span class="n">PipelineOptions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">)</span>
-    <span class="n">pipeline_options</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">SetupOptions</span><span class="p">)</span><span class="o">.</span><span class="n">save_main_session</span> <span class="o">=</span> <span class="kc">False</span>
-
-    <span class="k">with</span> <span class="n">beam</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">pipeline_options</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
-
-      <span class="c1"># execute pipeline</span>
-      <span class="p">(</span><span class="n">p</span> 
-      <span class="o">|</span> <span class="s1">&#39;Read from storage&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">get_files</span><span class="p">())</span> 
-      <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
-        <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
-          <span class="n">mapper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span>
-        <span class="p">)</span>
-      <span class="p">)</span>
-      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">writer</span><span class="p">)))</span>
-
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_config_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">ProcessingConfigHandler</span><span class="p">()</span>
@@ -1051,12 +1105,33 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
-    
+
+    <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
+
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">processor</span><span class="o">.</span><span class="n">transform_batch</span><span class="p">(</span>
-      <span class="n">input_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">,</span> 
-      <span class="n">output_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> 
-      <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">)</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+
+    <span class="c1"># if output is locally persisted, create parent folders</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
+      <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">pipeline_options</span> <span class="o">=</span> <span class="n">PipelineOptions</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">)</span>
+    <span class="n">pipeline_options</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">SetupOptions</span><span class="p">)</span><span class="o">.</span><span class="n">save_main_session</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">with</span> <span class="n">beam</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">pipeline_options</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+
+      <span class="c1"># execute pipeline</span>
+      <span class="p">(</span><span class="n">p</span>
+      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
+      <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
+      <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
+        <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+            <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
+        <span class="p">)</span>
+      <span class="p">)</span>
+      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 </pre></div>
 
         </details>
@@ -1101,7 +1176,67 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">beam_cmd_line_args</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+      <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+      <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+      <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">,</span>
+      <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><h6 id="args">Args</h6>
+
+<ul>
+<li><strong>charset (str):</strong>  String with characters to be extracted</li>
+<li><strong>font_extraction_size (int):</strong>  Font size to use when extracting font images</li>
+<li><strong>canvas_size (int):</strong>  Image canvas size in which fonts will be extracted</li>
+<li><strong>canvas_padding (int):</strong>  Padding in the image extraction canvas</li>
+<li><strong>output_array_size (int):</strong>  Final character image size</li>
+<li><strong>beam_cmd_line_args (t.List[str], optional):</strong>  List of Apache Beam command line arguments for distributed processing</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="LabeledExampleExtractor.build_pipeline" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#LabeledExampleExtractor.build_pipeline">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">build_pipeline</span><span class="signature">(
+    self,
+    charset: str,
+    font_extraction_size: int,
+    canvas_size: int,
+    canvas_padding: int,
+    output_array_size: int
+) -&gt; <a href="../preprocessing/mappings.html#PipelineExecutor">fontai.preprocessing.mappings.PipelineExecutor</a></span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">build_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): String with characters to be extracted</span>
+<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
+<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
+<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
+<span class="sd">        output_array_size (int): Final character image size</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        PipelineExecutor: Procesing transformation object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
       <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
       <span class="n">InputToFontFiles</span><span class="p">(),</span>
       <span class="n">ManyToManyMapper</span><span class="p">(</span>
@@ -1122,7 +1257,9 @@
 
         </details>
 
-            <div class="docstring"><h6 id="args">Args</h6>
+            <div class="docstring"><p>Build file processing pipeline object</p>
+
+<h6 id="args">Args</h6>
 
 <ul>
 <li><strong>charset (str):</strong>  String with characters to be extracted</li>
@@ -1130,8 +1267,13 @@
 <li><strong>canvas_size (int):</strong>  Image canvas size in which fonts will be extracted</li>
 <li><strong>canvas_padding (int):</strong>  Padding in the image extraction canvas</li>
 <li><strong>output_array_size (int):</strong>  Final character image size</li>
-<li><strong>beam_cmd_line_args (t.List[str], optional):</strong>  List of Apache Beam command line arguments for distributed processing</li>
 </ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>PipelineExecutor: Procesing transformation object</p>
+</blockquote>
 </div>
 
 
@@ -1198,71 +1340,6 @@
 
 
                             </div>
-                            <div id="LabeledExampleExtractor.transform_batch" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#LabeledExampleExtractor.transform_batch">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">transform_batch</span><span class="signature">(
-    self,
-    input_path: str,
-    output_path: str,
-    max_output_file_size: float = 128.0
-)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">transform_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
-
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Runs Beam preprocessing pipeline as defined in the config object.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        input_path (str): Input folder path</span>
-<span class="sd">        output_path (str): Output folder path</span>
-<span class="sd">        max_output_file_size (float, optional): maximum single-file output size</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># if output is locally persisted, create parent folders</span>
-    <span class="n">reader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">max_output_file_size</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
-      <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="n">pipeline_options</span> <span class="o">=</span> <span class="n">PipelineOptions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">)</span>
-    <span class="n">pipeline_options</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">SetupOptions</span><span class="p">)</span><span class="o">.</span><span class="n">save_main_session</span> <span class="o">=</span> <span class="kc">False</span>
-
-    <span class="k">with</span> <span class="n">beam</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">pipeline_options</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
-
-      <span class="c1"># execute pipeline</span>
-      <span class="p">(</span><span class="n">p</span> 
-      <span class="o">|</span> <span class="s1">&#39;Read from storage&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">get_files</span><span class="p">())</span> 
-      <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
-        <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
-          <span class="n">mapper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span>
-        <span class="p">)</span>
-      <span class="p">)</span>
-      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">writer</span><span class="p">)))</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Runs Beam preprocessing pipeline as defined in the config object.</p>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>input_path (str):</strong>  Input folder path</li>
-<li><strong>output_path (str):</strong>  Output folder path</li>
-<li><strong>max_output_file_size (float, optional):</strong>  maximum single-file output size</li>
-</ul>
-</div>
-
-
-                            </div>
                             <div id="LabeledExampleExtractor.get_config_parser" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#LabeledExampleExtractor.get_config_parser">#&nbsp;&nbsp</a>
 
@@ -1320,12 +1397,33 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
-    
+
+    <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
+
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">processor</span><span class="o">.</span><span class="n">transform_batch</span><span class="p">(</span>
-      <span class="n">input_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">,</span> 
-      <span class="n">output_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> 
-      <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">)</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+
+    <span class="c1"># if output is locally persisted, create parent folders</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
+      <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">pipeline_options</span> <span class="o">=</span> <span class="n">PipelineOptions</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">)</span>
+    <span class="n">pipeline_options</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">SetupOptions</span><span class="p">)</span><span class="o">.</span><span class="n">save_main_session</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">with</span> <span class="n">beam</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">pipeline_options</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+
+      <span class="c1"># execute pipeline</span>
+      <span class="p">(</span><span class="n">p</span>
+      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
+      <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
+      <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
+        <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+            <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
+        <span class="p">)</span>
+      <span class="p">)</span>
+      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 </pre></div>
 
         </details>
@@ -1336,6 +1434,7 @@
 
 <ul>
 <li><strong>config (BasePipelineTransformConfig):</strong>  Configuration object.</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to the implementation of this function</li>
 </ul>
 </div>
 
@@ -1424,6 +1523,8 @@
                                 <dd id="LabeledExampleExtractor.input_file_format.filename" class="variable"><a href="../io/formats.html#InMemoryFile.filename">filename</a></dd>
                 <dd id="LabeledExampleExtractor.input_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
                 <dd id="LabeledExampleExtractor.input_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
+                <dd id="LabeledExampleExtractor.input_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="LabeledExampleExtractor.input_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
 
             </div>
                                 </dl>
@@ -1686,14 +1787,14 @@
     <span class="k">return</span> <span class="n">predictor</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
     
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
       <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
       <span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
       <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
 
-    <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
@@ -2020,20 +2121,24 @@
                 <div class="decorator">@classmethod</div>
 
             <span class="def">def</span>
-            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/prediction.html#Config">fontai.config.prediction.Config</a>)</span>:
+            <span class="name">run_from_config_object</span><span class="signature">(
+    cls,
+    config: <a href="../config/prediction.html#Config">fontai.config.prediction.Config</a>,
+    load_from_model_path=False
+)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
     
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
       <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
       <span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
       <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
 
-    <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
@@ -2060,6 +2165,7 @@
 
 <ul>
 <li><strong>config (BasePipelineTransformConfig):</strong>  Configuration object.</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to the implementation of this function</li>
 </ul>
 </div>
 
@@ -2098,6 +2204,7 @@
 
 <ul>
 <li><strong>config (BasePipelineTransformConfig):</strong>  Configuration object.</li>
+<li><strong>**kwargs:</strong>  Additional parameters passed to the implementation of this function</li>
 </ul>
 </div>
 
