@@ -236,6 +236,10 @@ class Predictor(FittableTransform):
     self.training_config = training_config
     self.charset = charset
 
+    # physical_devices = tf.config.experimental.list_physical_devices('GPU')
+    # if len(physical_devices) > 0:
+    #   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
   def fit(self, data: TFRecordDataset):
     """Fits the scoring model with the passed data
     

@@ -4,7 +4,7 @@ model_path: models/supervised-uppercase
 charset: uppercase
 training:
   batch_size: 64
-  epochs: 2
+  epochs: 50
   steps_per_epoch: 5000
   optimizer:
     class: Adam
@@ -14,6 +14,16 @@ training:
     class: CategoricalCrossentropy
   metrics:
   - accuracy
+  callbacks:
+  - class: TensorBoard
+    kwargs:
+      log_dir: logs/tensorboard/supervised-uppercase
+  - class: ReduceLROnPlateau
+    kwargs:
+      min_lr: 0.0001
+      factor: 0.5
+      patience: 2
+      monitor: accuracy
 model:
   class: Sequential
   kwargs:

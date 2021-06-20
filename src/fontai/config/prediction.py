@@ -180,8 +180,8 @@ class ModelFactory(object):
         model = constructor(model_yaml)
         return model
       except Exception as e:
-        logger.debug(f"Model schema did not match {name}; {e}")
-        print(traceback.format_exc())
+        logger.debug(f"Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}")
+        #print(traceback.format_exc())
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
   def from_path(self,model_yaml: yml.YAML):
@@ -236,7 +236,7 @@ class ModelFactory(object):
         yml.load(args.get(arg).as_yaml(), self.SEQUENTIAL_MODEL_SCHEMA)
         materialised_kwargs[arg] = self.from_keras_sequential(args.get(arg))
       except Exception as e:
-        logger.debug(f"Parameter {arg} does not match Sequential model schema.")
+        logger.debug(f"Parameter {arg} does not match Sequential model schema. Full trace: {traceback.format_exc()}")
     return getattr(custom_models, model_yaml.get("class").text)(**materialised_kwargs)
 
 
@@ -260,8 +260,9 @@ class CallbackFactory(object):
     for module in [tf_callbacks, custom_callbacks]:
       try:
         callback = yaml_to_obj.get_instance(yaml, scope=module)
+        return callback
       except AttributeError as e:
-        logging.debug(f"error loading callback from YAML {yaml.dict} from module {module}: {e}")
+        logging.debug(f"error loading callback from YAML {yaml.dict} from module {module}: {e}\n Full trace: {traceback.format_exc()}")
     raise ValueError("Provided YAML did not match any known callback.")
 
 

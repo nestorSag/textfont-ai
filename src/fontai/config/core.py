@@ -33,15 +33,14 @@ class SimpleClassInstantiator(object):
   """
   Wrapper for some useful schema definitions and simple class instantiations.
   """
-  def __init__(self):
 
-    self.ANY_PRIMITIVES = yml.Int() | yml.Float() | yml.Bool() | yml.Str() | yml.Seq(yml.Int())
+  ANY_PRIMITIVES = yml.Int() | yml.Float() | yml.Bool() | yml.Str() | yml.Seq(yml.Int())
 
-    self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA = yml.Map(
-          {"class": yml.Str(), 
-          yml.Optional("kwargs", default = {}): yml.MapPattern(
-            yml.Str(),
-            self.ANY_PRIMITIVES) | yml.EmptyDict()})
+  PY_CLASS_INSTANCE_FROM_YAML_SCHEMA = yml.Map(
+        {"class": yml.Str(), 
+        yml.Optional("kwargs", default = {}): yml.MapPattern(
+          yml.Str(),
+          ANY_PRIMITIVES) | yml.EmptyDict()})
 
   def get_instance(self, yaml: yml.YAML, scope) -> object:
     """
@@ -58,7 +57,7 @@ class SimpleClassInstantiator(object):
       yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
       return getattr(scope, yaml.get("class").text)(**yaml.get("kwargs").data)
     except Exception as e:
-      logger.exception(f"Cannot instantiate class {yaml.get('class').text} from global namespace: {e}")
+      logger.exception(f"Cannot instantiate class {yaml.get('class').text} from namespace {scope}: {e}")
 
 
 

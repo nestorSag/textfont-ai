@@ -1,5 +1,6 @@
 # example run: python scripts/run_single_stage.py --config-file config/parameters/local-preprocessing.yaml --stage ingestion
 import sys
+import os
 import argparse
 import logging
 from pathlib import Path
@@ -10,7 +11,7 @@ from fontai.pipeline.stages import LabeledExampleExtractor, FontIngestion, Predi
 logger = logging.getLogger(__name__)
 
 Path("logs").mkdir(parents=True, exist_ok=True)
-
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true' #this is needed to run models on GPU
 
 def process_files(args):
   stage_classes = {
@@ -47,7 +48,7 @@ def process_files(args):
 
   args, _ = parser.parse_known_args(args)
 
-  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.INFO, filemode = "w")
+  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.DEBUG, filemode = "w")
 
   print(f"Redirecting logs to logs/{args.stage}.log")
 
