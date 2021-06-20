@@ -32,6 +32,7 @@ PREDICTOR_CONFIG = """
 input_path: src/tests/data/preprocessing/output
 output_path: src/tests/data/prediction/output
 model_path: src/tests/data/prediction/model
+charset: lowercase
 training:
   batch_size: 32
   epochs: 10
@@ -59,8 +60,8 @@ model:
         activation: elu
     - class: Dense
       kwargs: 
-        units: 62
-        activation: sigmoid
+        units: 26
+        activation: softmax
 """
 
 

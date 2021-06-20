@@ -1,12 +1,15 @@
 input_path: data/preprocessed
 output_path: data/scored
-model_path: data/model
+model_path: models/supervised-uppercase
+charset: uppercase
 training:
   batch_size: 64
-  epochs: 10 
-  steps_per_epoch: 125000
+  epochs: 2
+  steps_per_epoch: 5000
   optimizer:
     class: Adam
+    kwargs:
+      learning_rate: 0.001
   loss:
     class: CategoricalCrossentropy
   metrics:
@@ -15,6 +18,12 @@ model:
   class: Sequential
   kwargs:
     layers:
+    - class: Input
+      kwargs:
+        shape:
+        - 64
+        - 64
+        - 1
     - class: Conv2D
       kwargs: 
         filters: 32
@@ -70,3 +79,4 @@ model:
     - class: Dense
       kwargs:
         units: 26
+        activation: softmax

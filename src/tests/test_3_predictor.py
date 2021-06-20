@@ -10,6 +10,7 @@ SEQUENTIAL_PREDICTOR_CONFIG = f"""
 input_path: src/tests/data/preprocessing/output
 output_path: {outpath}/output
 model_path: {outpath}/model
+charset: lowercase
 training:
   batch_size: 32
   epochs: 10
@@ -37,8 +38,8 @@ model:
         activation: elu
     - class: Dense
       kwargs: 
-        units: 62
-        activation: sigmoid
+        units: 26
+        activation: softmax
 """
 
 
@@ -46,6 +47,7 @@ AAE_PREDICTOR_CONFIG = f"""
 input_path: src/tests/data/preprocessing/output
 output_path: {outpath}/output
 model_path: {outpath}/model
+charset: lowercase
 training:
   batch_size: 32
   epochs: 10
@@ -80,7 +82,7 @@ model:
         - class: Input
           kwargs:
             shape:
-            - 72
+            - 36
         - class: Dense
           kwargs: 
             units: 4096

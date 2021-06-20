@@ -36,7 +36,6 @@ class TrainingConfig(BaseModel):
       steps_per_epoch (int): batches per epoch
       optimizer (keras.optimizers.Optimizer): optimizer
       loss (keras.losses.Loss): loss function
-      charset (str, optional): one of 'all', 'lowercase', 'uppercase' and 'digits'
       filters t.List[t.Callable]: list of model input filter functions from `input_processing` module
       seed (int) Tensorflow global random seed
       metrics (t.List[str], optional): list of metrics to display
@@ -48,30 +47,11 @@ class TrainingConfig(BaseModel):
   steps_per_epoch: PositiveInt
   optimizer: keras.optimizers.Optimizer
   loss: keras.losses.Loss
-  charset: str = "all"
   filters: t.List[t.Callable] = []
   seed: PositiveInt = 1
   metrics: t.Optional[t.List[str]] = None
   callbacks: t.Optional[t.List[tf_callbacks.Callback]] = None
 
-  @validator("charset")
-  def allowed_charsets(charset: str):
-    """Vlidator for charset attribute
-    
-    Args:
-        charset (str): charset attribute
-    
-    Returns:
-        str: validated charset
-    
-    Raises:
-        ValueError: If charset is invalid
-    """
-    allowed_vals = ["all","uppercase","lowercase","digits"]
-    if charset in allowed_vals:
-      return charset
-    else:
-      raise ValueError(f"charset must be one of {allowed_vals}")
   #lr_shrink_factor: PositiveFloat
 
   @classmethod
@@ -119,10 +99,30 @@ class Config(BasePipelineTransformConfig):
   training_config: TrainingConfig
   model_path: str
   model: keras.Model
+  charset: str
 
   # internal BaseModel configuration class
   class Config:
     arbitrary_types_allowed = True
+
+  @validator("charset")
+  def allowed_charsets(charset: str):
+    """Vlidator for charset attribute
+    
+    Args:
+        charset (str): charset attribute
+    
+    Returns:
+        str: validated charset
+    
+    Raises:
+        ValueError: If charset is invalid
+    """
+    allowed_vals = ["all","uppercase","lowercase","digits"]
+    if charset in allowed_vals:
+      return charset
+    else:
+      raise ValueError(f"charset must be one of {allowed_vals}")
 
 
 class ModelFactory(object):
@@ -306,7 +306,7 @@ class ConfigHandler(BaseConfigHandler):
       "model_path": self.IO_CONFIG_SCHEMA,
       "training": self.TRAINING_CONFIG_SCHEMA,
       "model": yml.Any(),
-      yml.Optional("charset", default = "uppercase"): yml.Str()
+      yml.Optional("charset", default = "lowercase"): yml.Str()
        })
 
     return schema
@@ -323,6 +323,7 @@ class ConfigHandler(BaseConfigHandler):
     
     """
     input_path, output_path = config.get("input_path").text, config.get("output_path").text
+    charset = config.get("charset").text
 
     model_path = config.get("model_path").text
     training_config = TrainingConfig.from_yaml(config.get("training"))
@@ -335,4 +336,5 @@ class ConfigHandler(BaseConfigHandler):
       model_path = model_path,
       model = model,
       training_config = training_config,
+      charset = charset,
       yaml = config)

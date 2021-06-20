@@ -36,6 +36,14 @@ class LabeledExamplePreprocessor(object):
       filters (t.List[types.Callable]): List of filters to apply to training data
       num_classes (int): number of classes in charset
   """
+
+  CHARSET_OPTIONS = {
+    "uppercase": string.ascii_letters[26::],
+    "lowercase": string.ascii_letters[0:26],
+    "digits": string.digits,
+    "all": string.ascii_letters + string.digits
+    }
+
   def __init__(
     self, 
     batch_size: int,
@@ -50,13 +58,6 @@ class LabeledExamplePreprocessor(object):
         filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels
     """
     self.batch_size = batch_size
-
-    self.CHARSET_OPTIONS = {
-      "uppercase": string.ascii_letters[26::],
-      "lowercase": string.ascii_letters[0:26],
-      "digits": string.digits,
-      "all": string.ascii_letters + string.digits
-    }
 
     self.filters = filters
 
@@ -106,7 +107,7 @@ class LabeledExamplePreprocessor(object):
     return self.batch_dataset(dataset, repeat=training_format)
 
 
-  def batch_dataset(self, dataset, buffered_batches = 256, repeat=True):
+  def batch_dataset(self, dataset, buffered_batches = 512, repeat=True):
     """
     Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
     
@@ -138,7 +139,7 @@ class LabeledExamplePreprocessor(object):
         t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: output triplet
     """
     img = tf.image.decode_png(record["features"])
-    img = tf.cast(img,dtype=tf.float32)
+    img = tf.cast(img,dtype=tf.float32)/255.0 #rescaled image data
     one_hot_label = tf.cast(tf.where(self.charset_tensor == record["label"]),dtype=tf.int32)
     label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=self.num_classes),(self.num_classes,))
 

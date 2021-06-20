@@ -213,30 +213,28 @@ class Predictor(FittableTransform):
   """
   This class trains a prediction model or scores new exaples with an existing prediction model.
   
-  model: Keras model
-  
-  training_config: training configurat
-  
+
   Attributes:
-      input_file_format (TFRecordDataset): Hardcoded input file format
       model (keras.Model): Scoring model
-      output_file_format (TFRecordDataset): Hardcoded output file format
       training_config (TrainingConfig): training configuration wrapper
+      charset (str): charset to use for training and batch scoring
   
   """
 
   input_file_format = TFRecordDataset
   output_file_format = TFRecordDataset
 
-  def __init__(self, model: tf.keras.Model, training_config: TrainingConfig = None):
+  def __init__(self, model: tf.keras.Model, training_config: TrainingConfig = None, charset: str = "lowercase"):
     """
     
     Args:
         model (tf.keras.Model): Scoring model
         training_config (TrainingConfig, optional): Training configuration wrapper
+        charset (str): charset to use for training and batch scoring
     """
     self.model = model
     self.training_config = training_config
+    self.charset = charset
 
   def fit(self, data: TFRecordDataset):
     """Fits the scoring model with the passed data
@@ -255,7 +253,7 @@ class Predictor(FittableTransform):
 
     data_fetcher = LabeledExamplePreprocessor(
       batch_size = self.training_config.batch_size,
-      charset = self.training_config.charset,
+      charset = self.charset,
       filters = self.training_config.filters)
     
     self.model.compile(
@@ -328,18 +326,20 @@ class Predictor(FittableTransform):
       model = ModelFactory().from_yaml(model_yaml)
     else:
       model = config.model
-    predictor = Predictor(model = model, training_config = config.training_config)
+
+    predictor = Predictor(model = model, training_config = config.training_config, charset = config.charset)
     return predictor
 
   @classmethod
   def run_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
     
+    predictor = cls.from_config_object(config, load_from_model_path)
+
     data_fetcher = LabeledExamplePreprocessor(
-      batch_size = config.training_config.batch_size,
-      charset = "all",
+      batch_size = predictor.training_config.batch_size,
+      charset = predictor.charset,
       filters = [])
 
-    predictor = cls.from_config_object(config, load_from_model_path)
     writer = predictor.writer_class(config.output_path)
 
     data = predictor.reader_class(config.input_path).get_files()

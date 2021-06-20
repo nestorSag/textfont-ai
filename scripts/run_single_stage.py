@@ -4,6 +4,7 @@ import argparse
 import logging
 from pathlib import Path
 
+from fontai.pipeline.base import FittableTransform
 from fontai.pipeline.stages import LabeledExampleExtractor, FontIngestion, Predictor
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ def process_files(args):
       required = True,      
       help=
       """
-      path to YAML file that defines the execution of the file processing pipeline.
+      path to YAML file that defines the execution.
       """)
   parser.add_argument(
       '--stage',
@@ -35,16 +36,30 @@ def process_files(args):
       """
       One of 'ingestion', 'preprocessing' or 'prediction'
       """)
+  parser.add_argument(
+      '--fit',
+      dest='fit',
+      action = 'store_true',      
+      help=
+      """
+      If true, fits stage.
+      """)
+
   args, _ = parser.parse_known_args(args)
 
-  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.DEBUG, filemode = "w")
+  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.INFO, filemode = "w")
 
   print(f"Redirecting logs to logs/{args.stage}.log")
 
   try:
-    stage_classes[args.stage].run_from_config_file(args.config_file)
+    stage_class = stage_classes[args.stage]
   except KeyError as e:
     print("stage must be one of 'ingestion', 'preprocessing' or 'prediction'")
+
+  if args.fit and not issubclass(stage_class, FittableTransform):
+    raise TypeError(f"stage {args.stage} is not fittable.")
+
+  stage_class.fit_from_config_file(args.config_file) if args.fit else stage_class.run_from_config_file(args.config_file)
   
 if __name__ == "__main__":
 
