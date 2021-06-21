@@ -91,7 +91,7 @@ class SAAE(tf.keras.Model):
   def discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)
     fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
-    return (real_loss + fake_loss)
+    return (real_loss + fake_loss)/(2*self.prior_batch_size)
 
   def __call__(self, x, training=True, mask=None):
     return self.encoder(x)

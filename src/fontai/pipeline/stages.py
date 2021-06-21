@@ -29,7 +29,7 @@ from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as 
 from fontai.config.prediction import ModelFactory, TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
 
 
-from fontai.prediction.input_processing import LabeledExamplePreprocessor
+from fontai.prediction.input_processing import InputPreprocessorFactory
 from fontai.preprocessing.mappings import PipelineExecutor, ManyToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer, BeamCompatibleWrapper
 
 #from fontai.pipeline.base import MLPipelineTransform
@@ -235,6 +235,7 @@ class Predictor(FittableTransform):
     self.model = model
     self.training_config = training_config
     self.charset = charset
+    self.input_preprocessor = InputPreprocessorFactory.create(type(model))
 
     # physical_devices = tf.config.experimental.list_physical_devices('GPU')
     # if len(physical_devices) > 0:
@@ -255,7 +256,7 @@ class Predictor(FittableTransform):
     if self.training_config is None:
       raise ValueError("Training configuration not provided at instantiation time.")
 
-    data_fetcher = LabeledExamplePreprocessor(
+    data_fetcher = self.input_preprocessor(
       batch_size = self.training_config.batch_size,
       charset = self.charset,
       filters = self.training_config.filters)
@@ -339,7 +340,7 @@ class Predictor(FittableTransform):
     
     predictor = cls.from_config_object(config, load_from_model_path)
 
-    data_fetcher = LabeledExamplePreprocessor(
+    data_fetcher = predictor.input_preprocessor(
       batch_size = predictor.training_config.batch_size,
       charset = predictor.charset,
       filters = [])
@@ -357,9 +358,9 @@ class Predictor(FittableTransform):
           ScoredLabeledExample(
             labeled_example = LabeledExample(
               features = features[k].numpy(),
-              label = labels[k].numpy()[0],
-              fontname = fontnames[k].numpy()[0]), 
-            score = score))
+              label = labels[k].numpy().decode("utf-8"),
+              fontname = fontnames[k].numpy().decode("utf-8")), 
+            score = tf.convert_to_tensor(score[k])))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):

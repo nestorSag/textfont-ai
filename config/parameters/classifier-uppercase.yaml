@@ -1,5 +1,5 @@
 input_path: data/preprocessed
-output_path: data/scored
+output_path: data/uppercase-scored
 model_path: models/supervised-uppercase
 charset: uppercase
 training:

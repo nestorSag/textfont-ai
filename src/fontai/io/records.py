@@ -46,7 +46,7 @@ class TfrWritable(ABC, BaseModel):
     Returns:
         TFFeature: encoded value
     """
-    return tf.train.Feature(float_list=tf.train.TFFloatList(value=[value]))
+    return Feature(float_list=TFFloatList(value=[value]))
 
 
   @classmethod
@@ -172,7 +172,7 @@ class ScoredExample(TfrWritable):
 class ScoredLabeledExample(TfrWritable):
   # wrapper that holds a scored, labeled ML example. Useful for model evaluation
   labeled_example: LabeledExample
-  score: ndarray
+  score: Tensor
 
   _tfr_schema: t.Dict = {**LabeledExample._tfr_schema, **{'score': FixedLenFeature([], tf_str)}}
 
@@ -188,14 +188,14 @@ class ScoredLabeledExample(TfrWritable):
 
   def serialise(self) -> t.Dict:
 
-    # t = serialize_tensor(self.score)
-    # if executing_eagerly():
-    #   t_ = t.numpy()
-    # else:
-    #   t_ = t.eval()
+    t = serialize_tensor(self.score)
+    if executing_eagerly():
+      s_score = t.numpy()
+    else:
+      s_score = t.eval()
 
     return {
-    **{"score": self.bytes_feature(self.score.tobytes())},
+    **{"score": self.bytes_feature(s_score)},
     **self.labeled_example.serialise()
     }
 

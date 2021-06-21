@@ -13,6 +13,7 @@ import strictyaml as yml
 
 from fontai.config.core import BaseConfigHandler, SimpleClassInstantiator, BasePipelineTransformConfig
 import fontai.prediction.input_processing as input_processing
+import fontai.prediction.input_filters as input_filters
 import fontai.prediction.models as custom_models
 
 from tensorflow import keras
@@ -72,7 +73,7 @@ class TrainingConfig(BaseModel):
     args["optimizer"] = schema_handler.get_instance(yaml=yaml.get("optimizer"), scope=keras.optimizers)
     args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=keras.losses)
     if  yaml.get("filters") is not None:
-      args["filters"] = [getattr(input_processing, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("filters").data]
+      args["filters"] = [getattr(input_filters, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("filters")]
     else:
       args["filters"] = []
     
@@ -277,7 +278,13 @@ class ConfigHandler(BaseConfigHandler):
 
   def get_config_schema(self):
 
-    self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
+    #self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
+
+    self.FILTERS_SCHEMA = yml.Seq(yml.Map(
+        {"name": yml.Str(), 
+        yml.Optional("kwargs", default = {}): yml.MapPattern(
+          yml.Str(),
+          self.yaml_to_obj.ANY_PRIMITIVES) | yml.EmptyDict()})) | yml.EmptyList()
 
     self.TRAINING_CONFIG_SCHEMA = yml.Map({
       "batch_size": yml.Int(),
@@ -298,7 +305,7 @@ class ConfigHandler(BaseConfigHandler):
         default = None): yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)| yml.EmptyNone(),
       yml.Optional(
         "filters",
-        default = []): self.DATA_PREPROCESSING_SCHEMA
+        default = []): self.FILTERS_SCHEMA
     })
 
     schema = yml.Map({

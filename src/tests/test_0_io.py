@@ -76,7 +76,7 @@ def test_records():
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
-  sample_record = ScoredLabeledExample(labeled_example = sample_record, score = np_empty((4,)))
+  sample_record = ScoredLabeledExample(labeled_example = sample_record, score = tf.convert_to_tensor(np_empty((4,))))
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
