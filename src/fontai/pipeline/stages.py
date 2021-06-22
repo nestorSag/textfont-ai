@@ -9,6 +9,7 @@ import typing
 import zipfile
 import io
 import sys
+import signal
 import typing as t
 import pickle
 
@@ -364,8 +365,13 @@ class Predictor(FittableTransform):
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
-    
     predictor = cls.from_config_object(config, load_from_model_path)
+    
+    def save_on_sigint():
+      predictor.model.save(config.model_path)
+      logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
+    signal.signal(signal.SIGINT, save_on_sigint)
+
     predictor.fit(data = predictor.reader_class(config.input_path).get_files())
     logger.info(f"Saving trained model to {config.model_path}")
     predictor.model.save(config.model_path)
