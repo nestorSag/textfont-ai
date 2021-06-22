@@ -161,7 +161,7 @@ class TfrWriter(BatchWriter):
         writer (tf.io.TFRecordWriter): writer object
   """
 
-  def __init__(self, output_path: str, max_output_file_size: float = 128.0):
+  def __init__(self, output_path: str, max_output_file_size: float = 64.0):
     """
     
     Args:

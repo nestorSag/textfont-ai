@@ -1,5 +1,4 @@
-#input_path: data/preprocessed
-input_path: src/tests/data/preprocessing/output
+input_path: data/preprocessed
 output_path: data/uppercase-scored
 model_path: models/supervised-uppercase
 charset: uppercase

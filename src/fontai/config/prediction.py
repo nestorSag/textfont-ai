@@ -72,7 +72,7 @@ class TrainingConfig(BaseModel):
     # the following objects are not primitive types and need to be instantiated from YAML definitions
     args["optimizer"] = schema_handler.get_instance(yaml=yaml.get("optimizer"), scope=keras.optimizers)
     args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=keras.losses)
-    if  yaml.get("filters") is not None:
+    if  yaml.get("filters").data != []:
       args["filters"] = [getattr(input_filters, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("filters")]
     else:
       args["filters"] = []

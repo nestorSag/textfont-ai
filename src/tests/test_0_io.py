@@ -10,7 +10,7 @@ from fontai.io.records import LabeledExample, ScoredExample, ScoredLabeledExampl
 from fontai.io.readers import ReaderClassFactory, TfrReader, FileReader, ZipReader, FontfileReader
 from fontai.io.writers import WriterClassFactory, TfrWriter, ZipWriter, FileWriter
 
-from tensorflow import constant as tf_constant
+from tensorflow import constant as tf_constant, convert_to_tensor
 from tensorflow.train import Example as TFExample
 from tensorflow.data import TFRecordDataset
 
@@ -76,7 +76,7 @@ def test_records():
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
-  sample_record = ScoredLabeledExample(labeled_example = sample_record, score = tf.convert_to_tensor(np_empty((4,))))
+  sample_record = ScoredLabeledExample(labeled_example = sample_record, score = convert_to_tensor(np_empty((4,))))
 
   assert isinstance(sample_record.to_tfr(), TFExample)
 
