@@ -9,7 +9,7 @@ training:
     kwargs:
       threshold: 0.9
   batch_size: 64
-  epochs: 50
+  epochs: 10
   steps_per_epoch: 5000
   optimizer:
     class: Adam
@@ -23,17 +23,15 @@ training:
   - class: TensorBoard
     kwargs:
       log_dir: logs/tensorboard/supervised-uppercase
-  - class: ReduceLROnPlateau
+  - class: ModelCheckpoint
     kwargs:
-      min_lr: 0.0001
-      factor: 0.5
-      patience: 2
+      filepath: models/generative-uppercase-checkpoint
       monitor: MSE
 model:
   class: SAAE
   kwargs:
     prior_batch_size: 64
-    reconstruction_loss_weight: 0.001
+    reconstruction_loss_weight: 0.9
     discriminator:
       class: Sequential
       kwargs:
@@ -45,12 +43,15 @@ model:
         - class: Dense
           kwargs:
             units: 100
+            activation: elu
         - class: Dense
           kwargs:
             units: 100
+            activation: elu
         - class: Dense
           kwargs:
             units: 1
+            activation: softmax
     encoder:
       class: Sequential
       kwargs:
@@ -124,6 +125,7 @@ model:
         - class: Dense
           kwargs: 
             units: 4096
+            activation: elu
         - class: Reshape
           kwargs: 
             target_shape: 

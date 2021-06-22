@@ -1,0 +1,32 @@
+input_path: data/uppercase-scored
+output_path: data/uppercase-embeddings
+model_path: models/generative-uppercase
+charset: uppercase
+training:
+  filters:
+  - name: filter_misclassified
+  - name: filter_score
+    kwargs:
+      threshold: 0.9
+  batch_size: 128
+  epochs: 10
+  steps_per_epoch: 5000
+  optimizer:
+    class: Adam
+    kwargs:
+      learning_rate: 0.0001
+  loss:
+    class: CategoricalCrossentropy
+  metrics:
+  - accuracy
+  callbacks:
+  - class: TensorBoard
+    kwargs:
+      log_dir: logs/tensorboard/supervised-uppercase
+  - class: ModelCheckpoint
+    kwargs:
+      filepath: models/generative-uppercase-checkpoint
+      monitor: MSE
+model:
+  path: models/generative-uppercase
+  custom_class: SAAE

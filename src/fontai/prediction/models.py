@@ -3,11 +3,14 @@ import re
 import io
 import tensorflow as tf
 import json
+import logging
 import copy
 import matplotlib.pyplot as plt
 import numpy as np
 
 from fontai.io.storage import BytestreamPath
+
+logger = logging.getLogger(__name__)
 
 class SAAE(tf.keras.Model):
 
@@ -57,10 +60,11 @@ class SAAE(tf.keras.Model):
     self.prior_batch_size = prior_batch_size
 
     self.prior_sampler = tf.random.normal
-    self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False) #assumes discriminator outputs probabilities(i.e. in [0, 1])
     self.mse_loss = tf.keras.losses.MSE
     self.mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
     self.accuracy_metric = tf.keras.metrics.Accuracy(name="Adversarial error")
+    self.cross_entropy_metric = tf.keras.metrics.BinaryCrossentropy(name="Cross entropy error", from_logits=False)
   
   def compile(self,
     optimizer='rmsprop',
@@ -84,55 +88,58 @@ class SAAE(tf.keras.Model):
       run_eagerly=run_eagerly,
       **kwargs)
 
-
-  def decoder_loss(self,original,decoded):
-    return self.mse_loss(original,decoded)
-
   def discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)
     fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
     return (real_loss + fake_loss)/(2*self.prior_batch_size)
 
   def __call__(self, x, training=True, mask=None):
-    return self.encoder(x)
+    return self.encoder(x, training=training)
 
   def train_step(self, inputs):
 
     x, labels = inputs
 
-  
+    #self.prior_batch_size = x.shape[0]
+    #logger.info("prior_batch_size is deprecated; setting it equal to batch size.")
+
     with tf.GradientTape() as tape1, tf.GradientTape() as tape2, tf.GradientTape() as tape3:
 
-      # Forward pass
+      # apply autoencoder
       code = self.encoder(x, training=True)
       extended_code = tf.concat([code,labels],axis=-1)
       decoded = self.decoder(extended_code,training=True)  
 
+      # apply discriminator model
       prior_samples = self.prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
       real = self.discriminator(prior_samples,training=True)
       fake = self.discriminator(code,training=True)
 
-      reconstruction_loss = self.decoder_loss(x,decoded)
+      # compute losses for the 3 models
+      reconstruction_loss = self.mse_loss(x,decoded)
       classification_loss = self.discriminator_loss(real,fake)
-      mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*self.decoder_loss(x,decoded)
+      mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*reconstruction_loss
 
     # Compute gradients
-    
     discr_gradients = tape1.gradient(classification_loss,self.discriminator.trainable_variables)
     decoder_gradients = tape2.gradient(reconstruction_loss, self.decoder.trainable_variables)
     encoder_gradients = tape3.gradient(mixed_loss, self.encoder.trainable_variables)
 
+    #apply gradients
     self.discriminator.optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
     self.decoder.optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
     self.encoder.optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
 
+    # compute metrics
     self.mse_metric.update_state(x,decoded)
 
     discr_true = tf.concat([tf.ones_like(real),tf.zeros_like(fake)],axis=0)
-    discr_predicted = tf.round(tf.concat([real,fake],axis=0))
-    self.accuracy_metric.update_state(discr_true,discr_predicted)
+    discr_predicted = tf.concat([real,fake],axis=0)
+    self.accuracy_metric.update_state(discr_true,tf.round(discr_predicted))
 
-    return {"MSE": self.mse_metric.result(), "Accuracy": self.accuracy_metric.result()}
+    self.cross_entropy_metric.update_state(discr_true, discr_predicted)
+
+    return {"MSE": self.mse_metric.result(), "Accuracy": self.accuracy_metric.result(), "cross_entropy": self.cross_entropy_metric.result()}
 
   @property
   def metrics(self):
@@ -141,7 +148,7 @@ class SAAE(tf.keras.Model):
     Returns: A list of metric objects
 
     """
-    return [self.mse_metric, self.accuracy_metric]
+    return [self.mse_metric, self.accuracy_metric, self.cross_entropy_metric]
 
   # def get_config(self):
 
