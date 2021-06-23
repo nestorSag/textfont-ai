@@ -275,6 +275,21 @@ class Predictor(FittableTransform):
 
     return self
 
+  def _to_shape(self, x: t.Union[ndarray, Tensor]):
+    """Reshape single example to be transformed in-memory by the `transform` method.
+    
+    Args:
+        x (t.Union[ndarray, Tensor]): Single input
+    
+    Returns:
+        t.Union[ndarray, Tensor]: Reshaped input
+    """
+    if len(x.shape) == 2:
+      x = x.reshape((1,) + x.shape + (1,))
+    elif len(x.shape) == 3:
+      x = x.reshape((1,) + x.shape)
+    return x
+
   def transform(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Union[Tensor, ndarray, ScoredLabeledExample]:
     """
     Process a single instance
@@ -289,12 +304,13 @@ class Predictor(FittableTransform):
         TypeError: If input type is not allowed.
     
     """
+
     if isinstance(input_data, (ndarray, Tensor)):
-      return self.model.predict(input_data)
+      return self.model.predict(self._to_shape(input_data))
     elif isinstance(input_data, LabeledExample):
       return ScoredLabeledExample(
         labeled_example = input_data, 
-        score = self.model.predict(input_data.features.reshape((1,) + input_data.features.shape + (1,)))) #images have to be reshaped to 4 dimensions to be scored
+        score = tf.convert_to_tensor(self.model.predict(self._to_shape(input_data.features)))) #images have to be reshaped to 4 dimensions to be scored
     else:
       raise TypeError("Input type is not one of ndarray, Tensor or LabeledExample")
 
@@ -367,7 +383,7 @@ class Predictor(FittableTransform):
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
     predictor = cls.from_config_object(config, load_from_model_path)
     
-    def save_on_sigint():
+    def save_on_sigint(sig, frame):
       predictor.model.save(config.model_path)
       logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
     signal.signal(signal.SIGINT, save_on_sigint)

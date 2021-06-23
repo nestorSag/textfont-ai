@@ -8,13 +8,13 @@ training:
   - name: filter_score
     kwargs:
       threshold: 0.9
-  batch_size: 64
-  epochs: 10
+  batch_size: 128
+  epochs: 12
   steps_per_epoch: 5000
   optimizer:
     class: Adam
     kwargs:
-      learning_rate: 0.001
+      learning_rate: 0.0001
   loss:
     class: CategoricalCrossentropy
   metrics:
@@ -64,12 +64,6 @@ model:
             - 1
         - class: Conv2D
           kwargs: 
-            filters: 32
-            kernel_size: 3
-            activation: elu
-            padding: same
-        - class: Conv2D
-          kwargs: 
             filters: 64
             kernel_size: 3
             activation: elu
@@ -84,12 +78,6 @@ model:
             kernel_size: 3
             activation: elu
             padding: same
-        - class: Conv2D
-          kwargs: 
-            filters: 128
-            kernel_size: 3
-            activation: elu
-            padding: same
         - class: MaxPooling2D
           kwargs: 
             pool_size: 2
@@ -100,6 +88,10 @@ model:
             kernel_size: 3
             activation: elu
             padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
         - class: Conv2D
           kwargs: 
             filters: 64
@@ -113,6 +105,10 @@ model:
         - class: Flatten
         - class: Dense
           kwargs:
+            units: 1024
+            activation: elu
+        - class: Dense
+          kwargs:
             units: 10
     decoder:
       class: Sequential
@@ -124,13 +120,17 @@ model:
             - 36
         - class: Dense
           kwargs: 
-            units: 4096
+            units: 1024
+            activation: elu
+        - class: Dense
+          kwargs: 
+            units: 1024
             activation: elu
         - class: Reshape
           kwargs: 
             target_shape: 
-            - 8
-            - 8
+            - 4
+            - 4
             - 64
         - class: Conv2DTranspose
           kwargs:
@@ -154,6 +154,19 @@ model:
         - class: Conv2D
           kwargs: 
             filters: 32
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: BatchNormalization
+        - class: Conv2DTranspose
+          kwargs:
+            kernel_size: 2
+            activation: elu
+            strides: 2
+            filters: 32
+        - class: Conv2D
+          kwargs: 
+            filters: 1
             kernel_size: 3
             activation: elu
             padding: same

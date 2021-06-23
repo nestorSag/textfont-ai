@@ -75,7 +75,11 @@ class SAAE(tf.keras.Model):
     run_eagerly=None,
     **kwargs):
 
+    print(self.encoder)
+    print(self.decoder)
+    print(self.discriminator)
     self.encoder.compile(optimizer = copy.deepcopy(optimizer))
+
     self.decoder.compile(optimizer = copy.deepcopy(optimizer))
     self.discriminator.compile(optimizer = copy.deepcopy(optimizer))
 

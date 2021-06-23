@@ -8,8 +8,8 @@ outpath = "src/tests/data/prediction"
 
 SEQUENTIAL_PREDICTOR_CONFIG = f"""
 input_path: src/tests/data/preprocessing/output
-output_path: {outpath}/output
-model_path: {outpath}/model
+output_path: {outpath}/scored
+model_path: {outpath}/classifier
 charset: lowercase
 training:
   batch_size: 32
@@ -42,11 +42,29 @@ model:
         activation: softmax
 """
 
+SAVED_SEQUENTIAL_CONFIG = f"""
+input_path: src/tests/data/preprocessing/output
+output_path: {outpath}/scored
+model_path: {outpath}/classifier
+training:
+  batch_size: 32
+  epochs: 10
+  steps_per_epoch: 10
+  optimizer:
+    class: Adam
+  loss:
+    class: CategoricalCrossentropy
+  metrics:
+  - accuracy
+model:
+  path: {outpath}/classifier
+"""
+
 
 AAE_PREDICTOR_CONFIG = f"""
-input_path: src/tests/data/preprocessing/output
-output_path: {outpath}/output
-model_path: {outpath}/model
+input_path: {outpath}/scored
+output_path: {outpath}/embedded
+model_path: {outpath}/generative
 charset: lowercase
 training:
   batch_size: 32
@@ -108,10 +126,10 @@ model:
     prior_batch_size: 32
 """
 
-SAVED_PREDICTOR_CONFIG = f"""
-input_path: src/tests/data/preprocessing/output
-output_path: {outpath}/output
-model_path: {outpath}/model
+SAVED_SAAE_CONFIG = f"""
+input_path: {outpath}/scored
+output_path: {outpath}/embedded
+model_path: {outpath}/generative
 training:
   batch_size: 32
   epochs: 10
@@ -123,7 +141,7 @@ training:
   metrics:
   - accuracy
 model:
-  path: src/tests/data/prediction/model
+  path: {outpath}/generative
   custom_class: SAAE
 """
 
@@ -131,8 +149,9 @@ model:
   "config_string", 
   [
     SEQUENTIAL_PREDICTOR_CONFIG, 
+    SAVED_SEQUENTIAL_CONFIG,
     AAE_PREDICTOR_CONFIG, 
-    SAVED_PREDICTOR_CONFIG
+    SAVED_SAAE_CONFIG,
   ])
 def test_predictor(config_string):
   # preemtively clean output folder

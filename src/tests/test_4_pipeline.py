@@ -30,8 +30,8 @@ canvas_padding: 100
 
 PREDICTOR_CONFIG = """
 input_path: src/tests/data/preprocessing/output
-output_path: src/tests/data/prediction/output
-model_path: src/tests/data/prediction/model
+output_path: src/tests/data/prediction/scored
+model_path: src/tests/data/prediction/classifier
 charset: lowercase
 training:
   batch_size: 32
