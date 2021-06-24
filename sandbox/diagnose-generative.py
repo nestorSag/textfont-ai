@@ -11,7 +11,22 @@ import numpy as np
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true' #this is needed to run models on GPU
 charset = string.ascii_letters[26::]
 
+def plot_imgs(imgs):
+  # plot multiple images
+  fig, axs = plt.subplots(4,7)
+  for i in range(26):
+    x = imgs[i]
+    if isinstance(x, np.ndarray):
+      x_ = x
+    else:
+      x_ = x.numpy()
+    np_x = (255 * x_).astype(np.uint8).reshape((64,64))
+    np_x[np_x <= np.quantile(np_x,0.25)] = 0.0
+    #axs[int(i/7), i%7].imshow(np_x)
+  plt.show()
+
 def plot_img(x):
+  # plot single image
   if isinstance(x, np.ndarray):
     x_ = x
   else:
@@ -20,19 +35,22 @@ def plot_img(x):
   plt.imshow(np_x)
   plt.show()
 
-def generate(char = "A", embedded=None, scale=1):
+def generate(embedded=None):
+  # generate a batch with all character in the alphabet
   if embedded is None:
-    embedded = np.random.normal(size=(1,10), scale=scale)
+    embedded = np.random.normal(size=(1,10))
   #
-  label = np.zeros((1,26), dtype=np.float32)
-  index = charset.index(char)
-  label[0,index] = 1.0
-  return np.concatenate([embedded,label],axis=-1)
+  single = []
+  for index in range(26):
+    label = np.zeros((1,26), dtype=np.float32)
+    label[0,index] = 1.0
+    single.append(np.concatenate([embedded,label],axis=-1))
+  return np.concatenate(single,axis=0)
 
-def canonical(k):
-  x = np.zeros((1,10),dtype=np.float32)
-  x[0,k] = 1.0
-  return x
+# def canonical(k):
+#   x = np.zeros((1,10),dtype=np.float32)
+#   x[0,k] = 1.0
+#   return x
 # def compare_reconstruction(k):
 #   x, y = features[k], labels[k]
 #   embedding = pred.model.encoder.predict(x)
@@ -51,16 +69,11 @@ fetcher = pred.input_preprocessor(
 parsed = fetcher.fetch(tf_data)
 
 batch = next(iter(parsed))
-features, labels, scores = batch
-embeddings = pred.model.encoder.predict(features)
+features, labels = batch
+image_precode = pred.model.image_encoder.predict(features)
+embeddings = pred.model.full_encoder.predict(np.concatenate([image_precode, labels.numpy()], axis=-1))
 extended_embedding = np.concatenate([embeddings, labels], axis=-1)
 reconstructed = pred.model.decoder.predict(extended_embedding)
 
 
-plot_img(features[4])
-plot_img(reconstructed[0])
-
-
-gen = generate()
-
-r = np.random.normal(size=(1,10)); plot_img(pred.model.decoder.predict(generate(embedded=2*r)))
+plot_imgs(pred.model.decoder.predict(generate()))

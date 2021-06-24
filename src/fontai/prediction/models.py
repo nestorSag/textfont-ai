@@ -21,7 +21,8 @@ class SAAE(tf.keras.Model):
       cross_entropy (tf.keras.losses.BinaryCrossentropy): Cross entropy loss
       decoder (tf.keras.Model): Decoder model
       discriminator (tf.keras.Model): Discriminator model
-      encoder (tf.keras.Model): Encoder model
+      full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels
+      image_encoder (tf.keras.Model): Encoder for image features
       input_dim (t.Tuple[int]): Input dimension
       mse_loss (TYPE): Description
       mse_metric (tf.keras.losses.MSE): MSE loss
@@ -32,7 +33,8 @@ class SAAE(tf.keras.Model):
 
   def __init__(
     self,
-    encoder: tf.keras.Model,
+    full_encoder: tf.keras.Model,
+    image_encoder: tf.keras.Model,
     decoder: tf.keras.Model,
     discriminator: tf.keras.Model,
     reconstruction_loss_weight:float=0.5,
@@ -42,7 +44,8 @@ class SAAE(tf.keras.Model):
     Args:
         decoder (tf.keras.Model): Decoder model
         discriminator (tf.keras.Model): Discriminator model
-        encoder (tf.keras.Model): Encoder model
+        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels
+        image_encoder (tf.keras.Model): Encoder for image features
         reconstruction_loss_weight (float, optional): Weight of reconstruction loss at training time. Should be between 0 and 1.
         n_classes (int): number of labeled classes
         prior_batch_size (int): Batch size from prior distribution at training time
@@ -53,7 +56,8 @@ class SAAE(tf.keras.Model):
     #decoder.build(input_shape=(None,n_classes+code_dim))
     #discriminator.build(input_shape=(None,code_dim))
 
-    self.encoder = encoder
+    self.full_encoder = full_encoder
+    self.image_encoder = image_encoder
     self.decoder = decoder
     self.discriminator = discriminator
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
@@ -75,11 +79,8 @@ class SAAE(tf.keras.Model):
     run_eagerly=None,
     **kwargs):
 
-    print(self.encoder)
-    print(self.decoder)
-    print(self.discriminator)
-    self.encoder.compile(optimizer = copy.deepcopy(optimizer))
-
+    self.full_encoder.compile(optimizer = copy.deepcopy(optimizer))
+    self.image_encoder.compile(optimizer = copy.deepcopy(optimizer))
     self.decoder.compile(optimizer = copy.deepcopy(optimizer))
     self.discriminator.compile(optimizer = copy.deepcopy(optimizer))
 
@@ -107,10 +108,12 @@ class SAAE(tf.keras.Model):
     #self.prior_batch_size = x.shape[0]
     #logger.info("prior_batch_size is deprecated; setting it equal to batch size.")
 
-    with tf.GradientTape() as tape1, tf.GradientTape() as tape2, tf.GradientTape() as tape3:
+    with tf.GradientTape(persistent=True) as tape:
 
       # apply autoencoder
-      code = self.encoder(x, training=True)
+      image_precode = self.image_encoder(x, training=True)
+      full_precode = tf.concat([image_precode, labels], axis=-1)
+      code = self.full_encoder(full_precode, training=True)
       extended_code = tf.concat([code,labels],axis=-1)
       decoded = self.decoder(extended_code,training=True)  
 
@@ -119,20 +122,23 @@ class SAAE(tf.keras.Model):
       real = self.discriminator(prior_samples,training=True)
       fake = self.discriminator(code,training=True)
 
-      # compute losses for the 3 models
+      # compute losses for the models
       reconstruction_loss = self.mse_loss(x,decoded)
       classification_loss = self.discriminator_loss(real,fake)
       mixed_loss = -(1-self.rec_loss_weight)*classification_loss + self.rec_loss_weight*reconstruction_loss
 
     # Compute gradients
-    discr_gradients = tape1.gradient(classification_loss,self.discriminator.trainable_variables)
-    decoder_gradients = tape2.gradient(reconstruction_loss, self.decoder.trainable_variables)
-    encoder_gradients = tape3.gradient(mixed_loss, self.encoder.trainable_variables)
+    discr_gradients = tape.gradient(classification_loss,self.discriminator.trainable_variables)
+    decoder_gradients = tape.gradient(reconstruction_loss, self.decoder.trainable_variables)
+    image_encoder_gradients = tape.gradient(mixed_loss, self.image_encoder.trainable_variables)
+    full_encoder_gradients = tape.gradient(mixed_loss, self.full_encoder.trainable_variables)
+
 
     #apply gradients
     self.discriminator.optimizer.apply_gradients(zip(discr_gradients,self.discriminator.trainable_variables))
     self.decoder.optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
-    self.encoder.optimizer.apply_gradients(zip(encoder_gradients,self.encoder.trainable_variables))
+    self.image_encoder.optimizer.apply_gradients(zip(image_encoder_gradients,self.image_encoder.trainable_variables))
+    self.full_encoder.optimizer.apply_gradients(zip(full_encoder_gradients,self.full_encoder.trainable_variables))
 
     # compute metrics
     self.mse_metric.update_state(x,decoded)
@@ -154,30 +160,6 @@ class SAAE(tf.keras.Model):
     """
     return [self.mse_metric, self.accuracy_metric, self.cross_entropy_metric]
 
-  # def get_config(self):
-
-  #   config = {
-  #     "reconstruction_loss_weight":self.rec_loss_weight,
-  #     "prior_batch_size": self.prior_batch_size
-  #   }
-
-  #   config["encoder"] = self.encoder.get_config()
-  #   config["decoder"] = self.decoder.get_config()
-  #   config["discriminator"] = self.discriminator.get_config()
-
-  #   return config
-
-  # @classmethod
-  # def from_config(cls, config):
-  #   encoder = tf.keras.Sequential.from_config(config.pop("encoder"))
-  #   decoder = tf.keras.Sequential.from_config(config.pop("decoder"))
-  #   discriminator = tf.keras.Sequential.from_config(config.pop("discriminator"))
-
-  #   return SAAE(
-  #     encoder = encoder, 
-  #     decoder = decoder, 
-  #     discriminator = discriminator,**config)
-
   def predict(self, *args, **kwargs):
     return self.encoder.predict(*args,**kwargs)
 
@@ -188,7 +170,8 @@ class SAAE(tf.keras.Model):
     Args:
         output_dir (str): Target output folder
     """
-    self.encoder.save(str(BytestreamPath(output_dir) / "encoder"))
+    self.full_encoder.save(str(BytestreamPath(output_dir) / "full_encoder"))
+    self.image_encoder.save(str(BytestreamPath(output_dir) / "image_encoder"))
     self.decoder.save(str(BytestreamPath(output_dir) / "decoder"))
     self.discriminator.save(str(BytestreamPath(output_dir) / "discriminator"))
 
@@ -210,13 +193,19 @@ class SAAE(tf.keras.Model):
     Returns:
         SAAE: Loaded model
     """
-    encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "encoder"))
+    full_encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "full_encoder"))
+    image_encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "image_encoder"))
     decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))
     discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "discriminator"))
 
     with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
       d = json.loads(f.read())
 
-    return cls(encoder = encoder,decoder = decoder,discriminator = discriminator, **d)
+    return cls(
+      image_encoder = image_encoder, 
+      full_encoder = full_encoder, 
+      decoder = decoder, 
+      discriminator = discriminator, 
+      **d)
 
 

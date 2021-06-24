@@ -106,7 +106,7 @@ class LabeledExamplePreprocessor(object):
       for example_filter in self.filters:
         dataset = dataset.filter(example_filter)
 
-      #dataset = dataset.map(self.get_classifier_input)
+      dataset = dataset.map(self.get_classifier_input)
 
     return self.batch_dataset(dataset, repeat=training_format)
 

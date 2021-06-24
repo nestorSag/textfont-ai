@@ -7,14 +7,14 @@ training:
   - name: filter_misclassified
   - name: filter_score
     kwargs:
-      threshold: 0.9
-  batch_size: 128
-  epochs: 12
+      threshold: 0.95
+  batch_size: 64
+  epochs: 30
   steps_per_epoch: 5000
   optimizer:
     class: Adam
     kwargs:
-      learning_rate: 0.0001
+      learning_rate: 0.001
   loss:
     class: CategoricalCrossentropy
   metrics:
@@ -31,7 +31,7 @@ model:
   class: SAAE
   kwargs:
     prior_batch_size: 64
-    reconstruction_loss_weight: 0.9
+    reconstruction_loss_weight: 0.5
     discriminator:
       class: Sequential
       kwargs:
@@ -51,8 +51,8 @@ model:
         - class: Dense
           kwargs:
             units: 1
-            activation: softmax
-    encoder:
+            activation: sigmoid
+    image_encoder:
       class: Sequential
       kwargs:
         layers:
@@ -103,6 +103,18 @@ model:
             pool_size: 2
         - class: BatchNormalization
         - class: Flatten
+    full_encoder:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape: 
+            - 1050
+        - class: Dense
+          kwargs:
+            units: 1024
+            activation: elu
         - class: Dense
           kwargs:
             units: 1024
