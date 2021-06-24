@@ -199,3 +199,47 @@ class ScoredLabeledExample(TfrWritable):
     **self.labeled_example.serialise()
     }
 
+
+class LabeledFont(TfrWritable):
+  # wrapper that holds an entire font's character set
+  features: ndarray
+  labels: ndarray
+  fontname: str
+
+  _tfr_schema: t.Dict = {
+    'features': FixedLenFeature([], tf_str),
+    'label': FixedLenFeature([], tf_str),
+    'fontname': FixedLenFeature([], tf_str),
+    }
+
+  # def __init__(self, **data):
+
+  #   filtered_data = data.pop("_tfr_schema")
+  #   super().__init__(**filtered_data)
+
+
+  def __iter__(self):
+    return iter((self.features,self.label,self.fontname))
+
+  def __eq__(self,other):
+    return isinstance(other, LabeledFont) and self.features == other.features and self.labels == other.labels and self.fontname == other.fontname
+
+  @classmethod
+  def img_to_png_bytes(cls, img):
+    bf = io.BytesIO()
+    imageio.imwrite(bf,img.astype(uint8),"png")
+    val = bf.getvalue()
+    bf.close()
+    return val
+
+  # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True
+
+  def serialise(self) -> t.Dict:
+    return {
+    "labels": self.bytes_feature(bytes(self.labels.tobytes())),
+    "fontname": self.bytes_feature(bytes(str.encode(self.fontname))),
+    "features": self.bytes_feature(self.img_to_png_bytes(self.features))
+    }
+
