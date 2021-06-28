@@ -214,6 +214,45 @@ class Predictor(FittableTransform):
     # if len(physical_devices) > 0:
     #   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+
+  def add_batch_shape_signature(self, data: TFRecordDataset) -> TFRecordDataset:
+    """Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures
+    
+    Args:
+        data (TFRecordDataset): Input training data
+    
+    Returns:
+        TFRecordDataset
+    
+    Raises:
+        ValueError
+    """
+    def callable_data():
+      return data
+
+    features, labels = next(iter(data))
+    # drop batch size form shape tuples
+    ftr_shape = features.shape[1::]
+    lbl_shape = labels.shape[1::]
+
+    if len(ftr_shape) != 3 or len(lbl_shape) != 1:
+      raise ValueError(f"Input shapes don't match expected: got shapes {features.shape} and {labels.shape}")
+
+    training_data = tf.data.Dataset.from_generator(
+      callable_data, 
+      output_types = (
+        features.dtype, 
+        labels.dtype
+      ),
+      output_shapes=(
+        tf.TensorShape((None,) + ftr_shape),
+        tf.TensorShape((None,) + lbl_shape)
+      )
+    )
+
+    return training_data
+
+
   def fit(self, data: TFRecordDataset):
     """Fits the scoring model with the passed data
     
@@ -234,8 +273,11 @@ class Predictor(FittableTransform):
       optimizer = self.training_config.optimizer,
       metrics = self.training_config.metrics)
 
+    training_data = self.add_batch_shape_signature(data)
+
     self.model.fit(
-      data,
+      #data,
+      training_data,
       steps_per_epoch = self.training_config.steps_per_epoch, 
       epochs = self.training_config.epochs,
       callbacks = self.training_config.callbacks)
@@ -274,7 +316,7 @@ class Predictor(FittableTransform):
 
     if isinstance(input_data, (ndarray, Tensor)):
       return self.model.predict(self._to_shape(input_data))
-    elif issubclass(input_data, TfrWritable):
+    elif isinstance(input_data, TfrWritable):
       return input_data.add_score(self.model.predict(self._to_shape(input_data.features)))
     else:
       raise TypeError("Input type is not one of ndarray, Tensor or TfrWritable")
@@ -319,24 +361,25 @@ class Predictor(FittableTransform):
 
   @classmethod
   def run_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
-    
+
     predictor = cls.from_config_object(config, load_from_model_path)
 
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
       charset = predictor.charset,
-      filters = [])
+      custom_filters = [],
+      custom_mappers = [])
 
     writer = predictor.writer_class(config.output_path)
 
     data = predictor.reader_class(config.input_path).get_files()
     for example in data_fetcher.fetch(data, training_format=False):
-      writer.write(self.transform(example))
+      formatted = config.input_record_class.from_parsed_bytes_dict(example)
+      writer.write(predictor.transform(formatted))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
-
     predictor = cls.from_config_object(config, load_from_model_path)
     
     def save_on_sigint(sig, frame):
@@ -350,7 +393,8 @@ class Predictor(FittableTransform):
       input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
       charset = predictor.charset,
-      filters = predictor.training_config.filters)
+      custom_filters = predictor.training_config.custom_filters,
+      custom_mappers = predictor.training_config.custom_mappers)
 
     data = predictor.reader_class(config.input_path).get_files()
 

@@ -20,8 +20,6 @@ from  tensorflow.python.data.ops.dataset_ops import MapDataset
 
 from tensorflow.data import TFRecordDataset
 
-from fontai.io.records import LabeledChar, ScoredLabeledChar, LabeledFont
-
 import fontai.prediction.models as custom_models
 
 logger = logging.getLogger(__name__)
@@ -35,7 +33,7 @@ class RecordPreprocessor(object):
       charset (char): string with every character that needs to be extracted
       CHARSET_OPTIONS (TYPE): Dictionary from allowed charsets names to charsets
       charset_tensor (tf.Tensor): charset in tensor form
-      filters (t.List[types.Callable]): List of filters to apply to training data
+      custom_filters (t.List[types.Callable]): List of custom_filters to apply to training data
       num_classes (int): number of classes in charset
   """
 
@@ -49,23 +47,26 @@ class RecordPreprocessor(object):
   def __init__(
     self, 
     input_record_class: type,
-    batch_size: int,
+    batch_size: t.Optional[int],
     charset: str,
-    filters: t.List[t.Callable] = []):
+    custom_filters: t.List[t.Callable] = [],
+    custom_mappers: t.List[t.Callable] = []):
     """
     
     Args:
         batch_size (int): training batch size
         charset (str): One of 'lowercase', 'uppercase', 'digits' or 'all'; otherwise, chracters in the provided string are used as acustom charset.
 
-        filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels
+        custom_filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels
     """
 
     self.input_record_class = input_record_class
 
     self.batch_size = batch_size
 
-    self.filters = filters
+    self.custom_filters = custom_filters
+
+    self.custom_mappers = custom_mappers
 
     try:
       self.charset = self.CHARSET_OPTIONS[charset]
@@ -98,21 +99,25 @@ class RecordPreprocessor(object):
     # bytes -> dict -> tuple of objs
     dataset = dataset\
       .map(self.input_record_class.from_tf_example)\
-      .filter(self.filter_charset)\
-      .map(self.input_record_class.parse_bytes_dict)
-
-    # filter examples using raw tuple
-    for example_filter in self.filters:
+      .map(self.input_record_class.parse_bytes_dict)#\
+      #.filter(self.filter_charset)
+    
+    #apply custom filters to raw tuples
+    for example_filter in self.custom_filters:
         dataset = dataset.filter(example_filter)
+
+    # apply custom map to raw tuples
+    for example_mapper in self.custom_mappers:
+        dataset = dataset.filter(example_mapper)
 
     # if for training, take only features and formatted labels, and batch together
     if training_format:
-      dataset = dataset.map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))
+      dataset = dataset\
+        .map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))\
+        .filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
+
       dataset = self.batch_dataset(dataset)
-      return dataset
-    else:
-      # if testing, return instance of TfrWritable  class
-      return dataset.map(self.input_record_class.get_scoring_parser(charset_tensor = self.charset_tensor))
+    return dataset
 
 
   def batch_dataset(self, dataset, buffered_batches = 512):
@@ -127,21 +132,26 @@ class RecordPreprocessor(object):
         TFRecordDataset
     """
 
+    buffer_size = buffered_batches*self.batch_size if self.batch_size is not None else 1000
+
     dataset = dataset\
-      .shuffle(buffer_size=buffered_batches*self.batch_size)
+      .shuffle(buffer_size=buffer_size)
 
     dataset = dataset.repeat()
 
-    return dataset.batch(self.batch_size)
+    if self.batch_size is not None:
+      return dataset.batch(self.batch_size)
+    else:
+      return dataset
 
-  def filter_charset(self, record):
+  def label_is_nonempty(self, features, label):
     """
-    Filters out triplet examples not containing characters in the charset
+    Filters out training examples without rows or correctly formatted labels
     
     Args:
         record (tf.train.TFExample): Input example
     
     Returns:
-        Tensor: boolean
+        Tensor
     """
-    return tf.reduce_any(self.charset_tensor == record["label"])
+    return tf.math.logical_not(tf.equal(tf.size(label), 0))

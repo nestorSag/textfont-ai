@@ -13,7 +13,9 @@ import strictyaml as yml
 
 from fontai.config.core import BaseConfigHandler, SimpleClassInstantiator, BasePipelineTransformConfig
 import fontai.prediction.input_processing as input_processing
-import fontai.prediction.input_filters as input_filters
+import fontai.prediction.custom_filters as custom_filters
+import fontai.prediction.custom_mappers as custom_mappers
+
 import fontai.prediction.models as custom_models
 
 from tensorflow import keras
@@ -43,8 +45,9 @@ class TrainingConfig(BaseModel):
       metrics (t.List[str], optional): list of metrics to display
       callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.
   """
-  filters: t.List[t.Callable] = []
-  batch_size: PositiveInt
+  custom_filters: t.List[t.Callable] = []
+  custom_mappers: t.List[t.Callable] = []
+  batch_size: t.Optional[PositiveInt]
   epochs: PositiveInt
   steps_per_epoch: PositiveInt
   optimizer: keras.optimizers.Optimizer
@@ -72,10 +75,19 @@ class TrainingConfig(BaseModel):
     # the following objects are not primitive types and need to be instantiated from YAML definitions
     args["optimizer"] = schema_handler.get_instance(yaml=yaml.get("optimizer"), scope=keras.optimizers)
     args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=keras.losses)
-    if  yaml.get("filters").data != []:
-      args["filters"] = [getattr(input_filters, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("filters")]
+    
+    if  yaml.get("custom_filters").data != []:
+      args["custom_filters"] = [getattr(custom_filters, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("custom_filters")]
     else:
-      args["filters"] = []
+      args["custom_filters"] = []
+
+
+    if  yaml.get("custom_mappers").data != []:
+      args["custom_mappers"] = [getattr(custom_mappers, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("custom_mappers")]
+    else:
+      args["custom_mappers"] = []
+
+
     
     if  yaml.get("callbacks") is not None:
       args["callbacks"] = [CallbackFactory.create(yaml) for yaml in yaml.get("callbacks")]
@@ -203,7 +215,7 @@ class ModelFactory(object):
         return model
       except Exception as e:
         logger.debug(f"Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}")
-        #print(traceback.format_exc())
+        #print(f"Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}")
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
   def from_path(self,model_yaml: yml.YAML):
@@ -301,14 +313,14 @@ class ConfigHandler(BaseConfigHandler):
 
     #self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
 
-    self.FILTERS_SCHEMA = yml.Seq(yml.Map(
+    self.CUSTOM_FUNCTIONS = yml.Seq(yml.Map(
         {"name": yml.Str(), 
         yml.Optional("kwargs", default = {}): yml.MapPattern(
           yml.Str(),
           self.yaml_to_obj.ANY_PRIMITIVES) | yml.EmptyDict()})) | yml.EmptyList()
 
     self.TRAINING_CONFIG_SCHEMA = yml.Map({
-      "batch_size": yml.Int(),
+      yml.Optional("batch_size", default=None): yml.Int() | yml.EmptyNone(),
       "epochs": yml.Int(),
       yml.Optional("seed", default = 1): yml.Int(),
       yml.Optional(
@@ -325,8 +337,11 @@ class ConfigHandler(BaseConfigHandler):
         "callbacks", 
         default = None): yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)| yml.EmptyNone(),
       yml.Optional(
-        "filters",
-        default = []): self.FILTERS_SCHEMA
+        "custom_filters",
+        default = []): self.CUSTOM_FUNCTIONS,
+      yml.Optional(
+        "custom_mappers",
+        default = []): self.CUSTOM_FUNCTIONS
     })
 
     schema = yml.Map({

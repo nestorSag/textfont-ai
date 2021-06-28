@@ -313,7 +313,10 @@ class FontFileToLabeledFont(FontFileToLabeledChars):
       imgs.append(mapped.features)
       labels.append(mapped.label)
 
-    yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    if len(imgs) > 0:
+      yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    else:
+      return
 
 
 
@@ -338,7 +341,10 @@ class FontMapper(ObjectMapper):
         imgs.append(mapped.features)
         labels.append(mapped.label)
 
-    yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = example.fontname)
+    if len(imgs) > 0:
+      yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    else:
+      return
 
 
 class FeatureCropperAndResizer(ObjectMapper):

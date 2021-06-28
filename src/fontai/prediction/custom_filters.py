@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def filter_misclassified():
+def filter_misclassified_chars():
   """Returns a filtering function for Tensorflow datasets that filter out misclassified examples; examples must have the schema as in ScoredLabeledChars._tfr_schema
   
   Returns:
@@ -11,7 +11,7 @@ def filter_misclassified():
 
   return f
 
-def filter_score(threshold: float):
+def filter_by_score(threshold: float):
   """Returns a Filtering function for Tensorflow datasets that filter out scores lower than a given threshold.
   
   Args:

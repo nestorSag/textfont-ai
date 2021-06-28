@@ -78,21 +78,8 @@ class BaseConfigHandler(ABC):
 
     self.other_setup()
 
-    self.CONFIG_SCHEMA: t.Optional[yml.Map] = self.get_config_schema()
+    self.CONFIG_SCHEMA = self.get_config_schema()
 
-
-  # def instantiate_io_handlers(self, yaml: yml.YAML):
-  #   if yaml.get("input_path").data is not None and yaml.get("reader").data is not None:
-  #     reader = globals()[yaml.get("reader").data](input_path = yaml.get("input_path").data)
-  #   else:
-  #     reader = None
-
-  #   if yaml.get("output_path").data is not None and yaml.get("writer").data is not None:
-  #     writer = globals()[yaml.get("writer").data](output_path = yaml.get("output_path").data)
-  #   else:
-  #     writer = None
-
-  #   return reader, writer
 
   def from_string(self, config: str) -> BasePipelineTransformConfig:
     """

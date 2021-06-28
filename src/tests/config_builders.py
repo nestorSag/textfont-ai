@@ -27,7 +27,7 @@ output_path: src/tests/data/prediction/output/scored-{output_folder}
 model_path: src/tests/data/prediction/models/{model_folder}
 charset: lowercase
 training:
-  batch_size: 32
+  {batch_size}
   epochs: 10
   steps_per_epoch: 10
   optimizer:
@@ -89,7 +89,7 @@ char_saae = """
         - class: Flatten
         - class: Dense
           kwargs: 
-            units: 36
+            units: 10
     decoder:
       class: Sequential
       kwargs:
@@ -125,7 +125,7 @@ char_saae = """
 
 
 font_saae = """
-  class: FontStyleSAAE
+  class: PureFontStyleSAAE
   kwargs:
     image_encoder:
       class: Sequential
@@ -152,7 +152,7 @@ font_saae = """
         - class: Flatten
         - class: Dense
           kwargs: 
-            units: 36
+            units: 10
     decoder:
       class: Sequential
       kwargs:
@@ -213,7 +213,7 @@ def full_processing_config_str(output_record_class):
 
 def full_prediction_config_str(input_record_class, model):
 
-  keys = ("in_type_class", "input_folder", "output_folder", "model_folder", "model")
+  keys = ("in_type_class", "input_folder", "output_folder", "model_folder", "model", "batch_size")
 
   model_strs = {
     "Sequential": sequential_model,
@@ -222,8 +222,8 @@ def full_prediction_config_str(input_record_class, model):
   }
 
   cases  = {
-    "LabeledChar": ("LabeledChar", "chars", "chars", model, model_strs[model]),
-    "LabeledFont": ("LabeledFont", "fonts", "fonts", model, model_strs[model])
+    "LabeledChar": ("LabeledChar", "chars", "chars", model, model_strs[model], "batch_size: 32"),
+    "LabeledFont": ("LabeledFont", "fonts", "fonts", model, model_strs[model], "")
   }
 
   return predictor_config_str.format(**{key: value for key,value in zip(keys,cases[input_record_class])})

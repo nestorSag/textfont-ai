@@ -115,7 +115,7 @@ def test_records(record_class, record_args, charset):
   # recover original record instance
   #record = record_class.parse_dict_for_scoring(bytes_dict)
   parsed_dict = record_class.parse_bytes_dict(record_class.from_tf_example(convert_to_tensor(serialised)))
-  record = record_class.get_scoring_parser(charset_tensor=charset_tensor)(parsed_dict)
+  record = record_class.from_parsed_bytes_dict(parsed_dict)
   assert isinstance(record, record_class)
 
 @pytest.mark.parametrize("input_path, output_path", TEST_DATA_PATHS)

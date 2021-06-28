@@ -156,32 +156,18 @@ class TfrWritable(ABC):
         t.Callable: Parser function
     """
     pass
-  
+
   @classmethod
-  @abstractmethod
-  def get_scoring_parser(
-    cls, 
-    charset_tensor: Tensor) -> t.Callable:
-    """Returns a function that maps partially parsed objects as outputted by parse_bytes_dict to a (features, label) TfrWritable instance for scoring consumption
+  def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+    """Instantiate from a parsed bytes dict extracted from a Tensorflow record file
     
     Args:
-        charset_tensor (Tensor): tensor fo valid characters
+        kwargs (t.Dict): Parsed dictionary
     
     Returns:
-        t.Callable: Parser function
+        TfrWritable
     """
-
-    pass
-
-  @classmethod
-  def from_args(cls, *args: t.List[t.Any]):
-    """Instantiate from list of arguments; they have to be passed according to the order of _tfr_schema
-    
-    Args:
-        args (t.List[t.Any]): list of arguments
-    """
-    pass
-
+    return cls(**{key: kwargs[key].numpy() for key in kwargs})
 
 
 
@@ -225,9 +211,9 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
     "features": self.bytes_feature(self.img_to_png_bytes(self.features))
     }
 
-  def add_score(self, score: Tensor) -> TfrWritable:
+  def add_score(self, score: ndarray) -> TfrWritable:
 
-    return ScoredLabeledChar(labeled_char = self, score = score)
+    return ScoredLabeledChar(example = self, score = score)
 
 
   @classmethod
@@ -239,20 +225,6 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
     record["features"] = img
     return record
 
-  # @classmethod
-  # def parse_dict_for_training(
-  #   cls, 
-  #   record,
-  #   charset_tensor,
-  #   **kwargs):
-
-  #   num_classes = len(charset_tensor)
-
-  #   img, label, fontname = cls.parse_bytes_dict(record)
-  #   one_hot_label = tf.cast(tf.where(charset_tensor == label),dtype=tf.int32)
-  #   label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
-
-  #   return img, label#, fontname
 
   @classmethod
   def get_training_parser(
@@ -264,55 +236,15 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
       num_classes = len(charset_tensor)
 
       one_hot_label = tf.cast(tf.where(charset_tensor == kwargs["label"]),dtype=tf.int32)
-      label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
-
+      if tf.equal(tf.size(one_hot_label),0):
+        label = tf.cast(one_hot_label, dtype=tf.float32) #pass empty label for downstream deletion
+      else:
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
+      
       return kwargs["features"], label
 
     return parser
   
-  # @classmethod
-  # def parse_dict_for_scoring(cls, record, **kwargs):
-
-  #   img, label, fontname = cls.parse_bytes_dict(record)
-  #   return cls(
-  #     features = cls.tensor_to_numpy(img), 
-  #     label = cls.tensor_to_numpy(label), 
-  #     fontname = cls.tensor_to_numpy(fontname))
-
-  @classmethod
-  def get_scoring_parser(
-    cls, 
-    charset_tensor=None):
-
-    def parser(kwargs):
-
-      return cls(
-      features = cls.tensor_to_numpy(kwargs["features"]), 
-      label = cls.tensor_to_numpy(kwargs["label"]), 
-      fontname = cls.tensor_to_numpy(kwargs["fontname"]))
-
-    return parser
-
-  @classmethod
-  def from_args(cls, features, label, fontname):
-
-    if isinstance(features, Tensor):
-      features = cls.tensor_to_numpy(features)
-
-    if isinstance(label, Tensor):
-      label = cls.tensor_to_numpy(label)
-
-    if isinstance(fontname, Tensor):
-      fontname = cls.tensor_to_numpy(fontname)
-
-    if isinstance(label, bytes):
-      label = label.decode("utf-8")
-
-    if isinstance(fontname, bytes):
-      fontname = fontname.decode("utf-8")
-
-    return cls(features = features, label = label, fontname = fontname)
-
 
 
 
@@ -345,15 +277,19 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
 
 
   def to_bytes_dict(self) -> t.Dict:
+
+    feature_shape = self.features.shape
+
+    # add channel dimension to feature
     return {
-    "features": self.bytes_feature(self.array_to_bytes(self.features, dtype=tf.uint8)),
+    "features": self.bytes_feature(self.array_to_bytes(self.features.reshape(feature_shape + (1,)), dtype=tf.uint8)),
     "label": self.bytes_feature(self.array_to_bytes(self.label, dtype=tf.string)),
     "fontname": self.bytes_feature(bytes(str.encode(self.fontname))),
     }
 
-  def add_score(self, score: Tensor) -> TfrWritable:
+  def add_score(self, score: ndarray) -> TfrWritable:
 
-    return ScoredLabeledCFont(labeled_font = self, score = score)
+    return ScoredLabeledFont(example = self, score = score)
 
   @classmethod
   def parse_bytes_dict(cls, record):
@@ -365,20 +301,6 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
     record["label"] = label
     return record
 
-  # @classmethod
-  # def parse_dict_for_training(
-  #   cls, 
-  #   record,
-  #   charset_tensor):
-
-  #   num_classes = len(charset_tensor)
-
-  #   imgs, label, fontname = cls.parse_bytes_dict(record)
-  #   one_hot_label = tf.cast(tf.where(charset_tensor == label),dtype=tf.int32)
-  #   label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1))
-
-  #   return imgs, label#, fontname
-
   @classmethod
   def get_training_parser(
     cls, 
@@ -387,54 +309,26 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
     def parser(kwargs):
       num_classes = len(charset_tensor)
 
-      one_hot_label = tf.cast(tf.where(charset_tensor == kwargs["label"]),dtype=tf.int32)
-      label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1))
+      raw_one_hot = tf.cast(
+        tf.reshape(kwargs["label"], (-1,1)) == charset_tensor,
+        dtype=tf.int32
+      ) #one hot encoding with up to 62 columns
 
-      return kwargs["features"], label
+      index = tf.reduce_sum(raw_one_hot, axis=-1) > 0 # detect rows where all columns are zero (chars not in charset)
+
+      if tf.equal(tf.reduce_sum(tf.cast(index, dtype=tf.int32)), 0):
+        features = kwargs["features"]
+        label = tf.zeros((0,),dtype=tf.float32) #pass empty label for downstream deletion
+      else:
+        one_hot_label = tf.argmax(raw_one_hot[index]) # filter chars not in charset
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1)) #create bounded one hot encoding
+        features = kwargs["features"][index]
+
+
+      return features, label
+
 
     return parser
-
-  # @classmethod
-  # def parse_dict_for_scoring(cls, record, **kwargs):
-  #   imgs, label, fontname = cls.parse_bytes_dict(record)
-  #   return cls(
-  #     features = cls.tensor_to_numpy(imgs), 
-  #     label = cls.tensor_to_numpy(label), 
-  #     fontname = cls.tensor_to_numpy(fontname))
-
-
-  @classmethod
-  def get_scoring_parser(
-    cls, 
-    charset_tensor=None):
-
-    def parser(kwargs):
-      # assuming features, label, fontname = **kwargs
-      return cls(
-      features = cls.tensor_to_numpy(kwargs["features"]), 
-      label = cls.tensor_to_numpy(kwargs["label"]), 
-      fontname = cls.tensor_to_numpy(kwargs["fontname"]))
-
-    return parser
-
-  @classmethod
-  def from_args(cls, features, label, fontname):
-
-    if isinstance(features, Tensor):
-      features = cls.tensor_to_numpy(features)
-
-    if isinstance(label, Tensor):
-      label = cls.tensor_to_numpy(label)
-
-    if isinstance(fontname, Tensor):
-      fontname = cls.tensor_to_numpy(fontname)
-
-    if isinstance(fontname, bytes):
-      fontname = fontname.decode("utf-8")
-
-    return cls(features = features, label = label, fontname = fontname)
-
-
 
 class ScoredRecordFactory(object):
 
@@ -460,8 +354,8 @@ class ScoredRecordFactory(object):
       class ScoredRecord(TfrWritable):
         #
 
-        _T = T
-        _tfr_schema = {**_T._tfr_schema, **{'score': FixedLenFeature([], tf_str)}}
+        record_type = T
+        _tfr_schema = {**record_type._tfr_schema, **{'score': FixedLenFeature([], tf_str)}}
 
         def __init__(self, example: TfrWritable, score: ndarray):
           if not isinstance(example, T) or not isinstance(score, ndarray):
@@ -477,31 +371,31 @@ class ScoredRecordFactory(object):
         def to_bytes_dict(self) -> t.Dict:
           #
           return {
-          **{"score": self._T.bytes_feature(self._T.array_to_bytes(self.score, dtype=tf.float32))},
+          **{"score": self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32))},
           **self.example.to_bytes_dict()
           }
         #
         @classmethod
         def parse_bytes_dict(cls, record):
-          parsed_record_bytes_dict = cls._T.parse_bytes_dict(record)
+          parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
           score = tf.io.parse_tensor(record["score"], out_type=tf.float32)
           parsed_record_bytes_dict["score"] = score
           return parsed_record_bytes_dict 
-        #
-        # @classmethod
-        # def parse_dict_for_training(
-        #   cls, 
-        #   record,
-        #   charset_tensor):
-        #   #
-        #   return cls._T.parse_dict_for_training(record, charset_tensor=charset_tensor)
+
+        @classmethod
+        def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+          kwargs = {key: kwargs[key].numpy() for key in kwargs}
+          score = kwargs.pop("score")
+
+          return cls(example = cls.record_type(**kwargs), score = score)
 
         @classmethod
         def get_training_parser(
           cls, 
           charset_tensor: Tensor) -> t.Callable:
 
-          base_parser = cls._T.get_training_parser(charset_tensor=charset_tensor)
+          base_parser = cls.record_type.get_training_parser(charset_tensor=charset_tensor)
 
           def parser(kwargs):
             score = kwargs.pop("score")
@@ -510,30 +404,6 @@ class ScoredRecordFactory(object):
 
           return parser
         
-        # @classmethod
-        # def parse_dict_for_scoring(cls, record, **kwargs):
-
-        #   parsed_objects = list(cls.parse_bytes_dict(record))
-        #   score = parsed_objects.pop(-1)
-        #   example = cls._T.from_args(*parsed_objects)
-        #   return cls(example = example, score = cls._T.tensor_to_numpy(score))
-
-        @classmethod
-        def get_scoring_parser(
-          cls, 
-          charset_tensor=None):
-
-          def parser(kwargs):
-            print(f"class: {cls.__name__}, kwargs: {kwargs}")
-            score = kwargs.pop("score")
-            example = cls._T.from_args(**kwargs)
-
-            return cls(
-              example = example, 
-              score = cls._T.tensor_to_numpy(score))
-
-          return parser
-      #
       return ScoredRecord
 
 
