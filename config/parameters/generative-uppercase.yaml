@@ -1,4 +1,5 @@
 input_path: data/uppercase-scored
+input_schema_class: ScoredLabeledChar
 output_path: data/uppercase-embeddings
 model_path: models/generative-uppercase
 charset: uppercase

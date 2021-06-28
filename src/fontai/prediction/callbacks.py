@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from fontai.io.storage import BytestreamPath
-from fontai.prediction.input_processing import LabeledExamplePreprocessor 
+from fontai.prediction.input_processing import RecordPreprocessor 
 
 class SAAECallback(tf.keras.callbacks.Callback):
 
@@ -43,7 +43,7 @@ class SAAECallback(tf.keras.callbacks.Callback):
 
     def load_minibatch(input_path):
         # load single minibatch from source
-        loader = LabeledExamplePreprocessor(
+        loader = RecordPreprocessor(
             batch_size = batch_size,
             charset = charset,
             filters = [])

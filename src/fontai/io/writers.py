@@ -218,7 +218,7 @@ class TfrWriter(BatchWriter):
     if self.writer is None:
       self.open()
 
-    tf_example = obj.to_tfr().SerializeToString()
+    tf_example = obj.to_tf_example().SerializeToString()
     obj_size = sys.getsizeof(tf_example)
 
     if obj_size + self.shard_size > self.max_output_file_size * 1e6:

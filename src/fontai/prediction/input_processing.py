@@ -20,13 +20,13 @@ from  tensorflow.python.data.ops.dataset_ops import MapDataset
 
 from tensorflow.data import TFRecordDataset
 
-from fontai.io.records import LabeledExample, ScoredLabeledExample
+from fontai.io.records import LabeledChar, ScoredLabeledChar, LabeledFont
 
 import fontai.prediction.models as custom_models
 
 logger = logging.getLogger(__name__)
 
-class LabeledExamplePreprocessor(object):
+class RecordPreprocessor(object):
   """
   Fetches and processes a list of Tensorflow record files to be consumed by an ML model
   
@@ -46,10 +46,9 @@ class LabeledExamplePreprocessor(object):
     "all": string.ascii_letters + string.digits
     }
 
-  input_parser = LabeledExample.from_tfr
-
   def __init__(
     self, 
+    input_record_class: type,
     batch_size: int,
     charset: str,
     filters: t.List[t.Callable] = []):
@@ -61,6 +60,9 @@ class LabeledExamplePreprocessor(object):
 
         filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels
     """
+
+    self.input_record_class = input_record_class
+
     self.batch_size = batch_size
 
     self.filters = filters
@@ -81,7 +83,7 @@ class LabeledExamplePreprocessor(object):
     
     dataset: List of input files
     
-    training_format: if True, returns features and one hot encoded labels; otherwise, returns features, char labels and fontname
+    training_format: if True, returns features and one hot encoded labels; otherwise, returns TfrWritable record instances
     
     Returns a MapDataset object
     
@@ -92,33 +94,34 @@ class LabeledExamplePreprocessor(object):
     Returns:
         TFRecordDataset: Dataset ready for model consumption
     """
-    if training_format:
-      formatter = self.parse_for_training
-    else:
-      formatter = self.parse_for_scoring
 
+    # bytes -> dict -> tuple of objs
     dataset = dataset\
-      .map(self.input_parser)\
+      .map(self.input_record_class.from_tf_example)\
       .filter(self.filter_charset)\
-      .map(formatter)
+      .map(self.input_record_class.parse_bytes_dict)
 
-    if training_format:
-      for example_filter in self.filters:
+    # filter examples using raw tuple
+    for example_filter in self.filters:
         dataset = dataset.filter(example_filter)
 
-      dataset = dataset.map(self.get_classifier_input)
+    # if for training, take only features and formatted labels, and batch together
+    if training_format:
+      dataset = dataset.map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))
+      dataset = self.batch_dataset(dataset)
+      return dataset
+    else:
+      # if testing, return instance of TfrWritable  class
+      return dataset.map(self.input_record_class.get_scoring_parser(charset_tensor = self.charset_tensor))
 
-    return self.batch_dataset(dataset, repeat=training_format)
 
-
-  def batch_dataset(self, dataset, buffered_batches = 512, repeat=True):
+  def batch_dataset(self, dataset, buffered_batches = 512):
     """
     Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
     
     Args:
         dataset (TFRecordDataset): Input dataset
         buffered_batches (int, optional): Number of batches to fetch in memory buffer
-        repeat (boolean): If true, make it a cyclical dataset
     
     Returns:
         TFRecordDataset
@@ -127,44 +130,9 @@ class LabeledExamplePreprocessor(object):
     dataset = dataset\
       .shuffle(buffer_size=buffered_batches*self.batch_size)
 
-    if repeat:
-      dataset = dataset.repeat()
+    dataset = dataset.repeat()
 
     return dataset.batch(self.batch_size)
-
-  def parse_for_training(self, record):
-    """
-    Parses a serialised Tensorflow record to retrieve image tensors, one-hot-encoded labels and fontname
-    
-    Args:
-        record (tf.train.TFExample): Input example
-    
-    Returns:
-        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: output triplet
-    """
-    img = tf.image.decode_png(record["features"])
-    img = tf.cast(img,dtype=tf.float32)/255.0 #rescaled image data
-    one_hot_label = tf.cast(tf.where(self.charset_tensor == record["label"]),dtype=tf.int32)
-    label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=self.num_classes),(self.num_classes,))
-
-    return img, label, record["fontname"]
-  
-  def parse_for_scoring(self, record):
-    """
-    Parses a serialised Tensorflow record to retrieve image tensors, char labels and fontname
-    
-    Args:
-        record (tf.train.TFExample): Input example
-    
-    Returns:
-        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: output triplet
-    """
-  
-    img = tf.image.decode_png(record["features"])
-    img = tf.cast(img,dtype=tf.float32)
-    label = record["label"]
-
-    return img, label, record["fontname"]
 
   def filter_charset(self, record):
     """
@@ -177,84 +145,3 @@ class LabeledExamplePreprocessor(object):
         Tensor: boolean
     """
     return tf.reduce_any(self.charset_tensor == record["label"])
-
-  def get_classifier_input(self, features, label, *args):
-    """
-    Passes only the first 2 elements of input tuple, which are assumed to be features and labels, repsectively
-    
-    Args:
-        features (tf.Tensor): Description
-        label (tf.Tensor): Description
-        *args: additional elements
-    
-    Returns:
-        t.Tuple[tf.Tensor, tf.Tensor]: filtered tuple
-    """
-    return features, label
-
-
-
-
-
-
-
-
-
-class ScoredLabeledExamplePreprocessor(LabeledExamplePreprocessor):
-  """
-  Fetches and processes a list of Tensorflow record files to be consumed by an ML model
-  
-  Attributes:
-      batch_size (int): batch size
-      charset (char): string with every character that needs to be extracted
-      CHARSET_OPTIONS (TYPE): Dictionary from allowed charsets names to charsets
-      charset_tensor (tf.Tensor): charset in tensor form
-      filters (t.List[types.Callable]): List of filters to apply to training data
-      num_classes (int): number of classes in charset
-  """
-
-  input_parser = ScoredLabeledExample.from_tfr
-
-  def parse_for_training(self, record):
-    """
-    Parses a serialised Tensorflow record to retrieve image tensors, one-hot-encoded labels and fontname
-    
-    Args:
-        record (tf.train.TFExample): Input example
-    
-    Returns:
-        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: output triplet
-    """
-
-    img = tf.image.decode_png(record["features"])
-    img = tf.cast(img,dtype=tf.float32)/255.0 #rescaled image data
-    one_hot_label = tf.cast(tf.where(self.charset_tensor == record["label"]),dtype=tf.int32)
-    label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=self.num_classes),(self.num_classes,))
-    score = tf.io.parse_tensor(record["score"], out_type=tf.float32)
-
-    return img, label, score
-
-
-
-
-class InputPreprocessorFactory(object):
-
-  """Factory method that outputs the appropriate input preprocessor depending on the model class
-  """
-  
-  @classmethod
-  def create(self, model_class: type):
-    """Returns preprocessor class 
-    
-    Args:
-        model_class (type): model class
-    
-    Returns:
-        type
-    """
-
-    if model_class == custom_models.SAAE:
-      return ScoredLabeledExamplePreprocessor
-    else:
-      return LabeledExamplePreprocessor
-

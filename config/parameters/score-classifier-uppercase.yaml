@@ -1,4 +1,5 @@
 input_path: data/preprocessed
+input_schema_class: LabeledChar
 output_path: data/uppercase-scored
 model_path: models/supervised-uppercase
 charset: uppercase

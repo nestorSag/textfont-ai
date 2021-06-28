@@ -22,7 +22,7 @@ import apache_beam as beam
 from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
 from fontai.io.writers import BatchWriter, TfrWriter
 from fontai.io.storage import BytestreamPath
-from fontai.io.records import LabeledExample
+from fontai.io.records import LabeledChar, LabeledFont
 
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,7 @@ class InputToFontFiles(ObjectMapper):
 
 
 
-class FontFileToLabeledExamples(ObjectMapper):
+class FontFileToLabeledChars(ObjectMapper):
   """
     Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to image features and a fontname string indicating the original filename
 
@@ -212,7 +212,7 @@ class FontFileToLabeledExamples(ObjectMapper):
     self.canvas_size = canvas_size
     self.charset = charset
 
-  def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledExample, None, None]:
+  def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledChar, None, None]:
     logger.info(f"exctracting arrays from file '{file.filename}'")
     try:
       font = file.deserialise(font_size = self.font_extraction_size)
@@ -229,7 +229,7 @@ class FontFileToLabeledExamples(ObjectMapper):
           array = imageio.imread(bf2.getvalue(),format="png")
 
         array = np.mean(array, axis = -1).astype(np.uint8)
-        yield LabeledExample(features=array,label=char,fontname=file.filename)
+        yield LabeledChar(features=array,label=char,fontname=file.filename)
       except Exception as e:
         logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'")
 
@@ -241,19 +241,19 @@ class FeatureCropper(ObjectMapper):
   
   """
 
-  def raw_map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
+  def raw_map(self, example: LabeledChar) -> t.Generator[LabeledChar, None, None]:
     nonzero = np.where(example.features > 0)
     if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
       logger.info("Empty image found. ignoring.")
       return
-      #yield key, LabeledExample(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)
+      #yield key, LabeledChar(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)
     else:
       h_bound, w_bound = [(np.min(axis),np.max(axis)) for axis in nonzero]
       h = h_bound[1] - h_bound[0] + 1
       w = w_bound[1] - w_bound[0] + 1
       #crop and map to png
       cropped = example.features[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
-      yield LabeledExample(features=cropped, label=example.label, fontname=example.fontname)
+      yield LabeledChar(features=cropped, label=example.label, fontname=example.fontname)
 
 
 class FeatureResizer(ObjectMapper):
@@ -271,7 +271,7 @@ class FeatureResizer(ObjectMapper):
     """
     self.output_size = 64
 
-  def raw_map(self, example: LabeledExample) -> t.Generator[LabeledExample, None, None]:
+  def raw_map(self, example: LabeledChar) -> t.Generator[LabeledChar, None, None]:
     """
     resize given image to a squared output image
     """
@@ -293,38 +293,85 @@ class FeatureResizer(ObjectMapper):
         h_pad, w_pad = int((self.output_size - resized_h)/2), int((self.output_size - resized_w)/2)
         output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
         # make the image binary
-        yield LabeledExample(features=output.astype(np.uint8), label=y,fontname=metadata)
+        yield LabeledChar(features=output.astype(np.uint8), label=y,fontname=metadata)
     except Exception as e:
       logger.exception(f"Error while resizing array: {e}")
       return
 
 
 
-# class Reader(beam.DoFn):
-#   """
-#   Beam compatible class to use package's reader classes to retrieve files
-  
-#   Attributes:
-#       reader (BatchReader): An instance inheriting from the BathReader class
-  
-#   """
-#   def __init__(self, reader: BatchReader):
-#     self.reader = reader
-#   def process(self, path: str) -> None:
-#     try:
-#       return reader.get_files()
-#     except Exception as e:
-#       logging.exception(f"error reading file {path}: {e}")
 
-#   def teardown(self):
-#     self.writer.close()
+class FontFileToLabeledFont(FontFileToLabeledChars):
+  """
+    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename
+
+  """
+  def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledFont, None, None]:
+    imgs = []
+    labels = []
+    for mapped in super().raw_map(file):
+      imgs.append(mapped.features)
+      labels.append(mapped.label)
+
+    yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+
+
+
+class FontMapper(ObjectMapper):
+
+  """
+  Applies an ObjectMapper transformation to every character in a LabeledFont object
+  
+  Attributes:
+      mapper (ObjectMapper): Core transformation
+  
+  
+  """
+  def __init__(self, mapper: ObjectMapper):
+    self.mapper = mapper
+
+  def raw_map(self, alphabet: LabeledFont) -> t.Generator[LabeledFont, None, None]:
+    imgs = []
+    labels = []
+    for example in alphabet:
+      for mapped in self.mapper.raw_map(example):
+        imgs.append(mapped.features)
+        labels.append(mapped.label)
+
+    yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = example.fontname)
+
+
+class FeatureCropperAndResizer(ObjectMapper):
+  
+  """
+  Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.
+  
+  Attributes:
+      cropper (ObjectMapper)
+      resizer (ObjectMapper)
+  """
+  def __init__(self, output_size = 64):
+    """
+    
+    Args:
+        output_size (int, optional): height and width of output array
+    """
+
+    self.cropper = FeatureCropper()
+    self.resizer = FeatureResizer(output_size)
+
+  def raw_map(self, example: LabeledChar) -> t.Generator[LabeledChar, None, None]:
+
+    for cropped in self.cropper.raw_map(example):
+      for resized in self.resizer.raw_map(cropped):
+        yield resized
 
 
 
 
 class Writer(beam.DoFn):
   """
-  Takes instances of LabeledExamples and writes them to a tensorflow record file.
+  Takes instances of LabeledChar and writes them to a tensorflow record file.
   
   Attributes:
       output_path (str): Output path
@@ -332,7 +379,7 @@ class Writer(beam.DoFn):
   """
   def __init__(self, writer: BatchWriter):
     self.writer = writer
-  def process(self,example: LabeledExample) -> None:
+  def process(self,example: LabeledChar) -> None:
     try:
       self.writer.write(example)
     except Exception as e:
@@ -340,3 +387,72 @@ class Writer(beam.DoFn):
 
   def teardown(self):
     self.writer.close()
+
+
+
+class PipelineFactory(object):
+
+  """Factory class to construct core transformation sequence for preprocessing font files
+  """
+  
+  @classmethod
+  def create(cls, 
+    output_record_class: type,
+    charset: str,
+    font_extraction_size: int,
+    canvas_size: int,
+    canvas_padding: int,
+    output_array_size: int) -> PipelineExecutor:
+    """Build file processing pipeline object
+    
+    Args:
+        output_record_class (type): Class of output record schema, inheriting from TfrWritable
+        charset (str): String with characters to be extracted
+        font_extraction_size (int): Font size to use when extracting font images
+        canvas_size (int): Image canvas size in which fonts will be extracted
+        canvas_padding (int): Padding in the image extraction canvas
+        output_array_size (int): Final character image size
+    
+    Returns:
+        PipelineExecutor: Procesing transformation object
+    """
+    if output_record_class == LabeledChar:
+      return PipelineExecutor(
+        stages = [
+        InputToFontFiles(),
+        ManyToManyMapper(
+          mapper = FontFileToLabeledChars(
+            charset = charset,
+            font_extraction_size = font_extraction_size,
+            canvas_size = canvas_size,
+            canvas_padding = canvas_padding)
+        ),
+        ManyToManyMapper(
+          mapper = FeatureCropper()
+        ),
+        ManyToManyMapper(
+          mapper = FeatureResizer(output_size = output_array_size)
+        )]
+      )
+
+    elif output_record_class == LabeledFont:
+
+      return PipelineExecutor(
+        stages = [
+        InputToFontFiles(),
+        ManyToManyMapper(
+          mapper = FontFileToLabeledFont(
+            charset = charset,
+            font_extraction_size = font_extraction_size,
+            canvas_size = canvas_size,
+            canvas_padding = canvas_padding)
+        ),
+        ManyToManyMapper(
+          mapper = FontMapper(
+            mapper = FeatureCropperAndResizer(output_size = output_array_size)
+        ))]
+      )
+
+    else:
+
+      raise TypeError(f"Output schema class not recognised: {output_record_class}")

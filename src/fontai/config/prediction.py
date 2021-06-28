@@ -22,6 +22,7 @@ import tensorflow.keras.callbacks as tf_callbacks
 from tensorflow.random import set_seed
 
 import fontai.prediction.callbacks as custom_callbacks
+import fontai.io.records as records
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +43,12 @@ class TrainingConfig(BaseModel):
       metrics (t.List[str], optional): list of metrics to display
       callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.
   """
-
+  filters: t.List[t.Callable] = []
   batch_size: PositiveInt
   epochs: PositiveInt
   steps_per_epoch: PositiveInt
   optimizer: keras.optimizers.Optimizer
   loss: keras.losses.Loss
-  filters: t.List[t.Callable] = []
   seed: PositiveInt = 1
   metrics: t.Optional[t.List[str]] = None
   callbacks: t.Optional[t.List[tf_callbacks.Callback]] = None
@@ -93,11 +93,13 @@ class Config(BasePipelineTransformConfig):
   Wrapper class for the configuration of the ModelTrainingStage class
   
   Args:
+      input_record_class (records.TfrWritable): Input schema class from the `textai.io.records` submodule
       training_config (TrainingConfig): Runtime configuration for training routine
       model (keras.Model): Model instance that's going to be trained
   
   """
   training_config: TrainingConfig
+  input_record_class: type
   model_path: str
   model: keras.Model
   charset: str
@@ -108,7 +110,7 @@ class Config(BasePipelineTransformConfig):
 
   @validator("charset")
   def allowed_charsets(charset: str):
-    """Vlidator for charset attribute
+    """Validator for charset attribute
     
     Args:
         charset (str): charset attribute
@@ -124,6 +126,25 @@ class Config(BasePipelineTransformConfig):
       return charset
     else:
       raise ValueError(f"charset must be one of {allowed_vals}")
+
+  @validator("input_record_class")
+  def validate_input_record_class(input_record_class: type):
+    """Validate input record class
+    
+    Args:
+        input_record_class (type)
+    
+    Returns:
+        type: Validated record class
+    
+    Raises:
+        TypeError: If record class not in allowed set
+    """
+    supported = [records.LabeledChar, records.LabeledFont]
+    if input_record_class in supported:
+      return input_record_class
+    else:
+      raise TypeError(f"supported output_record_classes are {[x.__name__ for x in supported]}")
 
 
 class ModelFactory(object):
@@ -311,6 +332,7 @@ class ConfigHandler(BaseConfigHandler):
     schema = yml.Map({
       yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
       yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
+      yml.Optional("input_record_class",default = "LabeledChar"): yml.Str(),
       "model_path": self.IO_CONFIG_SCHEMA,
       "training": self.TRAINING_CONFIG_SCHEMA,
       "model": yml.Any(),
@@ -333,12 +355,15 @@ class ConfigHandler(BaseConfigHandler):
     input_path, output_path = config.get("input_path").text, config.get("output_path").text
     charset = config.get("charset").text
 
+    input_record_class = getattr(records, config.get("input_record_class").text)
+
     model_path = config.get("model_path").text
     training_config = TrainingConfig.from_yaml(config.get("training"))
     set_seed(training_config.seed)
     model = self.model_factory.from_yaml(config.get("model"))
 
     return Config(
+      input_record_class = input_record_class,
       input_path = input_path, 
       output_path = output_path,
       model_path = model_path,

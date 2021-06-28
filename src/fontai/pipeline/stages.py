@@ -30,13 +30,13 @@ from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as 
 from fontai.config.prediction import ModelFactory, TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
 
 
-from fontai.prediction.input_processing import InputPreprocessorFactory
-from fontai.preprocessing.mappings import PipelineExecutor, ManyToManyMapper, FontFileToLabeledExamples, FeatureCropper, FeatureResizer, InputToFontFiles, Writer, BeamCompatibleWrapper
+from fontai.prediction.input_processing import RecordPreprocessor
+from fontai.preprocessing.mappings import PipelineFactory, BeamCompatibleWrapper, Writer
 
 #from fontai.pipeline.base import MLPipelineTransform
 from fontai.io.storage import BytestreamPath
 from fontai.io.readers import ScrapperReader
-from fontai.io.records import ScoredLabeledExample, LabeledExample
+from fontai.io.records import ScoredLabeledChar, LabeledChar, TfrWritable
 from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFRecordDataset
 from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
@@ -86,7 +86,7 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
 
 class LabeledExampleExtractor(ConfigurableTransform):
   """
-  File preprocessing executable stage that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.
+  File preprocessing executable stage that maps zipped font files to Tensorflow records consisting of individual font characters for ML consumption; takes a Config object that defines its execution.
 
   """
 
@@ -95,6 +95,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
 
   def __init__(
     self, 
+    output_record_class: type,
     charset: str,
     font_extraction_size: int,
     canvas_size: int,
@@ -104,6 +105,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
     """
     
     Args:
+        output_record_class (type): Output schema class, inheriting from TfrWritable
         charset (str): String with characters to be extracted
         font_extraction_size (int): Font size to use when extracting font images
         canvas_size (int): Image canvas size in which fonts will be extracted
@@ -113,7 +115,8 @@ class LabeledExampleExtractor(ConfigurableTransform):
     """
     self.beam_cmd_line_args = beam_cmd_line_args
 
-    self.pipeline = self.build_pipeline(
+    self.pipeline = PipelineFactory.create(
+      output_record_class = output_record_class,
       charset = charset,
       font_extraction_size = font_extraction_size,
       canvas_size = canvas_size,
@@ -121,47 +124,11 @@ class LabeledExampleExtractor(ConfigurableTransform):
       output_array_size = output_array_size)
 
 
-  def build_pipeline(
-    self, 
-    charset: str,
-    font_extraction_size: int,
-    canvas_size: int,
-    canvas_padding: int,
-    output_array_size: int) -> PipelineExecutor:
-    """Build file processing pipeline object
-    
-    Args:
-        charset (str): String with characters to be extracted
-        font_extraction_size (int): Font size to use when extracting font images
-        canvas_size (int): Image canvas size in which fonts will be extracted
-        canvas_padding (int): Padding in the image extraction canvas
-        output_array_size (int): Final character image size
-    
-    Returns:
-        PipelineExecutor: Procesing transformation object
-    """
-    return PipelineExecutor(
-      stages = [
-      InputToFontFiles(),
-      ManyToManyMapper(
-        mapper = FontFileToLabeledExamples(
-          charset = charset,
-          font_extraction_size = font_extraction_size,
-          canvas_size = canvas_size,
-          canvas_padding = canvas_padding)
-      ),
-      ManyToManyMapper(
-        mapper = FeatureCropper()
-      ),
-      ManyToManyMapper(
-        mapper = FeatureResizer(output_size = output_array_size)
-      )]
-    )
-
   @classmethod
   def from_config_object(cls, config: ProcessingConfig, **kwargs):
 
     return cls(
+      output_record_class = config.output_record_class,
       output_array_size = config.output_array_size,
       beam_cmd_line_args = config.beam_cmd_line_args,
       **config.font_to_array_config.dict())
@@ -202,12 +169,14 @@ class LabeledExampleExtractor(ConfigurableTransform):
       | 'read files' >> beam.Map(lambda filepath: processor.input_file_format.from_bytestream_path(filepath)) #line needed to load files lazily and not overwhelm memory
       | 'get labeled exampes from zip files' >> beam.ParDo(
         BeamCompatibleWrapper(
-          mapper = processor.build_pipeline(
+          mapper = PipelineFactory.create(
+            output_record_class = config.output_record_class,
             output_array_size = config.output_array_size,
             **config.font_to_array_config.dict())
         )
       )
       | "write to storage" >> beam.ParDo(Writer(processor.writer_class(output_path, config.max_output_file_size))))
+
 
 
 class Predictor(FittableTransform):
@@ -225,7 +194,11 @@ class Predictor(FittableTransform):
   input_file_format = TFRecordDataset
   output_file_format = TFRecordDataset
 
-  def __init__(self, model: tf.keras.Model, training_config: TrainingConfig = None, charset: str = "lowercase"):
+  def __init__(
+    self, 
+    model: tf.keras.Model, 
+    training_config: TrainingConfig = None, 
+    charset: str = "lowercase"):
     """
     
     Args:
@@ -236,7 +209,6 @@ class Predictor(FittableTransform):
     self.model = model
     self.training_config = training_config
     self.charset = charset
-    self.input_preprocessor = InputPreprocessorFactory.create(type(model))
 
     # physical_devices = tf.config.experimental.list_physical_devices('GPU')
     # if len(physical_devices) > 0:
@@ -256,11 +228,6 @@ class Predictor(FittableTransform):
     """
     if self.training_config is None:
       raise ValueError("Training configuration not provided at instantiation time.")
-
-    data_fetcher = self.input_preprocessor(
-      batch_size = self.training_config.batch_size,
-      charset = self.charset,
-      filters = self.training_config.filters)
     
     self.model.compile(
       loss = self.training_config.loss, 
@@ -268,10 +235,10 @@ class Predictor(FittableTransform):
       metrics = self.training_config.metrics)
 
     self.model.fit(
-      data_fetcher.fetch(data, training_format=True),
+      data,
       steps_per_epoch = self.training_config.steps_per_epoch, 
       epochs = self.training_config.epochs,
-      callbacks=self.training_config.callbacks)
+      callbacks = self.training_config.callbacks)
 
     return self
 
@@ -290,15 +257,15 @@ class Predictor(FittableTransform):
       x = x.reshape((1,) + x.shape)
     return x
 
-  def transform(self, input_data: t.Union[ndarray, Tensor, LabeledExample]) -> t.Union[Tensor, ndarray, ScoredLabeledExample]:
+  def transform(self, input_data: t.Union[ndarray, Tensor, TfrWritable]) -> t.Union[Tensor, ndarray, TfrWritable]:
     """
     Process a single instance
     
     Args:
-        input_data (t.Union[ndarray, Tensor, LabeledExample]): Input instance
+        input_data (t.Union[ndarray, Tensor, TfrWritable]): Input instance
     
     Returns:
-        t.Union[Tensor, ndarray, ScoredLabeledExample]: Scored example in the corresponding format, depending on the input type.
+        t.Union[Tensor, ndarray, ScoredLabeledChar]: Scored example in the corresponding format, depending on the input type.
     
     Raises:
         TypeError: If input type is not allowed.
@@ -307,12 +274,10 @@ class Predictor(FittableTransform):
 
     if isinstance(input_data, (ndarray, Tensor)):
       return self.model.predict(self._to_shape(input_data))
-    elif isinstance(input_data, LabeledExample):
-      return ScoredLabeledExample(
-        labeled_example = input_data, 
-        score = tf.convert_to_tensor(self.model.predict(self._to_shape(input_data.features)))) #images have to be reshaped to 4 dimensions to be scored
+    elif issubclass(input_data, TfrWritable):
+      return input_data.add_score(self.model.predict(self._to_shape(input_data.features)))
     else:
-      raise TypeError("Input type is not one of ndarray, Tensor or LabeledExample")
+      raise TypeError("Input type is not one of ndarray, Tensor or TfrWritable")
 
   @classmethod
   def get_config_parser(cls):
@@ -357,7 +322,8 @@ class Predictor(FittableTransform):
     
     predictor = cls.from_config_object(config, load_from_model_path)
 
-    data_fetcher = predictor.input_preprocessor(
+    data_fetcher = RecordPreprocessor(
+      input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
       charset = predictor.charset,
       filters = [])
@@ -365,31 +331,33 @@ class Predictor(FittableTransform):
     writer = predictor.writer_class(config.output_path)
 
     data = predictor.reader_class(config.input_path).get_files()
-    for batch in data_fetcher.fetch(data, training_format=False):
-      features, labels, fontnames = batch
-      score = predictor.model.predict(features) #first element of example are the features
-
-      current_batch_size = features.shape[0]
-      for k in range(current_batch_size):
-        writer.write(
-          ScoredLabeledExample(
-            labeled_example = LabeledExample(
-              features = features[k].numpy(),
-              label = labels[k].numpy().decode("utf-8"),
-              fontname = fontnames[k].numpy().decode("utf-8")), 
-            score = tf.convert_to_tensor(score[k])))
+    for example in data_fetcher.fetch(data, training_format=False):
+      writer.write(self.transform(example))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
+
     predictor = cls.from_config_object(config, load_from_model_path)
     
     def save_on_sigint(sig, frame):
       predictor.model.save(config.model_path)
       logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
+      sys.exit(0)
+      
     signal.signal(signal.SIGINT, save_on_sigint)
 
-    predictor.fit(data = predictor.reader_class(config.input_path).get_files())
+    data_fetcher = RecordPreprocessor(
+      input_record_class = config.input_record_class,
+      batch_size = predictor.training_config.batch_size,
+      charset = predictor.charset,
+      filters = predictor.training_config.filters)
+
+    data = predictor.reader_class(config.input_path).get_files()
+
+    predictor.fit(data_fetcher.fetch(data, training_format=True))
+
     logger.info(f"Saving trained model to {config.model_path}")
     predictor.model.save(config.model_path)
+
     return predictor
 
