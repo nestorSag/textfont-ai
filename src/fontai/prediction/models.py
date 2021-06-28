@@ -228,16 +228,17 @@ class PureCharStyleSAAE(tf.keras.Model):
 
   """This model is trained as a regular SAAE bur an additional prior_discriminator model is added to ensure the embedding does not retain information about the character class; i.e. it only retains style information
   """
+  mean_metric = tf.keras.metrics.Mean(name="Mean code variance")
+  char_accuracy_metric = tf.keras.metrics.Accuracy(name="style-char accuracy")
+  prior_accuracy_metric = tf.keras.metrics.Accuracy(name="prior adversarial accuracy")
+  mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
+  cross_entropy_metric = tf.keras.metrics.BinaryCrossentropy(name="Prior adversarial cross entropy", from_logits=False)
+
 
   style_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
   cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False) #assumes prior_discriminator outputs 
 
-  mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
-  prior_accuracy_metric = tf.keras.metrics.Accuracy(name="prior adversarial accuracy")
-  cross_entropy_metric = tf.keras.metrics.BinaryCrossentropy(name="Prior adversarial cross entropy", from_logits=False)
-  char_accuracy_metric = tf.keras.metrics.Accuracy(name="style-char accuracy")
-
-  ## this __init__ has to be copy pasted from the model above, because Tensorflow hates good coding practices aparently
+    ## this __init__ has to be copy pasted from the model above, because Tensorflow hates good coding practices aparently
   def __init__(
     self,
     full_encoder: tf.keras.Model,
@@ -258,7 +259,7 @@ class PureCharStyleSAAE(tf.keras.Model):
         n_classes (int): number of labeled classes
         prior_batch_size (int): Batch size from prior distribution at training time
     """
-    super(PureCharStyleSAAE, self).__init__()
+    super(PureFontStyleSAAE, self).__init__()
 
     self.full_encoder = full_encoder
     self.image_encoder = image_encoder
@@ -267,6 +268,11 @@ class PureCharStyleSAAE(tf.keras.Model):
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
     self.prior_batch_size = prior_batch_size
     self.char_discriminator = char_discriminator
+
+  def prior_discriminator_loss(self,real,fake):
+    real_loss = self.cross_entropy(tf.ones_like(real), real)
+    fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
+    return (real_loss + fake_loss)/(2*self.prior_batch_size)
 
   def compile(self,
     optimizer='rmsprop',
@@ -292,11 +298,6 @@ class PureCharStyleSAAE(tf.keras.Model):
       run_eagerly=run_eagerly,
       **kwargs)
 
-  def prior_discriminator_loss(self,real,fake):
-    real_loss = self.cross_entropy(tf.ones_like(real), real)
-    fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
-    return (real_loss + fake_loss)/(2*self.prior_batch_size)
-
   def __call__(self, x, training=True, mask=None):
     return self.image_encoder(x, training=training)
 
@@ -317,7 +318,7 @@ class PureCharStyleSAAE(tf.keras.Model):
       decoded = self.decoder(extended_code,training=True)  
 
       # apply prior_discriminator model
-      prior_samples = self.prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
+      prior_samples = prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
       real = self.prior_discriminator(prior_samples,training=True)
       fake = self.prior_discriminator(code,training=True)
 
@@ -336,38 +337,33 @@ class PureCharStyleSAAE(tf.keras.Model):
     decoder_gradients = tape.gradient(reconstruction_loss, self.decoder.trainable_variables)
     image_encoder_gradients = tape.gradient(mixed_loss, self.image_encoder.trainable_variables)
     full_encoder_gradients = tape.gradient(mixed_loss, self.full_encoder.trainable_variables)
-    char_discr_gradients = tape.gradients(char_info_leak, self.char_discriminator.trainable_variables)
-
+    style_discr_gradients = tape.gradient(char_info_leak, self.char_discriminator.trainable_variables)
 
     #apply gradients
     self.prior_discriminator.optimizer.apply_gradients(zip(discr_gradients,self.prior_discriminator.trainable_variables))
     self.decoder.optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
     self.image_encoder.optimizer.apply_gradients(zip(image_encoder_gradients,self.image_encoder.trainable_variables))
     self.full_encoder.optimizer.apply_gradients(zip(full_encoder_gradients,self.full_encoder.trainable_variables))
-
     self.char_discriminator.optimizer.apply_gradients(
-      zip(char_discr_gradients, self.char_discriminator.trainable_variables))
-    
+      zip(style_discr_gradients, self.char_discriminator.trainable_variables))
+
     # compute metrics
     self.mse_metric.update_state(x,decoded)
 
     discr_true = tf.concat([tf.ones_like(real),tf.zeros_like(fake)],axis=0)
     discr_predicted = tf.concat([real,fake],axis=0)
-    self.prior_ccuracy_metric.update_state(discr_true,tf.round(discr_predicted))
+    self.prior_accuracy_metric.update_state(discr_true,tf.round(discr_predicted))
 
-    self.cross_entropy_metric.update_state(discr_true, discr_predicted)
+    #self.cross_entropy_metric.update_state(discr_true, discr_predicted)
 
-    self.mean_metric.update_state(code_variance)
 
     self.char_accuracy_metric.update_state(tf.argmax(labels, axis=-1), tf.argmax(char_guess, axis=-1))
 
     return {
     "MSE": self.mse_metric.result(), 
     "Prior accuracy": self.prior_accuracy_metric.result(), 
-    "Char accuracy": self.char_accuracy_metric.result()}
+    "style_accuracy": self.char_accuracy_metric.result()}
 
-  def predict(self, *args, **kwargs):
-    return self.image_encoder.predict(*args,**kwargs)
 
 
   def save(self,output_dir: str):
@@ -417,6 +413,8 @@ class PureCharStyleSAAE(tf.keras.Model):
       prior_discriminator = prior_discriminator, 
       char_discriminator = char_discriminator,
       **d)
+
+
 
 
 
