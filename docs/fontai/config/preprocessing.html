@@ -52,6 +52,9 @@
                     <a class="class" href="#Config">Config</a>
                             <ul class="memberlist">
                         <li>
+                                <a class="variable" href="#Config.output_record_class">output_record_class</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Config.output_array_size">output_array_size</a>
                         </li>
                         <li>
@@ -62,6 +65,9 @@
                         </li>
                         <li>
                                 <a class="variable" href="#Config.beam_cmd_line_args">beam_cmd_line_args</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Config.validate_output_schema">validate_output_schema</a>
                         </li>
                 </ul>
 
@@ -103,11 +109,11 @@
 <span class="kn">import</span> <span class="nn">string</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
 
-<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">PositiveInt</span><span class="p">,</span> <span class="n">PositiveFloat</span>
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">PositiveInt</span><span class="p">,</span> <span class="n">PositiveFloat</span><span class="p">,</span> <span class="n">validator</span>
 <span class="kn">import</span> <span class="nn">strictyaml</span> <span class="k">as</span> <span class="nn">yml</span>
 
 <span class="kn">from</span> <span class="nn">fontai.config.core</span> <span class="kn">import</span> <span class="n">BaseConfigHandler</span><span class="p">,</span> <span class="n">BasePipelineTransformConfig</span>
-
+<span class="kn">import</span> <span class="nn">fontai.io.records</span> <span class="k">as</span> <span class="nn">records</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -135,15 +141,36 @@
 <span class="sd">  Configuration class for the image extraction pipeline stage</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
+<span class="sd">      output_record_class (records.TfrWritable): tfr-compatible output classes from the module `fontai.io.records`; currently supported are `LabeledChar` and `LabeledFont`</span>
 <span class="sd">      output_array_size (int): size of the final grayscale image corresponding to each font&#39;s characters</span>
 <span class="sd">      font_to_array_config (int): Data object with runtime parameters for exctracting image arrays from files</span>
 <span class="sd">      beam_cmd_line_args (t.List[str]): List of command line arguments passed to the Beam pipeline</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span>
   <span class="n">output_array_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">max_output_file_size</span><span class="p">:</span> <span class="n">PositiveFloat</span>
   <span class="n">font_to_array_config</span><span class="p">:</span> <span class="n">FontExtractionConfig</span>
   <span class="n">beam_cmd_line_args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;output_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_output_schema</span><span class="p">(</span><span class="n">schema_class</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        schema_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">schema_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">schema_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     
 <span class="k">class</span> <span class="nc">ConfigHandler</span><span class="p">(</span><span class="n">BaseConfigHandler</span><span class="p">):</span>
@@ -155,12 +182,13 @@
   <span class="k">def</span> <span class="nf">get_config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="s2">&quot;output_record_class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
       <span class="s2">&quot;output_array_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="s2">&quot;font_extraction_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span> 
       <span class="s2">&quot;canvas_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span> 
       <span class="s2">&quot;canvas_padding&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;beam_cmd_line_args&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;--runner&quot;</span><span class="p">,</span> <span class="s2">&quot;DirectRunner&quot;</span><span class="p">]):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">())</span>
@@ -178,7 +206,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
-
+    <span class="n">output_record_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_record_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
     <span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;beam_cmd_line_args&quot;</span><span class="p">]</span>
     <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_array_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
     <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
@@ -192,7 +220,11 @@
     <span class="k">if</span> <span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_padding</span> <span class="o">&gt;=</span>  <span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_size</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;canvas padding value (</span><span class="si">{</span><span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_padding</span><span class="si">}</span><span class="s2">) is too large for canvas size (</span><span class="si">{</span><span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_size</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting output schema as </span><span class="si">{</span><span class="n">output_record_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">input_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="p">,</span> 
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span> 
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">,</span>
@@ -324,15 +356,36 @@
 <span class="sd">  Configuration class for the image extraction pipeline stage</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
+<span class="sd">      output_record_class (records.TfrWritable): tfr-compatible output classes from the module `fontai.io.records`; currently supported are `LabeledChar` and `LabeledFont`</span>
 <span class="sd">      output_array_size (int): size of the final grayscale image corresponding to each font&#39;s characters</span>
 <span class="sd">      font_to_array_config (int): Data object with runtime parameters for exctracting image arrays from files</span>
 <span class="sd">      beam_cmd_line_args (t.List[str]): List of command line arguments passed to the Beam pipeline</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span>
   <span class="n">output_array_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">max_output_file_size</span><span class="p">:</span> <span class="n">PositiveFloat</span>
   <span class="n">font_to_array_config</span><span class="p">:</span> <span class="n">FontExtractionConfig</span>
   <span class="n">beam_cmd_line_args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;output_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_output_schema</span><span class="p">(</span><span class="n">schema_class</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        schema_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">schema_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">schema_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -342,6 +395,7 @@
 <h6 id="args">Args</h6>
 
 <ul>
+<li><strong>output_record_class (records.TfrWritable):</strong>  tfr-compatible output classes from the module <code><a href="../io/records.html">fontai.io.records</a></code>; currently supported are <code>LabeledChar</code> and <code>LabeledFont</code></li>
 <li><strong>output_array_size (int):</strong>  size of the final grayscale image corresponding to each font's characters</li>
 <li><strong>font_to_array_config (int):</strong>  Data object with runtime parameters for exctracting image arrays from files</li>
 <li><strong>beam_cmd_line_args (t.List[str]):</strong>  List of command line arguments passed to the Beam pipeline</li>
@@ -349,6 +403,15 @@
 </div>
 
 
+                            <div id="Config.output_record_class" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.output_record_class">#&nbsp;&nbsp</a>
+
+        <span class="name">output_record_class</span><span class="annotation">: type</span>
+    </div>
+
+    
+
+                            </div>
                             <div id="Config.output_array_size" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Config.output_array_size">#&nbsp;&nbsp</a>
 
@@ -383,6 +446,62 @@
     </div>
 
     
+
+                            </div>
+                            <div id="Config.validate_output_schema" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Config.validate_output_schema">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@validator(&#39;output_record_class&#39;)</div>
+
+            <span class="def">def</span>
+            <span class="name">validate_output_schema</span><span class="signature">(schema_class)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;output_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_output_schema</span><span class="p">(</span><span class="n">schema_class</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        schema_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">schema_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">schema_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Validate input record class</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li>schema_class (type)</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>type: Validated record class</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>TypeError:</strong>  If record class not in allowed set</li>
+</ul>
+</div>
+
 
                             </div>
                             <div class="inherited">
@@ -434,12 +553,13 @@
   <span class="k">def</span> <span class="nf">get_config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="s2">&quot;output_record_class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
       <span class="s2">&quot;output_array_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="s2">&quot;font_extraction_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span> 
       <span class="s2">&quot;canvas_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span> 
       <span class="s2">&quot;canvas_padding&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;beam_cmd_line_args&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;--runner&quot;</span><span class="p">,</span> <span class="s2">&quot;DirectRunner&quot;</span><span class="p">]):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">())</span>
@@ -457,7 +577,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
-
+    <span class="n">output_record_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_record_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
     <span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;beam_cmd_line_args&quot;</span><span class="p">]</span>
     <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_array_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
     <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
@@ -471,7 +591,11 @@
     <span class="k">if</span> <span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_padding</span> <span class="o">&gt;=</span>  <span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_size</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;canvas padding value (</span><span class="si">{</span><span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_padding</span><span class="si">}</span><span class="s2">) is too large for canvas size (</span><span class="si">{</span><span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_size</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting output schema as </span><span class="si">{</span><span class="n">output_record_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">input_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="p">,</span> 
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span> 
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">,</span>
@@ -500,12 +624,13 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">get_config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="s2">&quot;output_record_class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
       <span class="s2">&quot;output_array_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="s2">&quot;font_extraction_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span> 
       <span class="s2">&quot;canvas_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span> 
       <span class="s2">&quot;canvas_padding&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;beam_cmd_line_args&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;--runner&quot;</span><span class="p">,</span> <span class="s2">&quot;DirectRunner&quot;</span><span class="p">]):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">())</span>
@@ -542,7 +667,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
-
+    <span class="n">output_record_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_record_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
     <span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;beam_cmd_line_args&quot;</span><span class="p">]</span>
     <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_array_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
     <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
@@ -556,7 +681,11 @@
     <span class="k">if</span> <span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_padding</span> <span class="o">&gt;=</span>  <span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_size</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;canvas padding value (</span><span class="si">{</span><span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_padding</span><span class="si">}</span><span class="s2">) is too large for canvas size (</span><span class="si">{</span><span class="n">f2a_config</span><span class="o">.</span><span class="n">canvas_size</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting output schema as </span><span class="si">{</span><span class="n">output_record_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">input_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="p">,</span> 
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span> 
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">,</span>
@@ -584,7 +713,6 @@
                                 <dl>
                                     <div><dt><a href="core.html#BaseConfigHandler">fontai.config.core.BaseConfigHandler</a></dt>
                                 <dd id="ConfigHandler.__init__" class="function"><a href="core.html#BaseConfigHandler.__init__">BaseConfigHandler</a></dd>
-                <dd id="ConfigHandler.CONFIG_SCHEMA" class="variable"><a href="core.html#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a></dd>
                 <dd id="ConfigHandler.from_string" class="function"><a href="core.html#BaseConfigHandler.from_string">from_string</a></dd>
                 <dd id="ConfigHandler.from_file" class="function"><a href="core.html#BaseConfigHandler.from_file">from_file</a></dd>
                 <dd id="ConfigHandler.other_setup" class="function"><a href="core.html#BaseConfigHandler.other_setup">other_setup</a></dd>

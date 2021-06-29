@@ -1,6 +1,7 @@
-output_schema_class: LabeledChar
+# This config does not orders the ouput images in any particular way
+output_record_class: LabeledChar
 input_path: data/raw
-output_path: "data/preprocessed"
+output_path: "data/preprocessed-chars"
 output_array_size: 64
 max_output_file_size: 64 #in MB
 font_extraction_size: 100

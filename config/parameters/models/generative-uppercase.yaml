@@ -1,5 +1,6 @@
+# Train a generative model based on the adversarial autoencoder architecture by Goodfellow et al. 
 input_path: data/uppercase-scored
-input_schema_class: ScoredLabeledChar
+input_record_class: ScoredLabeledChar
 output_path: data/uppercase-embeddings
 model_path: models/generative-uppercase
 charset: uppercase
@@ -29,7 +30,7 @@ training:
       filepath: models/generative-uppercase-checkpoint
       monitor: MSE
 model:
-  class: SAAE
+  class: CharStyleSAAE
   kwargs:
     prior_batch_size: 64
     reconstruction_loss_weight: 0.5

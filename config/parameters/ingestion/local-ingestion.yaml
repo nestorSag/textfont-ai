@@ -1,3 +1,4 @@
+# This mocks ingestion using local files
 scrappers:
 - class: LocalScrapper
   kwargs: 

@@ -237,7 +237,7 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
 
       one_hot_label = tf.cast(tf.where(charset_tensor == kwargs["label"]),dtype=tf.int32)
       if tf.equal(tf.size(one_hot_label),0):
-        label = tf.cast(one_hot_label, dtype=tf.float32) #pass empty label for downstream deletion
+        label = tf.cast(one_hot_label, dtype=tf.float32) #if label not in current charset, pass empty label for downstream deletion
       else:
         label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
       
@@ -314,14 +314,14 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
         dtype=tf.int32
       ) #one hot encoding with up to 62 columns
 
-      index = tf.reduce_sum(raw_one_hot, axis=-1) > 0 # detect rows where all columns are zero (chars not in charset)
+      index = tf.reduce_sum(raw_one_hot, axis=-1) > 0 # detect rows where all columns are zero (labels not in current charset)
 
       if tf.equal(tf.reduce_sum(tf.cast(index, dtype=tf.int32)), 0):
         features = kwargs["features"]
-        label = tf.zeros((0,),dtype=tf.float32) #pass empty label for downstream deletion
+        label = tf.zeros((0,),dtype=tf.float32) #if no labels are in current charset, pass empty label for downstream deletion
       else:
         one_hot_label = tf.argmax(raw_one_hot[index]) # filter chars not in charset
-        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1)) #create bounded one hot encoding
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1)) #create restricted one hot encoding
         features = kwargs["features"][index]
 
 

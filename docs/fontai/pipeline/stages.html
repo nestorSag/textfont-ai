@@ -76,9 +76,6 @@
                                 <a class="class" href="#LabeledExampleExtractor.output_file_format">LabeledExampleExtractor.output_file_format</a>
                         </li>
                         <li>
-                                <a class="function" href="#LabeledExampleExtractor.build_pipeline">build_pipeline</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#LabeledExampleExtractor.from_config_object">from_config_object</a>
                         </li>
                         <li>
@@ -107,6 +104,9 @@
                         </li>
                         <li>
                                 <a class="class" href="#Predictor.output_file_format">Predictor.output_file_format</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Predictor.add_batch_shape_signature">add_batch_shape_signature</a>
                         </li>
                         <li>
                                 <a class="function" href="#Predictor.fit">fit</a>
@@ -147,13 +147,13 @@
                     <h1 class="modulename">
 <a href="./../../fontai.html">fontai</a><wbr>.<a href="./../pipeline.html">pipeline</a><wbr>.stages    </h1>
 
-                        <div class="docstring"><p>This module contains the definitions of high-level ML lifecycle stage classes; at the moment this includes ingestion, preprocessing and training.</p>
+                        <div class="docstring"><p>This module contains the definitions of high-level ML lifecycle stage classes; at the moment this includes ingestion, preprocessing and training/scoring.</p>
 </div>
 
                         <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">  This module contains the definitions of high-level ML lifecycle stage classes; at the moment this includes ingestion, preprocessing and training.</span>
+<span class="sd">  This module contains the definitions of high-level ML lifecycle stage classes; at the moment this includes ingestion, preprocessing and training/scoring.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">logging</span>
@@ -163,6 +163,7 @@
 <span class="kn">import</span> <span class="nn">zipfile</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
 
@@ -183,13 +184,13 @@
 <span class="kn">from</span> <span class="nn">fontai.config.prediction</span> <span class="kn">import</span> <span class="n">ModelFactory</span><span class="p">,</span> <span class="n">TrainingConfig</span><span class="p">,</span> <span class="n">Config</span> <span class="k">as</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">ConfigHandler</span> <span class="k">as</span> <span class="n">PredictorConfigHandler</span>
 
 
-<span class="kn">from</span> <span class="nn">fontai.prediction.input_processing</span> <span class="kn">import</span> <span class="n">LabeledExamplePreprocessor</span>
-<span class="kn">from</span> <span class="nn">fontai.preprocessing.mappings</span> <span class="kn">import</span> <span class="n">PipelineExecutor</span><span class="p">,</span> <span class="n">ManyToManyMapper</span><span class="p">,</span> <span class="n">FontFileToLabeledExamples</span><span class="p">,</span> <span class="n">FeatureCropper</span><span class="p">,</span> <span class="n">FeatureResizer</span><span class="p">,</span> <span class="n">InputToFontFiles</span><span class="p">,</span> <span class="n">Writer</span><span class="p">,</span> <span class="n">BeamCompatibleWrapper</span>
+<span class="kn">from</span> <span class="nn">fontai.prediction.input_processing</span> <span class="kn">import</span> <span class="n">RecordPreprocessor</span>
+<span class="kn">from</span> <span class="nn">fontai.preprocessing.mappings</span> <span class="kn">import</span> <span class="n">PipelineFactory</span><span class="p">,</span> <span class="n">BeamCompatibleWrapper</span><span class="p">,</span> <span class="n">Writer</span>
 
 <span class="c1">#from fontai.pipeline.base import MLPipelineTransform</span>
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
 <span class="kn">from</span> <span class="nn">fontai.io.readers</span> <span class="kn">import</span> <span class="n">ScrapperReader</span>
-<span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">ScoredLabeledExample</span><span class="p">,</span> <span class="n">LabeledExample</span>
+<span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">TfrWritable</span>
 <span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">TFRecordDataset</span>
 <span class="kn">from</span> <span class="nn">fontai.pipeline.base</span> <span class="kn">import</span> <span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">,</span> <span class="n">FittableTransform</span>
 
@@ -199,7 +200,12 @@
 
 <span class="k">class</span> <span class="nc">FontIngestion</span><span class="p">(</span><span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">):</span>
 
-  <span class="sd">&quot;&quot;&quot;Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It&#39;s transform method takes a list of scrappers from which it downloads files to storage.</span>
+  <span class="sd">&quot;&quot;&quot;Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It&#39;s transform method takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.</span>
+
+<span class="sd">  Configuration YAML schema:</span>
+
+<span class="sd">  scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use</span>
+<span class="sd">  output_path: target output folder</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
@@ -239,7 +245,19 @@
 
 <span class="k">class</span> <span class="nc">LabeledExampleExtractor</span><span class="p">(</span><span class="n">ConfigurableTransform</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">  File preprocessing executable stage that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.</span>
+<span class="sd">  File preprocessing executable stage that maps zipped font files to Tensorflow records consisting of labeled images for ML consumption; takes a Config object that defines its execution.</span>
+
+<span class="sd">  Configuration YAML schema:</span>
+
+<span class="sd">  output_record_class: name of record class that will populate output files; it has to inherit from `fontai.io.records.TfrWritable`</span>
+<span class="sd">  input_path: Input files&#39; folder</span>
+<span class="sd">  output_path: output files&#39; folder</span>
+<span class="sd">  output_array_size: height and width of the squared output images</span>
+<span class="sd">  max_output_file_size: maximum single-file size for output files #in MB</span>
+<span class="sd">  font_extraction_size: Font size to use when extracting characters to images</span>
+<span class="sd">  canvas_size: initial image canvas size in which font chars are extracted</span>
+<span class="sd">  canvas_padding: padding for the initial image canvas to allow for unusally large fonts</span>
+<span class="sd">  beam_cmd_line_args: list of Apache Beam&#39;s command line aeguments</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
 
@@ -248,6 +266,7 @@
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
     <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -257,6 +276,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
+<span class="sd">        output_record_class (type): Output schema class, inheriting from TfrWritable</span>
 <span class="sd">        charset (str): String with characters to be extracted</span>
 <span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
 <span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
@@ -266,7 +286,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">beam_cmd_line_args</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
       <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
       <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
@@ -274,47 +295,11 @@
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
 
 
-  <span class="k">def</span> <span class="nf">build_pipeline</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> 
-    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        charset (str): String with characters to be extracted</span>
-<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
-<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
-<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
-<span class="sd">        output_array_size (int): Final character image size</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        PipelineExecutor: Procesing transformation object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
-      <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-      <span class="n">InputToFontFiles</span><span class="p">(),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledExamples</span><span class="p">(</span>
-          <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
-          <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
-          <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
-          <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
-      <span class="p">),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
-      <span class="p">),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
-      <span class="p">)]</span>
-    <span class="p">)</span>
-
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
       <span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">,</span>
       <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
@@ -355,7 +340,8 @@
       <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
       <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
         <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
-          <span class="n">mapper</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_record_class</span><span class="p">,</span>
             <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
             <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
         <span class="p">)</span>
@@ -363,34 +349,118 @@
       <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 
 
+
 <span class="k">class</span> <span class="nc">Predictor</span><span class="p">(</span><span class="n">FittableTransform</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  This class trains a prediction model or scores new exaples with an existing prediction model.</span>
 <span class="sd">  </span>
-<span class="sd">  model: Keras model</span>
-<span class="sd">  </span>
-<span class="sd">  training_config: training configurat</span>
-<span class="sd">  </span>
+
 <span class="sd">  Attributes:</span>
-<span class="sd">      input_file_format (TFRecordDataset): Hardcoded input file format</span>
 <span class="sd">      model (keras.Model): Scoring model</span>
-<span class="sd">      output_file_format (TFRecordDataset): Hardcoded output file format</span>
 <span class="sd">      training_config (TrainingConfig): training configuration wrapper</span>
+<span class="sd">      charset (str): charset to use for training and batch scoring</span>
+<span class="sd">  </span>
+
+<span class="sd">  YAML configuration schema:</span>
+
+
+<span class="sd">  input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from `fontai.io.records.TfrWritable`</span>
+<span class="sd">  input_path: Input files&#39; folder</span>
+<span class="sd">  output_path: output files&#39; folder</span>
+<span class="sd">  model_path: Output model path</span>
+<span class="sd">  charset (optional, defaults to &#39;lowercase&#39;): charset to use for training</span>
+<span class="sd">  training: subyaml. See below</span>
+<span class="sd">  model: subyaml. See below</span>
+
+
+<span class="sd">  Training subyaml schema:</span>
+
+
+<span class="sd">  batch_size (optional, defaults to None): can be null</span>
+<span class="sd">  epochs: number of epochs</span>
+<span class="sd">  steps_per_epoch (optional, defauls to 10k): </span>
+<span class="sd">  seed (optional, defaults to 1): random seed for TF functions</span>
+<span class="sd">  metrics: List of TF metrics as strings</span>
+<span class="sd">  loss: subyaml with keys `class` and `kwargs` to instantiate a Keras loss function</span>
+<span class="sd">  optimizer (optional, defaults to Adam with default parameters): subyaml with keys `class` and `kwargs` to instantiate a Keras optimizer</span>
+<span class="sd">  callbacks (optional, defaults to []): subyaml with keys `class` and `kwargs` to instantiate a Keras callback or a custome one defined in `fontai.prediction.callbacks`</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised</span>
+
+<span class="sd">  model subyaml schema:</span>
+
+<span class="sd">  Can be one of two:</span>
+
+<span class="sd">  1. A subyaml with entries `path` and optionally `custom_class` to load an existing model from a path; `custom_class` has to be the class name if the model is custom defined in `fontai.prediction.models`</span>
+
+<span class="sd">  2. A subyaml with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `fontai.prediction.models`. the kwargs of the specified class can subsequently be Sequential keras models if needed.</span>
+
+
+
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
   <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
 
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">model</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> 
+    <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lowercase&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        model (tf.keras.Model): Scoring model</span>
 <span class="sd">        training_config (TrainingConfig, optional): Training configuration wrapper</span>
+<span class="sd">        charset (str): charset to use for training and batch scoring</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
+
+    <span class="c1"># physical_devices = tf.config.experimental.list_physical_devices(&#39;GPU&#39;)</span>
+    <span class="c1"># if len(physical_devices) &gt; 0:</span>
+    <span class="c1">#   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)</span>
+
+
+  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data (TFRecordDataset): Input training data</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        TFRecordDataset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="c1"># drop batch size form shape tuples</span>
+    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+      <span class="n">callable_data</span><span class="p">,</span> 
+      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
+        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="p">),</span>
+      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">training_data</span>
+
 
   <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fits the scoring model with the passed data</span>
@@ -406,47 +476,59 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Training configuration not provided at instantiation time.&quot;</span><span class="p">)</span>
-
-    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
-      <span class="n">filters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
     
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
       <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> 
       <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
       <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">metrics</span><span class="p">)</span>
 
+    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-      <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+      <span class="c1">#data,</span>
+      <span class="n">training_data</span><span class="p">,</span>
       <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">steps_per_epoch</span><span class="p">,</span> 
       <span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
-      <span class="n">callbacks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
+      <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">self</span>
 
-  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">LabeledExample</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">ScoredLabeledExample</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">_to_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Reshape single example to be transformed in-memory by the `transform` method.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        x (t.Union[ndarray, Tensor]): Single input</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Union[ndarray, Tensor]: Reshaped input</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Process a single instance</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        input_data (t.Union[ndarray, Tensor, LabeledExample]): Input instance</span>
+<span class="sd">        input_data (t.Union[ndarray, Tensor, TfrWritable]): Input instance</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        t.Union[Tensor, ndarray, ScoredLabeledExample]: Scored example in the corresponding format, depending on the input type.</span>
+<span class="sd">        t.Union[Tensor, ndarray, TfrWritable]: Scored example in the corresponding format, depending on the input type.</span>
 <span class="sd">    </span>
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If input type is not allowed.</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">)):</span>
-      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">LabeledExample</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">ScoredLabeledExample</span><span class="p">(</span>
-        <span class="n">labeled_example</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">,</span> 
-        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))))</span> <span class="c1">#images have to be reshaped to 4 dimensions to be scored</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or LabeledExample&quot;</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or TfrWritable&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_config_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -482,42 +564,54 @@
       <span class="n">model</span> <span class="o">=</span> <span class="n">ModelFactory</span><span class="p">()</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
-    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span> <span class="n">training_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span>
+
+    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span> <span class="n">training_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="p">,</span> <span class="n">charset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">predictor</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    
-    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
-      <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
 
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
+
+    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
+      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="p">[],</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="p">[])</span>
+
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-      <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fontnames</span> <span class="o">=</span> <span class="n">batch</span>
-      <span class="n">score</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">)</span> <span class="c1">#first element of example are the features</span>
-
-      <span class="n">current_batch_size</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-      <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">current_batch_size</span><span class="p">):</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-          <span class="n">ScoredLabeledExample</span><span class="p">(</span>
-            <span class="n">labeled_example</span> <span class="o">=</span> <span class="n">LabeledExample</span><span class="p">(</span>
-              <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
-              <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
-              <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span> 
-            <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+      <span class="n">formatted</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_parsed_bytes_dict</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">formatted</span><span class="p">))</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
-    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">())</span>
+    
+    <span class="k">def</span> <span class="nf">save_on_sigint</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+      <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Training stopped by SIGINT: saving current model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+      
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">save_on_sigint</span><span class="p">)</span>
+
+    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
+      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+
+    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">predictor</span>
 </pre></div>
 
@@ -537,7 +631,12 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FontIngestion</span><span class="p">(</span><span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">):</span>
 
-  <span class="sd">&quot;&quot;&quot;Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It&#39;s transform method takes a list of scrappers from which it downloads files to storage.</span>
+  <span class="sd">&quot;&quot;&quot;Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It&#39;s transform method takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.</span>
+
+<span class="sd">  Configuration YAML schema:</span>
+
+<span class="sd">  scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use</span>
+<span class="sd">  output_path: target output folder</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
@@ -577,7 +676,12 @@
 
         </details>
 
-            <div class="docstring"><p>Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers from which it downloads files to storage.</p>
+            <div class="docstring"><p>Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers defined in <code><a href="../io/scrappers.html">fontai.io.scrappers</a></code> from which it downloads files to storage.</p>
+
+<p>Configuration YAML schema:</p>
+
+<p>scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from <code><a href="../io/scrappers.html">fontai.io.scrappers</a></code>to use
+output_path: target output folder</p>
 </div>
 
 
@@ -1010,7 +1114,19 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">LabeledExampleExtractor</span><span class="p">(</span><span class="n">ConfigurableTransform</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">  File preprocessing executable stage that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.</span>
+<span class="sd">  File preprocessing executable stage that maps zipped font files to Tensorflow records consisting of labeled images for ML consumption; takes a Config object that defines its execution.</span>
+
+<span class="sd">  Configuration YAML schema:</span>
+
+<span class="sd">  output_record_class: name of record class that will populate output files; it has to inherit from `fontai.io.records.TfrWritable`</span>
+<span class="sd">  input_path: Input files&#39; folder</span>
+<span class="sd">  output_path: output files&#39; folder</span>
+<span class="sd">  output_array_size: height and width of the squared output images</span>
+<span class="sd">  max_output_file_size: maximum single-file size for output files #in MB</span>
+<span class="sd">  font_extraction_size: Font size to use when extracting characters to images</span>
+<span class="sd">  canvas_size: initial image canvas size in which font chars are extracted</span>
+<span class="sd">  canvas_padding: padding for the initial image canvas to allow for unusally large fonts</span>
+<span class="sd">  beam_cmd_line_args: list of Apache Beam&#39;s command line aeguments</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
 
@@ -1019,6 +1135,7 @@
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
     <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1028,6 +1145,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
+<span class="sd">        output_record_class (type): Output schema class, inheriting from TfrWritable</span>
 <span class="sd">        charset (str): String with characters to be extracted</span>
 <span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
 <span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
@@ -1037,7 +1155,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">beam_cmd_line_args</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
       <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
       <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
@@ -1045,47 +1164,11 @@
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
 
 
-  <span class="k">def</span> <span class="nf">build_pipeline</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> 
-    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        charset (str): String with characters to be extracted</span>
-<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
-<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
-<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
-<span class="sd">        output_array_size (int): Final character image size</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        PipelineExecutor: Procesing transformation object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
-      <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-      <span class="n">InputToFontFiles</span><span class="p">(),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledExamples</span><span class="p">(</span>
-          <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
-          <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
-          <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
-          <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
-      <span class="p">),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
-      <span class="p">),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
-      <span class="p">)]</span>
-    <span class="p">)</span>
-
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
       <span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">,</span>
       <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
@@ -1126,7 +1209,8 @@
       <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
       <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
         <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
-          <span class="n">mapper</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_record_class</span><span class="p">,</span>
             <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
             <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
         <span class="p">)</span>
@@ -1136,7 +1220,19 @@
 
         </details>
 
-            <div class="docstring"><p>File preprocessing executable stage that maps zipped font files to Tensorflow records for ML consumption; takes a Config object that defines its execution.</p>
+            <div class="docstring"><p>File preprocessing executable stage that maps zipped font files to Tensorflow records consisting of labeled images for ML consumption; takes a Config object that defines its execution.</p>
+
+<p>Configuration YAML schema:</p>
+
+<p>output_record_class: name of record class that will populate output files; it has to inherit from <code><a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a></code>
+input_path: Input files' folder
+output_path: output files' folder
+output_array_size: height and width of the squared output images
+max_output_file_size: maximum single-file size for output files #in MB
+font_extraction_size: Font size to use when extracting characters to images
+canvas_size: initial image canvas size in which font chars are extracted
+canvas_padding: padding for the initial image canvas to allow for unusally large fonts
+beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 </div>
 
 
@@ -1145,6 +1241,7 @@
 
         
             <span class="name">LabeledExampleExtractor</span><span class="signature">(
+    output_record_class: type,
     charset: str,
     font_extraction_size: int,
     canvas_size: int,
@@ -1158,6 +1255,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
     <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1167,6 +1265,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
+<span class="sd">        output_record_class (type): Output schema class, inheriting from TfrWritable</span>
 <span class="sd">        charset (str): String with characters to be extracted</span>
 <span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
 <span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
@@ -1176,7 +1275,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">beam_cmd_line_args</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
       <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
       <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
@@ -1189,6 +1289,7 @@
             <div class="docstring"><h6 id="args">Args</h6>
 
 <ul>
+<li><strong>output_record_class (type):</strong>  Output schema class, inheriting from TfrWritable</li>
 <li><strong>charset (str):</strong>  String with characters to be extracted</li>
 <li><strong>font_extraction_size (int):</strong>  Font size to use when extracting font images</li>
 <li><strong>canvas_size (int):</strong>  Image canvas size in which fonts will be extracted</li>
@@ -1196,84 +1297,6 @@
 <li><strong>output_array_size (int):</strong>  Final character image size</li>
 <li><strong>beam_cmd_line_args (t.List[str], optional):</strong>  List of Apache Beam command line arguments for distributed processing</li>
 </ul>
-</div>
-
-
-                            </div>
-                            <div id="LabeledExampleExtractor.build_pipeline" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#LabeledExampleExtractor.build_pipeline">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">build_pipeline</span><span class="signature">(
-    self,
-    charset: str,
-    font_extraction_size: int,
-    canvas_size: int,
-    canvas_padding: int,
-    output_array_size: int
-) -&gt; <a href="../preprocessing/mappings.html#PipelineExecutor">fontai.preprocessing.mappings.PipelineExecutor</a></span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">build_pipeline</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> 
-    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        charset (str): String with characters to be extracted</span>
-<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
-<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
-<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
-<span class="sd">        output_array_size (int): Final character image size</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        PipelineExecutor: Procesing transformation object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
-      <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-      <span class="n">InputToFontFiles</span><span class="p">(),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledExamples</span><span class="p">(</span>
-          <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
-          <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
-          <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
-          <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
-      <span class="p">),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
-      <span class="p">),</span>
-      <span class="n">ManyToManyMapper</span><span class="p">(</span>
-        <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
-      <span class="p">)]</span>
-    <span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Build file processing pipeline object</p>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>charset (str):</strong>  String with characters to be extracted</li>
-<li><strong>font_extraction_size (int):</strong>  Font size to use when extracting font images</li>
-<li><strong>canvas_size (int):</strong>  Image canvas size in which fonts will be extracted</li>
-<li><strong>canvas_padding (int):</strong>  Padding in the image extraction canvas</li>
-<li><strong>output_array_size (int):</strong>  Final character image size</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<blockquote>
-  <p>PipelineExecutor: Procesing transformation object</p>
-</blockquote>
 </div>
 
 
@@ -1293,6 +1316,7 @@
   <span class="k">def</span> <span class="nf">from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+      <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_record_class</span><span class="p">,</span>
       <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
       <span class="n">beam_cmd_line_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">beam_cmd_line_args</span><span class="p">,</span>
       <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
@@ -1418,7 +1442,8 @@
       <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
       <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
         <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
-          <span class="n">mapper</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">output_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_record_class</span><span class="p">,</span>
             <span class="n">output_array_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_array_size</span><span class="p">,</span>
             <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
         <span class="p">)</span>
@@ -1668,30 +1693,113 @@
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  This class trains a prediction model or scores new exaples with an existing prediction model.</span>
 <span class="sd">  </span>
-<span class="sd">  model: Keras model</span>
-<span class="sd">  </span>
-<span class="sd">  training_config: training configurat</span>
-<span class="sd">  </span>
+
 <span class="sd">  Attributes:</span>
-<span class="sd">      input_file_format (TFRecordDataset): Hardcoded input file format</span>
 <span class="sd">      model (keras.Model): Scoring model</span>
-<span class="sd">      output_file_format (TFRecordDataset): Hardcoded output file format</span>
 <span class="sd">      training_config (TrainingConfig): training configuration wrapper</span>
+<span class="sd">      charset (str): charset to use for training and batch scoring</span>
+<span class="sd">  </span>
+
+<span class="sd">  YAML configuration schema:</span>
+
+
+<span class="sd">  input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from `fontai.io.records.TfrWritable`</span>
+<span class="sd">  input_path: Input files&#39; folder</span>
+<span class="sd">  output_path: output files&#39; folder</span>
+<span class="sd">  model_path: Output model path</span>
+<span class="sd">  charset (optional, defaults to &#39;lowercase&#39;): charset to use for training</span>
+<span class="sd">  training: subyaml. See below</span>
+<span class="sd">  model: subyaml. See below</span>
+
+
+<span class="sd">  Training subyaml schema:</span>
+
+
+<span class="sd">  batch_size (optional, defaults to None): can be null</span>
+<span class="sd">  epochs: number of epochs</span>
+<span class="sd">  steps_per_epoch (optional, defauls to 10k): </span>
+<span class="sd">  seed (optional, defaults to 1): random seed for TF functions</span>
+<span class="sd">  metrics: List of TF metrics as strings</span>
+<span class="sd">  loss: subyaml with keys `class` and `kwargs` to instantiate a Keras loss function</span>
+<span class="sd">  optimizer (optional, defaults to Adam with default parameters): subyaml with keys `class` and `kwargs` to instantiate a Keras optimizer</span>
+<span class="sd">  callbacks (optional, defaults to []): subyaml with keys `class` and `kwargs` to instantiate a Keras callback or a custome one defined in `fontai.prediction.callbacks`</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised</span>
+
+<span class="sd">  model subyaml schema:</span>
+
+<span class="sd">  Can be one of two:</span>
+
+<span class="sd">  1. A subyaml with entries `path` and optionally `custom_class` to load an existing model from a path; `custom_class` has to be the class name if the model is custom defined in `fontai.prediction.models`</span>
+
+<span class="sd">  2. A subyaml with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `fontai.prediction.models`. the kwargs of the specified class can subsequently be Sequential keras models if needed.</span>
+
+
+
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
   <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
 
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">model</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> 
+    <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lowercase&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        model (tf.keras.Model): Scoring model</span>
 <span class="sd">        training_config (TrainingConfig, optional): Training configuration wrapper</span>
+<span class="sd">        charset (str): charset to use for training and batch scoring</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
+
+    <span class="c1"># physical_devices = tf.config.experimental.list_physical_devices(&#39;GPU&#39;)</span>
+    <span class="c1"># if len(physical_devices) &gt; 0:</span>
+    <span class="c1">#   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)</span>
+
+
+  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data (TFRecordDataset): Input training data</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        TFRecordDataset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="c1"># drop batch size form shape tuples</span>
+    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+      <span class="n">callable_data</span><span class="p">,</span> 
+      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
+        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="p">),</span>
+      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">training_data</span>
+
 
   <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fits the scoring model with the passed data</span>
@@ -1707,47 +1815,59 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Training configuration not provided at instantiation time.&quot;</span><span class="p">)</span>
-
-    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
-      <span class="n">filters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
     
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
       <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> 
       <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
       <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">metrics</span><span class="p">)</span>
 
+    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-      <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+      <span class="c1">#data,</span>
+      <span class="n">training_data</span><span class="p">,</span>
       <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">steps_per_epoch</span><span class="p">,</span> 
       <span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
-      <span class="n">callbacks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
+      <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">self</span>
 
-  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">LabeledExample</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">ScoredLabeledExample</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">_to_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Reshape single example to be transformed in-memory by the `transform` method.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        x (t.Union[ndarray, Tensor]): Single input</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Union[ndarray, Tensor]: Reshaped input</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Process a single instance</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        input_data (t.Union[ndarray, Tensor, LabeledExample]): Input instance</span>
+<span class="sd">        input_data (t.Union[ndarray, Tensor, TfrWritable]): Input instance</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        t.Union[Tensor, ndarray, ScoredLabeledExample]: Scored example in the corresponding format, depending on the input type.</span>
+<span class="sd">        t.Union[Tensor, ndarray, TfrWritable]: Scored example in the corresponding format, depending on the input type.</span>
 <span class="sd">    </span>
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If input type is not allowed.</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">)):</span>
-      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">LabeledExample</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">ScoredLabeledExample</span><span class="p">(</span>
-        <span class="n">labeled_example</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">,</span> 
-        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))))</span> <span class="c1">#images have to be reshaped to 4 dimensions to be scored</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or LabeledExample&quot;</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or TfrWritable&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_config_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -1783,42 +1903,54 @@
       <span class="n">model</span> <span class="o">=</span> <span class="n">ModelFactory</span><span class="p">()</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
-    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span> <span class="n">training_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span>
+
+    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span> <span class="n">training_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="p">,</span> <span class="n">charset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">predictor</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    
-    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
-      <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
 
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
+
+    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
+      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="p">[],</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="p">[])</span>
+
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-      <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fontnames</span> <span class="o">=</span> <span class="n">batch</span>
-      <span class="n">score</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">)</span> <span class="c1">#first element of example are the features</span>
-
-      <span class="n">current_batch_size</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-      <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">current_batch_size</span><span class="p">):</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-          <span class="n">ScoredLabeledExample</span><span class="p">(</span>
-            <span class="n">labeled_example</span> <span class="o">=</span> <span class="n">LabeledExample</span><span class="p">(</span>
-              <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
-              <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
-              <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span> 
-            <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+      <span class="n">formatted</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_parsed_bytes_dict</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">formatted</span><span class="p">))</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
-    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">())</span>
+    
+    <span class="k">def</span> <span class="nf">save_on_sigint</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+      <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Training stopped by SIGINT: saving current model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+      
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">save_on_sigint</span><span class="p">)</span>
+
+    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
+      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+
+    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">predictor</span>
 </pre></div>
 
@@ -1826,18 +1958,45 @@
 
             <div class="docstring"><p>This class trains a prediction model or scores new exaples with an existing prediction model.</p>
 
-<p>model: Keras model</p>
-
-<p>training_config: training configurat</p>
-
 <h6 id="attributes">Attributes</h6>
 
 <ul>
-<li><strong>input_file_format (TFRecordDataset):</strong>  Hardcoded input file format</li>
 <li><strong>model (keras.Model):</strong>  Scoring model</li>
-<li><strong>output_file_format (TFRecordDataset):</strong>  Hardcoded output file format</li>
 <li><strong>training_config (TrainingConfig):</strong>  training configuration wrapper</li>
+<li><strong>charset (str):</strong>  charset to use for training and batch scoring</li>
 </ul>
+
+<p>YAML configuration schema:</p>
+
+<p>input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from <code><a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a></code>
+input_path: Input files' folder
+output_path: output files' folder
+model_path: Output model path
+charset (optional, defaults to 'lowercase'): charset to use for training
+training: subyaml. See below
+model: subyaml. See below</p>
+
+<p>Training subyaml schema:</p>
+
+<p>batch_size (optional, defaults to None): can be null
+epochs: number of epochs
+steps_per_epoch (optional, defauls to 10k): 
+seed (optional, defaults to 1): random seed for TF functions
+metrics: List of TF metrics as strings
+loss: subyaml with keys <code>class</code> and <code>kwargs</code> to instantiate a Keras loss function
+optimizer (optional, defaults to Adam with default parameters): subyaml with keys <code>class</code> and <code>kwargs</code> to instantiate a Keras optimizer
+callbacks (optional, defaults to []): subyaml with keys <code>class</code> and <code>kwargs</code> to instantiate a Keras callback or a custome one defined in <code><a href="../prediction/callbacks.html">fontai.prediction.callbacks</a></code>
+custom_filters (optional, defaults to []): subyaml with keys <code>name</code> and <code>kwargs</code> to instantiate a filtering function defined in <code><a href="../prediction/custom_filters.html">fontai.prediction.custom_filters</a></code> to apply just after records are deserialised
+custom_filters (optional, defaults to []): subyaml with keys <code>name</code> and <code>kwargs</code> to instantiate a mapping function defined in <code><a href="../prediction.html#custom_mappings">fontai.prediction.custom_mappings</a></code> to apply just after records are deserialised</p>
+
+<p>model subyaml schema:</p>
+
+<p>Can be one of two:</p>
+
+<ol>
+<li><p>A subyaml with entries <code>path</code> and optionally <code>custom_class</code> to load an existing model from a path; <code>custom_class</code> has to be the class name if the model is custom defined in <code><a href="../prediction/models.html">fontai.prediction.models</a></code></p></li>
+<li><p>A subyaml with entries <code>class</code> and <code>kwargs</code> to instantiate a Keras model architecture; currently only <code>Sequential</code> types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in <code><a href="../prediction/models.html">fontai.prediction.models</a></code>. the kwargs of the specified class can subsequently be Sequential keras models if needed.</p></li>
+</ol>
 </div>
 
 
@@ -1847,21 +2006,28 @@
         
             <span class="name">Predictor</span><span class="signature">(
     model: tensorflow.python.keras.engine.training.Model,
-    training_config: <a href="../config/prediction.html#TrainingConfig">fontai.config.prediction.TrainingConfig</a> = None
+    training_config: <a href="../config/prediction.html#TrainingConfig">fontai.config.prediction.TrainingConfig</a> = None,
+    charset: str = &#39;lowercase&#39;
 )</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">model</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> 
+    <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lowercase&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        model (tf.keras.Model): Scoring model</span>
 <span class="sd">        training_config (TrainingConfig, optional): Training configuration wrapper</span>
+<span class="sd">        charset (str): charset to use for training and batch scoring</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 </pre></div>
 
         </details>
@@ -1871,6 +2037,83 @@
 <ul>
 <li><strong>model (tf.keras.Model):</strong>  Scoring model</li>
 <li><strong>training_config (TrainingConfig, optional):</strong>  Training configuration wrapper</li>
+<li><strong>charset (str):</strong>  charset to use for training and batch scoring</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="Predictor.add_batch_shape_signature" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Predictor.add_batch_shape_signature">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">add_batch_shape_signature</span><span class="signature">(
+    self,
+    data: tensorflow.python.data.ops.readers.TFRecordDatasetV2
+) -&gt; tensorflow.python.data.ops.readers.TFRecordDatasetV2</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data (TFRecordDataset): Input training data</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        TFRecordDataset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="c1"># drop batch size form shape tuples</span>
+    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+      <span class="n">callable_data</span><span class="p">,</span> 
+      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
+        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="p">),</span>
+      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">training_data</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>data (TFRecordDataset):</strong>  Input training data</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>TFRecordDataset</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li>ValueError</li>
 </ul>
 </div>
 
@@ -1900,22 +2143,20 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Training configuration not provided at instantiation time.&quot;</span><span class="p">)</span>
-
-    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
-      <span class="n">filters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
     
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
       <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> 
       <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
       <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">metrics</span><span class="p">)</span>
 
+    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-      <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+      <span class="c1">#data,</span>
+      <span class="n">training_data</span><span class="p">,</span>
       <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">steps_per_epoch</span><span class="p">,</span> 
       <span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
-      <span class="n">callbacks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
+      <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">self</span>
 </pre></div>
@@ -1952,34 +2193,33 @@
             <span class="def">def</span>
             <span class="name">transform</span><span class="signature">(
     self,
-    input_data: Union[numpy.ndarray, tensorflow.python.framework.ops.Tensor, <a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>]
-) -&gt; Union[tensorflow.python.framework.ops.Tensor, numpy.ndarray, <a href="../io/records.html#ScoredLabeledExample">fontai.io.records.ScoredLabeledExample</a>]</span>:
+    input_data: Union[numpy.ndarray, tensorflow.python.framework.ops.Tensor, <a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a>]
+) -&gt; Union[tensorflow.python.framework.ops.Tensor, numpy.ndarray, <a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a>]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">LabeledExample</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">ScoredLabeledExample</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Process a single instance</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        input_data (t.Union[ndarray, Tensor, LabeledExample]): Input instance</span>
+<span class="sd">        input_data (t.Union[ndarray, Tensor, TfrWritable]): Input instance</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        t.Union[Tensor, ndarray, ScoredLabeledExample]: Scored example in the corresponding format, depending on the input type.</span>
+<span class="sd">        t.Union[Tensor, ndarray, TfrWritable]: Scored example in the corresponding format, depending on the input type.</span>
 <span class="sd">    </span>
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If input type is not allowed.</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">)):</span>
-      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">LabeledExample</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">ScoredLabeledExample</span><span class="p">(</span>
-        <span class="n">labeled_example</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">,</span> 
-        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))))</span> <span class="c1">#images have to be reshaped to 4 dimensions to be scored</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or LabeledExample&quot;</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or TfrWritable&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1989,13 +2229,13 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>input_data (t.Union[ndarray, Tensor, LabeledExample]):</strong>  Input instance</li>
+<li><strong>input_data (t.Union[ndarray, Tensor, TfrWritable]):</strong>  Input instance</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <blockquote>
-  <p>t.Union[Tensor, ndarray, ScoredLabeledExample]: Scored example in the corresponding format, depending on the input type.</p>
+  <p>t.Union[Tensor, ndarray, TfrWritable]: Scored example in the corresponding format, depending on the input type.</p>
 </blockquote>
 
 <h6 id="raises">Raises</h6>
@@ -2091,7 +2331,8 @@
       <span class="n">model</span> <span class="o">=</span> <span class="n">ModelFactory</span><span class="p">()</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
-    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span> <span class="n">training_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span>
+
+    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span> <span class="n">training_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="p">,</span> <span class="n">charset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">predictor</span>
 </pre></div>
 
@@ -2132,29 +2373,22 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    
-    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
-      <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
 
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
+
+    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
+      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="p">[],</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="p">[])</span>
+
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-      <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fontnames</span> <span class="o">=</span> <span class="n">batch</span>
-      <span class="n">score</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">)</span> <span class="c1">#first element of example are the features</span>
-
-      <span class="n">current_batch_size</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-      <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">current_batch_size</span><span class="p">):</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-          <span class="n">ScoredLabeledExample</span><span class="p">(</span>
-            <span class="n">labeled_example</span> <span class="o">=</span> <span class="n">LabeledExample</span><span class="p">(</span>
-              <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
-              <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
-              <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span> 
-            <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+      <span class="n">formatted</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_parsed_bytes_dict</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">formatted</span><span class="p">))</span>
 </pre></div>
 
         </details>
@@ -2188,11 +2422,29 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
-    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">())</span>
+    
+    <span class="k">def</span> <span class="nf">save_on_sigint</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+      <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Training stopped by SIGINT: saving current model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+      
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">save_on_sigint</span><span class="p">)</span>
+
+    <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
+      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+
+    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">predictor</span>
 </pre></div>
 

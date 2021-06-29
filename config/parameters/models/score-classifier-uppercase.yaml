@@ -1,5 +1,6 @@
-input_path: data/preprocessed
-input_schema_class: LabeledChar
+# score new images or retrain model
+input_path: data/preprocessed-chars
+input_record_class: LabeledChar
 output_path: data/uppercase-scored
 model_path: models/supervised-uppercase
 charset: uppercase

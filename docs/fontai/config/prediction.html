@@ -34,6 +34,12 @@
                     <a class="class" href="#TrainingConfig">TrainingConfig</a>
                             <ul class="memberlist">
                         <li>
+                                <a class="variable" href="#TrainingConfig.custom_filters">custom_filters</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TrainingConfig.custom_mappers">custom_mappers</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#TrainingConfig.batch_size">batch_size</a>
                         </li>
                         <li>
@@ -49,12 +55,6 @@
                                 <a class="variable" href="#TrainingConfig.loss">loss</a>
                         </li>
                         <li>
-                                <a class="variable" href="#TrainingConfig.charset">charset</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#TrainingConfig.filters">filters</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#TrainingConfig.seed">seed</a>
                         </li>
                         <li>
@@ -62,9 +62,6 @@
                         </li>
                         <li>
                                 <a class="variable" href="#TrainingConfig.callbacks">callbacks</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#TrainingConfig.allowed_charsets">allowed_charsets</a>
                         </li>
                         <li>
                                 <a class="function" href="#TrainingConfig.from_yaml">from_yaml</a>
@@ -79,10 +76,16 @@
                                             <a class="variable" href="#TrainingConfig.Config.training_config">training_config</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#TrainingConfig.Config.input_record_class">input_record_class</a>
+                                    </li>
+                                    <li>
                                             <a class="variable" href="#TrainingConfig.Config.model_path">model_path</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#TrainingConfig.Config.model">model</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#TrainingConfig.Config.charset">charset</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#TrainingConfig.Config.arbitrary_types_allowed">arbitrary_types_allowed</a>
@@ -100,10 +103,16 @@
                                 <a class="variable" href="#Config.training_config">training_config</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Config.input_record_class">input_record_class</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Config.model_path">model_path</a>
                         </li>
                         <li>
                                 <a class="variable" href="#Config.model">model</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Config.charset">charset</a>
                         </li>
                         <li>
                                 <a class="class" href="#Config.Config">Config.Config</a>
@@ -115,16 +124,28 @@
                                             <a class="variable" href="#Config.Config.training_config">training_config</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#Config.Config.input_record_class">input_record_class</a>
+                                    </li>
+                                    <li>
                                             <a class="variable" href="#Config.Config.model_path">model_path</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Config.Config.model">model</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#Config.Config.charset">charset</a>
+                                    </li>
+                                    <li>
                                             <a class="variable" href="#Config.Config.arbitrary_types_allowed">arbitrary_types_allowed</a>
                                     </li>
                             </ul>
 
+                        </li>
+                        <li>
+                                <a class="function" href="#Config.allowed_charsets">allowed_charsets</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Config.validate_input_record_class">validate_input_record_class</a>
                         </li>
                 </ul>
 
@@ -210,6 +231,9 @@
 
 <span class="kn">from</span> <span class="nn">fontai.config.core</span> <span class="kn">import</span> <span class="n">BaseConfigHandler</span><span class="p">,</span> <span class="n">SimpleClassInstantiator</span><span class="p">,</span> <span class="n">BasePipelineTransformConfig</span>
 <span class="kn">import</span> <span class="nn">fontai.prediction.input_processing</span> <span class="k">as</span> <span class="nn">input_processing</span>
+<span class="kn">import</span> <span class="nn">fontai.prediction.custom_filters</span> <span class="k">as</span> <span class="nn">custom_filters</span>
+<span class="kn">import</span> <span class="nn">fontai.prediction.custom_mappers</span> <span class="k">as</span> <span class="nn">custom_mappers</span>
+
 <span class="kn">import</span> <span class="nn">fontai.prediction.models</span> <span class="k">as</span> <span class="nn">custom_models</span>
 
 <span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
@@ -218,6 +242,7 @@
 <span class="kn">from</span> <span class="nn">tensorflow.random</span> <span class="kn">import</span> <span class="n">set_seed</span>
 
 <span class="kn">import</span> <span class="nn">fontai.prediction.callbacks</span> <span class="k">as</span> <span class="nn">custom_callbacks</span>
+<span class="kn">import</span> <span class="nn">fontai.io.records</span> <span class="k">as</span> <span class="nn">records</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -233,42 +258,22 @@
 <span class="sd">      steps_per_epoch (int): batches per epoch</span>
 <span class="sd">      optimizer (keras.optimizers.Optimizer): optimizer</span>
 <span class="sd">      loss (keras.losses.Loss): loss function</span>
-<span class="sd">      charset (str, optional): one of &#39;all&#39;, &#39;lowercase&#39;, &#39;uppercase&#39; and &#39;digits&#39;</span>
 <span class="sd">      filters t.List[t.Callable]: list of model input filter functions from `input_processing` module</span>
 <span class="sd">      seed (int) Tensorflow global random seed</span>
 <span class="sd">      metrics (t.List[str], optional): list of metrics to display</span>
 <span class="sd">      callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">batch_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
+  <span class="n">custom_filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="n">custom_mappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="n">batch_size</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span>
   <span class="n">epochs</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">steps_per_epoch</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">optimizer</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Optimizer</span>
   <span class="n">loss</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Loss</span>
-  <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
-  <span class="n">filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
   <span class="n">seed</span><span class="p">:</span> <span class="n">PositiveInt</span> <span class="o">=</span> <span class="mi">1</span>
   <span class="n">metrics</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
   <span class="n">callbacks</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">tf_callbacks</span><span class="o">.</span><span class="n">Callback</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
-  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Vlidator for charset attribute</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        charset (str): charset attribute</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        str: validated charset</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If charset is invalid</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">charset</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
   <span class="c1">#lr_shrink_factor: PositiveFloat</span>
 
   <span class="nd">@classmethod</span>
@@ -288,10 +293,19 @@
     <span class="c1"># the following objects are not primitive types and need to be instantiated from YAML definitions</span>
     <span class="n">args</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_handler</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="p">)</span>
     <span class="n">args</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_handler</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss&quot;</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="p">)</span>
-    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">input_processing</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+    
+    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="p">[]:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">custom_filters</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">)]</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="p">[]:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">custom_mappers</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
     
     <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callbacks&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">args</span><span class="p">[</span><span class="s2">&quot;callbacks&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">CallbackFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">yaml</span><span class="p">)</span> <span class="k">for</span> <span class="n">yaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callbacks&quot;</span><span class="p">)]</span>
@@ -309,17 +323,58 @@
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
+<span class="sd">      input_record_class (records.TfrWritable): Input schema class from the `textai.io.records` submodule</span>
 <span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
 <span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
+  <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span>
+  <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span>
 
   <span class="c1"># internal BaseModel configuration class</span>
   <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
     <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">charset</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_input_record_class</span><span class="p">(</span><span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        input_record_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">input_record_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">input_record_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">ModelFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -377,8 +432,8 @@
         <span class="n">model</span> <span class="o">=</span> <span class="n">constructor</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model schema did not match </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model schema did not match </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1">#print(f&quot;Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}&quot;)</span>
     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No valid schema matched provided model YAML; look at DEBUG log level for more info.&quot;</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
@@ -433,7 +488,7 @@
         <span class="n">yml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span><span class="o">.</span><span class="n">as_yaml</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEQUENTIAL_MODEL_SCHEMA</span><span class="p">)</span>
         <span class="n">materialised_kwargs</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_keras_sequential</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2"> does not match Sequential model schema.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2"> does not match Sequential model schema. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">custom_models</span><span class="p">,</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">materialised_kwargs</span><span class="p">)</span>
 
 
@@ -457,8 +512,9 @@
     <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tf_callbacks</span><span class="p">,</span> <span class="n">custom_callbacks</span><span class="p">]:</span>
       <span class="k">try</span><span class="p">:</span>
         <span class="n">callback</span> <span class="o">=</span> <span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">callback</span>
       <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error loading callback from YAML </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dict</span><span class="si">}</span><span class="s2"> from module </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error loading callback from YAML </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dict</span><span class="si">}</span><span class="s2"> from module </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provided YAML did not match any known callback.&quot;</span><span class="p">)</span>
 
 
@@ -473,10 +529,16 @@
 
   <span class="k">def</span> <span class="nf">get_config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">DATA_PREPROCESSING_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyList</span><span class="p">()</span>
+    <span class="c1">#self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+          <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()}))</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyList</span><span class="p">()</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_CONFIG_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
-      <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyNone</span><span class="p">(),</span>
       <span class="s2">&quot;epochs&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
@@ -493,17 +555,21 @@
         <span class="s2">&quot;callbacks&quot;</span><span class="p">,</span> 
         <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span><span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyNone</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
-        <span class="s2">&quot;filters&quot;</span><span class="p">,</span>
-        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATA_PREPROCESSING_SCHEMA</span>
+        <span class="s2">&quot;custom_filters&quot;</span><span class="p">,</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
+        <span class="s2">&quot;custom_mappers&quot;</span><span class="p">,</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span>
     <span class="p">})</span>
 
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">,</span><span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;LabeledChar&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="s2">&quot;model_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="s2">&quot;training&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Any</span><span class="p">(),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;uppercase&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;lowercase&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
        <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -520,6 +586,9 @@
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+    <span class="n">charset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+
+    <span class="n">input_record_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
     <span class="n">model_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
     <span class="n">training_config</span> <span class="o">=</span> <span class="n">TrainingConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training&quot;</span><span class="p">))</span>
@@ -527,11 +596,13 @@
     <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_factory</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">input_record_class</span><span class="p">,</span>
       <span class="n">input_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="p">,</span> 
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span>
       <span class="n">model_path</span> <span class="o">=</span> <span class="n">model_path</span><span class="p">,</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
       <span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
       <span class="n">yaml</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 
@@ -560,42 +631,22 @@
 <span class="sd">      steps_per_epoch (int): batches per epoch</span>
 <span class="sd">      optimizer (keras.optimizers.Optimizer): optimizer</span>
 <span class="sd">      loss (keras.losses.Loss): loss function</span>
-<span class="sd">      charset (str, optional): one of &#39;all&#39;, &#39;lowercase&#39;, &#39;uppercase&#39; and &#39;digits&#39;</span>
 <span class="sd">      filters t.List[t.Callable]: list of model input filter functions from `input_processing` module</span>
 <span class="sd">      seed (int) Tensorflow global random seed</span>
 <span class="sd">      metrics (t.List[str], optional): list of metrics to display</span>
 <span class="sd">      callbacks (t.List[tf_callbacks.Callback], optional): list of callbakcs to use at training time.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">batch_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
+  <span class="n">custom_filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="n">custom_mappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="n">batch_size</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span>
   <span class="n">epochs</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">steps_per_epoch</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">optimizer</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Optimizer</span>
   <span class="n">loss</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Loss</span>
-  <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
-  <span class="n">filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
   <span class="n">seed</span><span class="p">:</span> <span class="n">PositiveInt</span> <span class="o">=</span> <span class="mi">1</span>
   <span class="n">metrics</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
   <span class="n">callbacks</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">tf_callbacks</span><span class="o">.</span><span class="n">Callback</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
-  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Vlidator for charset attribute</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        charset (str): charset attribute</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        str: validated charset</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If charset is invalid</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">charset</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
   <span class="c1">#lr_shrink_factor: PositiveFloat</span>
 
   <span class="nd">@classmethod</span>
@@ -615,10 +666,19 @@
     <span class="c1"># the following objects are not primitive types and need to be instantiated from YAML definitions</span>
     <span class="n">args</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_handler</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="p">)</span>
     <span class="n">args</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_handler</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss&quot;</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="p">)</span>
-    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">input_processing</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+    
+    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="p">[]:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">custom_filters</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">)]</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="p">[]:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">custom_mappers</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
     
     <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callbacks&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">args</span><span class="p">[</span><span class="s2">&quot;callbacks&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">CallbackFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">yaml</span><span class="p">)</span> <span class="k">for</span> <span class="n">yaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callbacks&quot;</span><span class="p">)]</span>
@@ -643,7 +703,6 @@
 <li><strong>steps_per_epoch (int):</strong>  batches per epoch</li>
 <li><strong>optimizer (keras.optimizers.Optimizer):</strong>  optimizer</li>
 <li><strong>loss (keras.losses.Loss):</strong>  loss function</li>
-<li><strong>charset (str, optional):</strong>  one of 'all', 'lowercase', 'uppercase' and 'digits'</li>
 <li><strong>filters t.List[t.Callable]:</strong>  list of model input filter functions from <code>input_processing</code> module</li>
 <li>seed (int) Tensorflow global random seed</li>
 <li><strong>metrics (t.List[str], optional):</strong>  list of metrics to display</li>
@@ -652,10 +711,28 @@
 </div>
 
 
+                            <div id="TrainingConfig.custom_filters" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#TrainingConfig.custom_filters">#&nbsp;&nbsp</a>
+
+        <span class="name">custom_filters</span><span class="annotation">: List[Callable]</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="TrainingConfig.custom_mappers" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#TrainingConfig.custom_mappers">#&nbsp;&nbsp</a>
+
+        <span class="name">custom_mappers</span><span class="annotation">: List[Callable]</span>
+    </div>
+
+    
+
+                            </div>
                             <div id="TrainingConfig.batch_size" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#TrainingConfig.batch_size">#&nbsp;&nbsp</a>
 
-        <span class="name">batch_size</span><span class="annotation">: pydantic.types.PositiveInt</span>
+        <span class="name">batch_size</span><span class="annotation">: Union[pydantic.types.PositiveInt, NoneType]</span>
     </div>
 
     
@@ -697,24 +774,6 @@
     
 
                             </div>
-                            <div id="TrainingConfig.charset" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#TrainingConfig.charset">#&nbsp;&nbsp</a>
-
-        <span class="name">charset</span><span class="annotation">: str</span>
-    </div>
-
-    
-
-                            </div>
-                            <div id="TrainingConfig.filters" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#TrainingConfig.filters">#&nbsp;&nbsp</a>
-
-        <span class="name">filters</span><span class="annotation">: List[Callable]</span>
-    </div>
-
-    
-
-                            </div>
                             <div id="TrainingConfig.seed" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#TrainingConfig.seed">#&nbsp;&nbsp</a>
 
@@ -740,62 +799,6 @@
     </div>
 
     
-
-                            </div>
-                            <div id="TrainingConfig.allowed_charsets" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#TrainingConfig.allowed_charsets">#&nbsp;&nbsp</a>
-
-                <div class="decorator">@validator(&#39;charset&#39;)</div>
-
-            <span class="def">def</span>
-            <span class="name">allowed_charsets</span><span class="signature">(charset: str)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
-  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Vlidator for charset attribute</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        charset (str): charset attribute</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        str: validated charset</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If charset is invalid</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">charset</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Vlidator for charset attribute</p>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>charset (str):</strong>  charset attribute</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<blockquote>
-  <p>str: validated charset</p>
-</blockquote>
-
-<h6 id="raises">Raises</h6>
-
-<ul>
-<li><strong>ValueError:</strong>  If charset is invalid</li>
-</ul>
-</div>
-
 
                             </div>
                             <div id="TrainingConfig.from_yaml" class="classattr">
@@ -826,10 +829,19 @@
     <span class="c1"># the following objects are not primitive types and need to be instantiated from YAML definitions</span>
     <span class="n">args</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_handler</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="p">)</span>
     <span class="n">args</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_handler</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss&quot;</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="p">)</span>
-    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">input_processing</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+    
+    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="p">[]:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">custom_filters</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">)]</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_filters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+    <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="p">[]:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">custom_mappers</span><span class="p">,</span> <span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">subyaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">subyaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">args</span><span class="p">[</span><span class="s2">&quot;custom_mappers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
     
     <span class="k">if</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callbacks&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">args</span><span class="p">[</span><span class="s2">&quot;callbacks&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">CallbackFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">yaml</span><span class="p">)</span> <span class="k">for</span> <span class="n">yaml</span> <span class="ow">in</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callbacks&quot;</span><span class="p">)]</span>
@@ -896,17 +908,58 @@
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
+<span class="sd">      input_record_class (records.TfrWritable): Input schema class from the `textai.io.records` submodule</span>
 <span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
 <span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
+  <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span>
+  <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span>
 
   <span class="c1"># internal BaseModel configuration class</span>
   <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
     <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">charset</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_input_record_class</span><span class="p">(</span><span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        input_record_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">input_record_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">input_record_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -933,6 +986,15 @@
     
 
                             </div>
+                            <div id="TrainingConfig.Config.input_record_class" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#TrainingConfig.Config.input_record_class">#&nbsp;&nbsp</a>
+
+        <span class="name">input_record_class</span><span class="annotation">: type</span>
+    </div>
+
+    
+
+                            </div>
                             <div id="TrainingConfig.Config.model_path" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#TrainingConfig.Config.model_path">#&nbsp;&nbsp</a>
 
@@ -946,6 +1008,15 @@
                                             <div class="attr variable"><a class="headerlink" href="#TrainingConfig.Config.model">#&nbsp;&nbsp</a>
 
         <span class="name">model</span><span class="annotation">: tensorflow.python.keras.engine.training.Model</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="TrainingConfig.Config.charset" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#TrainingConfig.Config.charset">#&nbsp;&nbsp</a>
+
+        <span class="name">charset</span><span class="annotation">: str</span>
     </div>
 
     
@@ -977,17 +1048,58 @@
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
+<span class="sd">      input_record_class (records.TfrWritable): Input schema class from the `textai.io.records` submodule</span>
 <span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
 <span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
+  <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span>
+  <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span>
 
   <span class="c1"># internal BaseModel configuration class</span>
   <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
     <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">charset</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_input_record_class</span><span class="p">(</span><span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        input_record_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">input_record_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">input_record_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -997,6 +1109,7 @@
 <h6 id="args">Args</h6>
 
 <ul>
+<li><strong>input_record_class (records.TfrWritable):</strong>  Input schema class from the <code>textai.io.records</code> submodule</li>
 <li><strong>training_config (TrainingConfig):</strong>  Runtime configuration for training routine</li>
 <li><strong>model (keras.Model):</strong>  Model instance that's going to be trained</li>
 </ul>
@@ -1007,6 +1120,15 @@
                                             <div class="attr variable"><a class="headerlink" href="#Config.training_config">#&nbsp;&nbsp</a>
 
         <span class="name">training_config</span><span class="annotation">: <a href="#TrainingConfig">fontai.config.prediction.TrainingConfig</a></span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Config.input_record_class" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.input_record_class">#&nbsp;&nbsp</a>
+
+        <span class="name">input_record_class</span><span class="annotation">: type</span>
     </div>
 
     
@@ -1028,6 +1150,127 @@
     </div>
 
     
+
+                            </div>
+                            <div id="Config.charset" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.charset">#&nbsp;&nbsp</a>
+
+        <span class="name">charset</span><span class="annotation">: str</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Config.allowed_charsets" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Config.allowed_charsets">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@validator(&#39;charset&#39;)</div>
+
+            <span class="def">def</span>
+            <span class="name">allowed_charsets</span><span class="signature">(charset: str)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">charset</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Validator for charset attribute</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>charset (str):</strong>  charset attribute</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>str: validated charset</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError:</strong>  If charset is invalid</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="Config.validate_input_record_class" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Config.validate_input_record_class">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@validator(&#39;input_record_class&#39;)</div>
+
+            <span class="def">def</span>
+            <span class="name">validate_input_record_class</span><span class="signature">(input_record_class: type)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_input_record_class</span><span class="p">(</span><span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        input_record_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">input_record_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">input_record_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Validate input record class</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li>input_record_class (type)</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>type: Validated record class</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>TypeError:</strong>  If record class not in allowed set</li>
+</ul>
+</div>
+
 
                             </div>
                             <div class="inherited">
@@ -1074,17 +1317,58 @@
 <span class="sd">  Wrapper class for the configuration of the ModelTrainingStage class</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
+<span class="sd">      input_record_class (records.TfrWritable): Input schema class from the `textai.io.records` submodule</span>
 <span class="sd">      training_config (TrainingConfig): Runtime configuration for training routine</span>
 <span class="sd">      model (keras.Model): Model instance that&#39;s going to be trained</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">training_config</span><span class="p">:</span> <span class="n">TrainingConfig</span>
+  <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span>
   <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span>
+  <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span>
 
   <span class="c1"># internal BaseModel configuration class</span>
   <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
     <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">allowed_charsets</span><span class="p">(</span><span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validator for charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        charset (str): charset attribute</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: validated charset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If charset is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allowed_vals</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;uppercase&quot;</span><span class="p">,</span><span class="s2">&quot;lowercase&quot;</span><span class="p">,</span><span class="s2">&quot;digits&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">allowed_vals</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">charset</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset must be one of </span><span class="si">{</span><span class="n">allowed_vals</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+  <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">validate_input_record_class</span><span class="p">(</span><span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validate input record class</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        input_record_class (type)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        type: Validated record class</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If record class not in allowed set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">records</span><span class="o">.</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">LabeledFont</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">input_record_class</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">input_record_class</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;supported output_record_classes are </span><span class="si">{</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1111,6 +1395,15 @@
     
 
                             </div>
+                            <div id="Config.Config.input_record_class" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.Config.input_record_class">#&nbsp;&nbsp</a>
+
+        <span class="name">input_record_class</span><span class="annotation">: type</span>
+    </div>
+
+    
+
+                            </div>
                             <div id="Config.Config.model_path" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Config.Config.model_path">#&nbsp;&nbsp</a>
 
@@ -1124,6 +1417,15 @@
                                             <div class="attr variable"><a class="headerlink" href="#Config.Config.model">#&nbsp;&nbsp</a>
 
         <span class="name">model</span><span class="annotation">: tensorflow.python.keras.engine.training.Model</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Config.Config.charset" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.Config.charset">#&nbsp;&nbsp</a>
+
+        <span class="name">charset</span><span class="annotation">: str</span>
     </div>
 
     
@@ -1205,8 +1507,8 @@
         <span class="n">model</span> <span class="o">=</span> <span class="n">constructor</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model schema did not match </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model schema did not match </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1">#print(f&quot;Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}&quot;)</span>
     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No valid schema matched provided model YAML; look at DEBUG log level for more info.&quot;</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">):</span>
@@ -1261,7 +1563,7 @@
         <span class="n">yml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span><span class="o">.</span><span class="n">as_yaml</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEQUENTIAL_MODEL_SCHEMA</span><span class="p">)</span>
         <span class="n">materialised_kwargs</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_keras_sequential</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2"> does not match Sequential model schema.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2"> does not match Sequential model schema. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">custom_models</span><span class="p">,</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">materialised_kwargs</span><span class="p">)</span>
 </pre></div>
 
@@ -1343,8 +1645,8 @@
         <span class="n">model</span> <span class="o">=</span> <span class="n">constructor</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model schema did not match </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model schema did not match </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1">#print(f&quot;Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}&quot;)</span>
     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No valid schema matched provided model YAML; look at DEBUG log level for more info.&quot;</span><span class="p">)</span>
 </pre></div>
 
@@ -1495,7 +1797,7 @@
         <span class="n">yml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span><span class="o">.</span><span class="n">as_yaml</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEQUENTIAL_MODEL_SCHEMA</span><span class="p">)</span>
         <span class="n">materialised_kwargs</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_keras_sequential</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2"> does not match Sequential model schema.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2"> does not match Sequential model schema. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">custom_models</span><span class="p">,</span> <span class="n">model_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">materialised_kwargs</span><span class="p">)</span>
 </pre></div>
 
@@ -1550,8 +1852,9 @@
     <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tf_callbacks</span><span class="p">,</span> <span class="n">custom_callbacks</span><span class="p">]:</span>
       <span class="k">try</span><span class="p">:</span>
         <span class="n">callback</span> <span class="o">=</span> <span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">callback</span>
       <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error loading callback from YAML </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dict</span><span class="si">}</span><span class="s2"> from module </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error loading callback from YAML </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dict</span><span class="si">}</span><span class="s2"> from module </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provided YAML did not match any known callback.&quot;</span><span class="p">)</span>
 </pre></div>
 
@@ -1601,8 +1904,9 @@
     <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tf_callbacks</span><span class="p">,</span> <span class="n">custom_callbacks</span><span class="p">]:</span>
       <span class="k">try</span><span class="p">:</span>
         <span class="n">callback</span> <span class="o">=</span> <span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">callback</span>
       <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error loading callback from YAML </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dict</span><span class="si">}</span><span class="s2"> from module </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error loading callback from YAML </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dict</span><span class="si">}</span><span class="s2"> from module </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provided YAML did not match any known callback.&quot;</span><span class="p">)</span>
 </pre></div>
 
@@ -1648,10 +1952,16 @@
 
   <span class="k">def</span> <span class="nf">get_config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">DATA_PREPROCESSING_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyList</span><span class="p">()</span>
+    <span class="c1">#self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+          <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()}))</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyList</span><span class="p">()</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_CONFIG_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
-      <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyNone</span><span class="p">(),</span>
       <span class="s2">&quot;epochs&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
@@ -1668,17 +1978,21 @@
         <span class="s2">&quot;callbacks&quot;</span><span class="p">,</span> 
         <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span><span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyNone</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
-        <span class="s2">&quot;filters&quot;</span><span class="p">,</span>
-        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATA_PREPROCESSING_SCHEMA</span>
+        <span class="s2">&quot;custom_filters&quot;</span><span class="p">,</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
+        <span class="s2">&quot;custom_mappers&quot;</span><span class="p">,</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span>
     <span class="p">})</span>
 
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">,</span><span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;LabeledChar&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="s2">&quot;model_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="s2">&quot;training&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Any</span><span class="p">(),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;uppercase&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;lowercase&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
        <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -1695,6 +2009,9 @@
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+    <span class="n">charset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+
+    <span class="n">input_record_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
     <span class="n">model_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
     <span class="n">training_config</span> <span class="o">=</span> <span class="n">TrainingConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training&quot;</span><span class="p">))</span>
@@ -1702,11 +2019,13 @@
     <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_factory</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">input_record_class</span><span class="p">,</span>
       <span class="n">input_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="p">,</span> 
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span>
       <span class="n">model_path</span> <span class="o">=</span> <span class="n">model_path</span><span class="p">,</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
       <span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
       <span class="n">yaml</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 
@@ -1747,10 +2066,16 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">get_config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">DATA_PREPROCESSING_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyList</span><span class="p">()</span>
+    <span class="c1">#self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+          <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()}))</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyList</span><span class="p">()</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_CONFIG_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
-      <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyNone</span><span class="p">(),</span>
       <span class="s2">&quot;epochs&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
@@ -1767,17 +2092,21 @@
         <span class="s2">&quot;callbacks&quot;</span><span class="p">,</span> 
         <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span><span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyNone</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
-        <span class="s2">&quot;filters&quot;</span><span class="p">,</span>
-        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATA_PREPROCESSING_SCHEMA</span>
+        <span class="s2">&quot;custom_filters&quot;</span><span class="p">,</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span>
+        <span class="s2">&quot;custom_mappers&quot;</span><span class="p">,</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="p">[]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">CUSTOM_FUNCTIONS</span>
     <span class="p">})</span>
 
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span> 
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">,</span><span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;LabeledChar&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="s2">&quot;model_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="s2">&quot;training&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_CONFIG_SCHEMA</span><span class="p">,</span>
       <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Any</span><span class="p">(),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;uppercase&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;lowercase&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
        <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -1813,6 +2142,9 @@
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">input_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+    <span class="n">charset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+
+    <span class="n">input_record_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_record_class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
     <span class="n">model_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_path&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
     <span class="n">training_config</span> <span class="o">=</span> <span class="n">TrainingConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training&quot;</span><span class="p">))</span>
@@ -1820,11 +2152,13 @@
     <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_factory</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">input_record_class</span><span class="p">,</span>
       <span class="n">input_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="p">,</span> 
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span>
       <span class="n">model_path</span> <span class="o">=</span> <span class="n">model_path</span><span class="p">,</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
       <span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span><span class="p">,</span>
+      <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
       <span class="n">yaml</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 
@@ -1852,7 +2186,6 @@
                                 <dl>
                                     <div><dt><a href="core.html#BaseConfigHandler">fontai.config.core.BaseConfigHandler</a></dt>
                                 <dd id="ConfigHandler.__init__" class="function"><a href="core.html#BaseConfigHandler.__init__">BaseConfigHandler</a></dd>
-                <dd id="ConfigHandler.CONFIG_SCHEMA" class="variable"><a href="core.html#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a></dd>
                 <dd id="ConfigHandler.from_string" class="function"><a href="core.html#BaseConfigHandler.from_string">from_string</a></dd>
                 <dd id="ConfigHandler.from_file" class="function"><a href="core.html#BaseConfigHandler.from_file">from_file</a></dd>
 

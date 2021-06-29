@@ -1,4 +1,5 @@
-output_schema_class: LabeledChar
+# This config outputs grouped images for each font; this is useful to traing some custom architectures
+output_record_class: LabeledFont
 input_path: data/raw
 output_path: "data/preprocessed"
 output_array_size: 64

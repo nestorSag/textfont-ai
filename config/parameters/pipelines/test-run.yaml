@@ -1,0 +1,8 @@
+# Test the library end-to-end using ~1k fonts from google and training a classifier
+stages:
+- class: FontIngestion
+  yaml_config_path: config/parameters/ingestion/google-fonts-ingestion.yaml
+- class: LabeledExampleExtractor
+  yaml_config_path: config/parameters/preprocessing/local-char-processing.yaml
+- class: Predictor
+  yaml_config_path: config/parameters/models/classifier-uppercase.yaml

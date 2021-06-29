@@ -255,7 +255,7 @@
 <span class="sd">        writer (tf.io.TFRecordWriter): writer object</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -312,7 +312,7 @@
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
+    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tf_example</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
     <span class="n">obj_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">:</span>
@@ -423,7 +423,7 @@
 <span class="sd">        writer (tf.io.TFRecordWriter): writer object</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -480,7 +480,7 @@
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
+    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tf_example</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
     <span class="n">obj_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">:</span>
@@ -520,12 +520,12 @@
                                         <div class="attr function"><a class="headerlink" href="#TfrWriter.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">TfrWriter</span><span class="signature">(output_path: str, max_output_file_size: float = 128.0)</span>
+            <span class="name">TfrWriter</span><span class="signature">(output_path: str, max_output_file_size: float = 64.0)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -658,7 +658,7 @@
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tfr</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
+    <span class="n">tf_example</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_tf_example</span><span class="p">()</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
     <span class="n">obj_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">tf_example</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shard_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">:</span>

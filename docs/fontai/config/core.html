@@ -64,6 +64,12 @@
                                 <a class="function" href="#SimpleClassInstantiator.__init__">SimpleClassInstantiator</a>
                         </li>
                         <li>
+                                <a class="variable" href="#SimpleClassInstantiator.ANY_PRIMITIVES">ANY_PRIMITIVES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SimpleClassInstantiator.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#SimpleClassInstantiator.get_instance">get_instance</a>
                         </li>
                 </ul>
@@ -72,9 +78,6 @@
             <li>
                     <a class="class" href="#BaseConfigHandler">BaseConfigHandler</a>
                             <ul class="memberlist">
-                        <li>
-                                <a class="variable" href="#BaseConfigHandler.CONFIG_SCHEMA">CONFIG_SCHEMA</a>
-                        </li>
                         <li>
                                 <a class="function" href="#BaseConfigHandler.from_string">from_string</a>
                         </li>
@@ -146,15 +149,14 @@
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Wrapper for some useful schema definitions and simple class instantiations.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">())</span>
+  <span class="n">ANY_PRIMITIVES</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">())</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
-          <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
-          <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
-            <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()})</span>
+  <span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+          <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
+          <span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()})</span>
 
   <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -171,7 +173,7 @@
       <span class="n">yaml</span><span class="o">.</span><span class="n">revalidate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span>
       <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot instantiate class </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> from global namespace: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot instantiate class </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> from namespace </span><span class="si">{</span><span class="n">scope</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
 
@@ -192,21 +194,8 @@
 
     <span class="bp">self</span><span class="o">.</span><span class="n">other_setup</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_schema</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_schema</span><span class="p">()</span>
 
-
-  <span class="c1"># def instantiate_io_handlers(self, yaml: yml.YAML):</span>
-  <span class="c1">#   if yaml.get(&quot;input_path&quot;).data is not None and yaml.get(&quot;reader&quot;).data is not None:</span>
-  <span class="c1">#     reader = globals()[yaml.get(&quot;reader&quot;).data](input_path = yaml.get(&quot;input_path&quot;).data)</span>
-  <span class="c1">#   else:</span>
-  <span class="c1">#     reader = None</span>
-
-  <span class="c1">#   if yaml.get(&quot;output_path&quot;).data is not None and yaml.get(&quot;writer&quot;).data is not None:</span>
-  <span class="c1">#     writer = globals()[yaml.get(&quot;writer&quot;).data](output_path = yaml.get(&quot;output_path&quot;).data)</span>
-  <span class="c1">#   else:</span>
-  <span class="c1">#     writer = None</span>
-
-  <span class="c1">#   return reader, writer</span>
 
   <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -407,15 +396,14 @@
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Wrapper for some useful schema definitions and simple class instantiations.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">())</span>
+  <span class="n">ANY_PRIMITIVES</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">())</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
-          <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
-          <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
-            <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()})</span>
+  <span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+          <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
+          <span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()})</span>
 
   <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">YAML</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -432,7 +420,7 @@
       <span class="n">yaml</span><span class="o">.</span><span class="n">revalidate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span>
       <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot instantiate class </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> from global namespace: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot instantiate class </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> from namespace </span><span class="si">{</span><span class="n">scope</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -448,20 +436,24 @@
             <span class="name">SimpleClassInstantiator</span><span class="signature">()</span>
     </div>
 
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+    
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">())</span>
+                            </div>
+                            <div id="SimpleClassInstantiator.ANY_PRIMITIVES" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#SimpleClassInstantiator.ANY_PRIMITIVES">#&nbsp;&nbsp</a>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span>
-          <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
-          <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
-            <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()})</span>
-</pre></div>
+        <span class="name">ANY_PRIMITIVES</span><span class="default_value"> = Int() | Float() | Bool() | Str() | Seq(Int())</span>
+    </div>
 
-        </details>
+    
+
+                            </div>
+                            <div id="SimpleClassInstantiator.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#SimpleClassInstantiator.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA">#&nbsp;&nbsp</a>
+
+        <span class="name">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="default_value"> = Map({&#39;class&#39;: Str(), Optional(&#34;kwargs&#34;): MapPattern(Str(), Int() | Float() | Bool() | Str() | Seq(Int())) | EmptyDict()})</span>
+    </div>
 
     
 
@@ -491,7 +483,7 @@
       <span class="n">yaml</span><span class="o">.</span><span class="n">revalidate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">)</span>
       <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)(</span><span class="o">**</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot instantiate class </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> from global namespace: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot instantiate class </span><span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> from namespace </span><span class="si">{</span><span class="n">scope</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -543,21 +535,8 @@
 
     <span class="bp">self</span><span class="o">.</span><span class="n">other_setup</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_schema</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_SCHEMA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config_schema</span><span class="p">()</span>
 
-
-  <span class="c1"># def instantiate_io_handlers(self, yaml: yml.YAML):</span>
-  <span class="c1">#   if yaml.get(&quot;input_path&quot;).data is not None and yaml.get(&quot;reader&quot;).data is not None:</span>
-  <span class="c1">#     reader = globals()[yaml.get(&quot;reader&quot;).data](input_path = yaml.get(&quot;input_path&quot;).data)</span>
-  <span class="c1">#   else:</span>
-  <span class="c1">#     reader = None</span>
-
-  <span class="c1">#   if yaml.get(&quot;output_path&quot;).data is not None and yaml.get(&quot;writer&quot;).data is not None:</span>
-  <span class="c1">#     writer = globals()[yaml.get(&quot;writer&quot;).data](output_path = yaml.get(&quot;output_path&quot;).data)</span>
-  <span class="c1">#   else:</span>
-  <span class="c1">#     writer = None</span>
-
-  <span class="c1">#   return reader, writer</span>
 
   <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePipelineTransformConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -620,15 +599,6 @@
 </div>
 
 
-                            <div id="BaseConfigHandler.CONFIG_SCHEMA" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#BaseConfigHandler.CONFIG_SCHEMA">#&nbsp;&nbsp</a>
-
-        <span class="name">CONFIG_SCHEMA</span><span class="annotation">: Union[strictyaml.compound.Map, NoneType]</span>
-    </div>
-
-    
-
-                            </div>
                             <div id="BaseConfigHandler.from_string" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseConfigHandler.from_string">#&nbsp;&nbsp</a>
 

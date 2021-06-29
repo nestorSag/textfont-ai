@@ -91,13 +91,13 @@
 
             </li>
             <li>
-                    <a class="class" href="#FontFileToLabeledExamples">FontFileToLabeledExamples</a>
+                    <a class="class" href="#FontFileToLabeledChars">FontFileToLabeledChars</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#FontFileToLabeledExamples.__init__">FontFileToLabeledExamples</a>
+                                <a class="function" href="#FontFileToLabeledChars.__init__">FontFileToLabeledChars</a>
                         </li>
                         <li>
-                                <a class="function" href="#FontFileToLabeledExamples.raw_map">raw_map</a>
+                                <a class="function" href="#FontFileToLabeledChars.raw_map">raw_map</a>
                         </li>
                 </ul>
 
@@ -127,6 +127,39 @@
 
             </li>
             <li>
+                    <a class="class" href="#FontFileToLabeledFont">FontFileToLabeledFont</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#FontFileToLabeledFont.raw_map">raw_map</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#FontMapper">FontMapper</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#FontMapper.__init__">FontMapper</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#FontMapper.raw_map">raw_map</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#FeatureCropperAndResizer">FeatureCropperAndResizer</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#FeatureCropperAndResizer.__init__">FeatureCropperAndResizer</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#FeatureCropperAndResizer.raw_map">raw_map</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
                     <a class="class" href="#Writer">Writer</a>
                             <ul class="memberlist">
                         <li>
@@ -137,6 +170,18 @@
                         </li>
                         <li>
                                 <a class="function" href="#Writer.teardown">teardown</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#PipelineFactory">PipelineFactory</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#PipelineFactory.__init__">PipelineFactory</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#PipelineFactory.create">create</a>
                         </li>
                 </ul>
 
@@ -185,7 +230,7 @@
 <span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">InMemoryFontfileHolder</span><span class="p">,</span> <span class="n">InMemoryFile</span>
 <span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">BatchWriter</span><span class="p">,</span> <span class="n">TfrWriter</span>
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
-<span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">LabeledExample</span>
+<span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">LabeledChar</span><span class="p">,</span> <span class="n">LabeledFont</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -344,7 +389,7 @@
 
 
 
-<span class="k">class</span> <span class="nc">FontFileToLabeledExamples</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">FontFileToLabeledChars</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to image features and a fontname string indicating the original filename</span>
 
@@ -375,7 +420,7 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exctracting arrays from file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="n">font</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">deserialise</span><span class="p">(</span><span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_extraction_size</span><span class="p">)</span>
@@ -392,7 +437,7 @@
           <span class="n">array</span> <span class="o">=</span> <span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">bf2</span><span class="o">.</span><span class="n">getvalue</span><span class="p">(),</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
 
         <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">array</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">char</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">array</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">char</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while reading char &#39;</span><span class="si">{</span><span class="n">char</span><span class="si">}</span><span class="s2">&#39; from font file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
 
@@ -404,19 +449,19 @@
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">nonzero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">example</span><span class="o">.</span><span class="n">features</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nonzero</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="ow">or</span> <span class="n">nonzero</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,):</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Empty image found. ignoring.&quot;</span><span class="p">)</span>
       <span class="k">return</span>
-      <span class="c1">#yield key, LabeledExample(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)</span>
+      <span class="c1">#yield key, LabeledChar(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">h_bound</span><span class="p">,</span> <span class="n">w_bound</span> <span class="o">=</span> <span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">nonzero</span><span class="p">]</span>
       <span class="n">h</span> <span class="o">=</span> <span class="n">h_bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
       <span class="n">w</span> <span class="o">=</span> <span class="n">w_bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
       <span class="c1">#crop and map to png</span>
       <span class="n">cropped</span> <span class="o">=</span> <span class="n">example</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]:(</span><span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">h</span><span class="p">),</span><span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]:(</span><span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span>
-      <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">cropped</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span>
+      <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">cropped</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">FeatureResizer</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
@@ -434,7 +479,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">=</span> <span class="mi">64</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    resize given image to a squared output image</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -456,38 +501,91 @@
         <span class="n">h_pad</span><span class="p">,</span> <span class="n">w_pad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">-</span> <span class="n">resized_h</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">-</span> <span class="n">resized_w</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">output</span><span class="p">[</span><span class="n">h_pad</span><span class="p">:(</span><span class="n">h_pad</span><span class="o">+</span><span class="n">resized_h</span><span class="p">),</span><span class="n">w_pad</span><span class="p">:(</span><span class="n">w_pad</span><span class="o">+</span><span class="n">resized_w</span><span class="p">)]</span> <span class="o">=</span> <span class="n">resized</span>
         <span class="c1"># make the image binary</span>
-        <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while resizing array: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
       <span class="k">return</span>
 
 
 
-<span class="c1"># class Reader(beam.DoFn):</span>
-<span class="c1">#   &quot;&quot;&quot;</span>
-<span class="c1">#   Beam compatible class to use package&#39;s reader classes to retrieve files</span>
-  
-<span class="c1">#   Attributes:</span>
-<span class="c1">#       reader (BatchReader): An instance inheriting from the BathReader class</span>
-  
-<span class="c1">#   &quot;&quot;&quot;</span>
-<span class="c1">#   def __init__(self, reader: BatchReader):</span>
-<span class="c1">#     self.reader = reader</span>
-<span class="c1">#   def process(self, path: str) -&gt; None:</span>
-<span class="c1">#     try:</span>
-<span class="c1">#       return reader.get_files()</span>
-<span class="c1">#     except Exception as e:</span>
-<span class="c1">#       logging.exception(f&quot;error reading file {path}: {e}&quot;)</span>
 
-<span class="c1">#   def teardown(self):</span>
-<span class="c1">#     self.writer.close()</span>
+<span class="k">class</span> <span class="nc">FontFileToLabeledFont</span><span class="p">(</span><span class="n">FontFileToLabeledChars</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+      <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+      <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">yield</span> <span class="n">LabeledFont</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">fontname</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span>
+
+
+
+<span class="k">class</span> <span class="nc">FontMapper</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Applies an ObjectMapper transformation to every character in a LabeledFont object</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      mapper (ObjectMapper): Core transformation</span>
+<span class="sd">  </span>
+<span class="sd">  </span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapper</span><span class="p">:</span> <span class="n">ObjectMapper</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">mapper</span> <span class="o">=</span> <span class="n">mapper</span>
+
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alphabet</span><span class="p">:</span> <span class="n">LabeledFont</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">alphabet</span><span class="p">:</span>
+      <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+        <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+        <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">yield</span> <span class="n">LabeledFont</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">fontname</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span>
+
+
+<span class="k">class</span> <span class="nc">FeatureCropperAndResizer</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+  
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      cropper (ObjectMapper)</span>
+<span class="sd">      resizer (ObjectMapper)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_size</span> <span class="o">=</span> <span class="mi">64</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        output_size (int, optional): height and width of output array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">cropper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resizer</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">for</span> <span class="n">cropped</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cropper</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+      <span class="k">for</span> <span class="n">resized</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">resizer</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">cropped</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">resized</span>
 
 
 
 
 <span class="k">class</span> <span class="nc">Writer</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">DoFn</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">  Takes instances of LabeledExamples and writes them to a tensorflow record file.</span>
+<span class="sd">  Takes instances of LabeledChar and writes them to a tensorflow record file.</span>
 <span class="sd">  </span>
 <span class="sd">  Attributes:</span>
 <span class="sd">      output_path (str): Output path</span>
@@ -495,7 +593,7 @@
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">BatchWriter</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">writer</span>
-  <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -503,6 +601,75 @@
 
   <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+
+<span class="k">class</span> <span class="nc">PipelineFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+  <span class="sd">&quot;&quot;&quot;Factory class to construct core transformation sequence for preprocessing font files</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> 
+    <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        output_record_class (type): Class of output record schema, inheriting from TfrWritable</span>
+<span class="sd">        charset (str): String with characters to be extracted</span>
+<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
+<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
+<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
+<span class="sd">        output_array_size (int): Final character image size</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        PipelineExecutor: Procesing transformation object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledChar</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledChars</span><span class="p">(</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+            <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+            <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+            <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+        <span class="p">)]</span>
+      <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledFont</span><span class="p">:</span>
+
+      <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledFont</span><span class="p">(</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+            <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+            <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+            <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontMapper</span><span class="p">(</span>
+            <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropperAndResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+        <span class="p">))]</span>
+      <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output schema class not recognised: </span><span class="si">{</span><span class="n">output_record_class</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1180,18 +1347,18 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
                                 </dl>
                             </div>
                 </section>
-                <section id="FontFileToLabeledExamples">
+                <section id="FontFileToLabeledChars">
                                 <div class="attr class">
-        <a class="headerlink" href="#FontFileToLabeledExamples">#&nbsp;&nbsp</a>
+        <a class="headerlink" href="#FontFileToLabeledChars">#&nbsp;&nbsp</a>
 
         
         <span class="def">class</span>
-        <span class="name">FontFileToLabeledExamples</span><wbr>(<span class="base"><a href="#ObjectMapper">ObjectMapper</a></span>):
+        <span class="name">FontFileToLabeledChars</span><wbr>(<span class="base"><a href="#ObjectMapper">ObjectMapper</a></span>):
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FontFileToLabeledExamples</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FontFileToLabeledChars</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to image features and a fontname string indicating the original filename</span>
 
@@ -1222,7 +1389,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
     <span class="bp">self</span><span class="o">.</span><span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exctracting arrays from file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="n">font</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">deserialise</span><span class="p">(</span><span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_extraction_size</span><span class="p">)</span>
@@ -1239,7 +1406,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
           <span class="n">array</span> <span class="o">=</span> <span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">bf2</span><span class="o">.</span><span class="n">getvalue</span><span class="p">(),</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
 
         <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">array</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">char</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">array</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">char</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while reading char &#39;</span><span class="si">{</span><span class="n">char</span><span class="si">}</span><span class="s2">&#39; from font file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1250,11 +1417,11 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 </div>
 
 
-                            <div id="FontFileToLabeledExamples.__init__" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#FontFileToLabeledExamples.__init__">#&nbsp;&nbsp</a>
+                            <div id="FontFileToLabeledChars.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FontFileToLabeledChars.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">FontFileToLabeledExamples</span><span class="signature">(
+            <span class="name">FontFileToLabeledChars</span><span class="signature">(
     charset=&#39;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&#39;,
     font_extraction_size=100,
     canvas_size=500,
@@ -1311,20 +1478,20 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 
 
                             </div>
-                            <div id="FontFileToLabeledExamples.raw_map" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#FontFileToLabeledExamples.raw_map">#&nbsp;&nbsp</a>
+                            <div id="FontFileToLabeledChars.raw_map" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FontFileToLabeledChars.raw_map">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
             <span class="name">raw_map</span><span class="signature">(
     self,
     file: <a href="../io/formats.html#InMemoryFontfileHolder">fontai.io.formats.InMemoryFontfileHolder</a>
-) -&gt; Generator[<a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>, NoneType, NoneType]</span>:
+) -&gt; Generator[<a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exctracting arrays from file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="n">font</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">deserialise</span><span class="p">(</span><span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_extraction_size</span><span class="p">)</span>
@@ -1341,7 +1508,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
           <span class="n">array</span> <span class="o">=</span> <span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">bf2</span><span class="o">.</span><span class="n">getvalue</span><span class="p">(),</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
 
         <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">array</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">char</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">array</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">char</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while reading char &#39;</span><span class="si">{</span><span class="n">char</span><span class="si">}</span><span class="s2">&#39; from font file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1363,7 +1530,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#ObjectMapper">ObjectMapper</a></dt>
-                                <dd id="FontFileToLabeledExamples.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
+                                <dd id="FontFileToLabeledChars.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
 
             </div>
                                 </dl>
@@ -1387,19 +1554,19 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">nonzero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">example</span><span class="o">.</span><span class="n">features</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nonzero</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="ow">or</span> <span class="n">nonzero</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,):</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Empty image found. ignoring.&quot;</span><span class="p">)</span>
       <span class="k">return</span>
-      <span class="c1">#yield key, LabeledExample(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)</span>
+      <span class="c1">#yield key, LabeledChar(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">h_bound</span><span class="p">,</span> <span class="n">w_bound</span> <span class="o">=</span> <span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">nonzero</span><span class="p">]</span>
       <span class="n">h</span> <span class="o">=</span> <span class="n">h_bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
       <span class="n">w</span> <span class="o">=</span> <span class="n">w_bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
       <span class="c1">#crop and map to png</span>
       <span class="n">cropped</span> <span class="o">=</span> <span class="n">example</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]:(</span><span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">h</span><span class="p">),</span><span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]:(</span><span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span>
-      <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">cropped</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span>
+      <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">cropped</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1426,25 +1593,25 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
             <span class="def">def</span>
             <span class="name">raw_map</span><span class="signature">(
     self,
-    example: <a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>
-) -&gt; Generator[<a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>, NoneType, NoneType]</span>:
+    example: <a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>
+) -&gt; Generator[<a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">nonzero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">example</span><span class="o">.</span><span class="n">features</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nonzero</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="ow">or</span> <span class="n">nonzero</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,):</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Empty image found. ignoring.&quot;</span><span class="p">)</span>
       <span class="k">return</span>
-      <span class="c1">#yield key, LabeledExample(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)</span>
+      <span class="c1">#yield key, LabeledChar(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">h_bound</span><span class="p">,</span> <span class="n">w_bound</span> <span class="o">=</span> <span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">nonzero</span><span class="p">]</span>
       <span class="n">h</span> <span class="o">=</span> <span class="n">h_bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
       <span class="n">w</span> <span class="o">=</span> <span class="n">w_bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
       <span class="c1">#crop and map to png</span>
       <span class="n">cropped</span> <span class="o">=</span> <span class="n">example</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]:(</span><span class="n">h_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">h</span><span class="p">),</span><span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]:(</span><span class="n">w_bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span>
-      <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">cropped</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span>
+      <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">cropped</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="n">example</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1496,7 +1663,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">=</span> <span class="mi">64</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    resize given image to a squared output image</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1518,7 +1685,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
         <span class="n">h_pad</span><span class="p">,</span> <span class="n">w_pad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">-</span> <span class="n">resized_h</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">-</span> <span class="n">resized_w</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">output</span><span class="p">[</span><span class="n">h_pad</span><span class="p">:(</span><span class="n">h_pad</span><span class="o">+</span><span class="n">resized_h</span><span class="p">),</span><span class="n">w_pad</span><span class="p">:(</span><span class="n">w_pad</span><span class="o">+</span><span class="n">resized_w</span><span class="p">)]</span> <span class="o">=</span> <span class="n">resized</span>
         <span class="c1"># make the image binary</span>
-        <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while resizing array: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
       <span class="k">return</span>
@@ -1566,13 +1733,13 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
             <span class="def">def</span>
             <span class="name">raw_map</span><span class="signature">(
     self,
-    example: <a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>
-) -&gt; Generator[<a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>, NoneType, NoneType]</span>:
+    example: <a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>
+) -&gt; Generator[<a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledExample</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    resize given image to a squared output image</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1594,7 +1761,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
         <span class="n">h_pad</span><span class="p">,</span> <span class="n">w_pad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">-</span> <span class="n">resized_h</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">-</span> <span class="n">resized_w</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">output</span><span class="p">[</span><span class="n">h_pad</span><span class="p">:(</span><span class="n">h_pad</span><span class="o">+</span><span class="n">resized_h</span><span class="p">),</span><span class="n">w_pad</span><span class="p">:(</span><span class="n">w_pad</span><span class="o">+</span><span class="n">resized_w</span><span class="p">)]</span> <span class="o">=</span> <span class="n">resized</span>
         <span class="c1"># make the image binary</span>
-        <span class="k">yield</span> <span class="n">LabeledExample</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">LabeledChar</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fontname</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while resizing array: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
       <span class="k">return</span>
@@ -1617,6 +1784,336 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
                                 </dl>
                             </div>
                 </section>
+                <section id="FontFileToLabeledFont">
+                                <div class="attr class">
+        <a class="headerlink" href="#FontFileToLabeledFont">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">FontFileToLabeledFont</span><wbr>(<span class="base"><a href="#FontFileToLabeledChars">FontFileToLabeledChars</a></span>):
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FontFileToLabeledFont</span><span class="p">(</span><span class="n">FontFileToLabeledChars</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+      <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+      <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">yield</span> <span class="n">LabeledFont</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">fontname</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename</p>
+</div>
+
+
+                            <div id="FontFileToLabeledFont.raw_map" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FontFileToLabeledFont.raw_map">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">raw_map</span><span class="signature">(
+    self,
+    file: <a href="../io/formats.html#InMemoryFontfileHolder">fontai.io.formats.InMemoryFontfileHolder</a>
+) -&gt; Generator[<a href="../io/records.html#LabeledFont">fontai.io.records.LabeledFont</a>, NoneType, NoneType]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+      <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+      <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">yield</span> <span class="n">LabeledFont</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">fontname</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Applies a transformation to the input data.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>data (t.Any):</strong>  input data</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#FontFileToLabeledChars">FontFileToLabeledChars</a></dt>
+                                <dd id="FontFileToLabeledFont.__init__" class="function"><a href="#FontFileToLabeledChars.__init__">FontFileToLabeledChars</a></dd>
+
+            </div>
+            <div><dt><a href="#ObjectMapper">ObjectMapper</a></dt>
+                                <dd id="FontFileToLabeledFont.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="FontMapper">
+                                <div class="attr class">
+        <a class="headerlink" href="#FontMapper">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">FontMapper</span><wbr>(<span class="base"><a href="#ObjectMapper">ObjectMapper</a></span>):
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FontMapper</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Applies an ObjectMapper transformation to every character in a LabeledFont object</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      mapper (ObjectMapper): Core transformation</span>
+<span class="sd">  </span>
+<span class="sd">  </span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapper</span><span class="p">:</span> <span class="n">ObjectMapper</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">mapper</span> <span class="o">=</span> <span class="n">mapper</span>
+
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alphabet</span><span class="p">:</span> <span class="n">LabeledFont</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">alphabet</span><span class="p">:</span>
+      <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+        <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+        <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">yield</span> <span class="n">LabeledFont</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">fontname</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Applies an ObjectMapper transformation to every character in a LabeledFont object</p>
+
+<h6 id="attributes">Attributes</h6>
+
+<ul>
+<li><strong>mapper (ObjectMapper):</strong>  Core transformation</li>
+</ul>
+</div>
+
+
+                            <div id="FontMapper.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FontMapper.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">FontMapper</span><span class="signature">(mapper: <a href="#ObjectMapper">fontai.preprocessing.mappings.ObjectMapper</a>)</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapper</span><span class="p">:</span> <span class="n">ObjectMapper</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">mapper</span> <span class="o">=</span> <span class="n">mapper</span>
+</pre></div>
+
+        </details>
+
+    
+
+                            </div>
+                            <div id="FontMapper.raw_map" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FontMapper.raw_map">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">raw_map</span><span class="signature">(
+    self,
+    alphabet: <a href="../io/records.html#LabeledFont">fontai.io.records.LabeledFont</a>
+) -&gt; Generator[<a href="../io/records.html#LabeledFont">fontai.io.records.LabeledFont</a>, NoneType, NoneType]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alphabet</span><span class="p">:</span> <span class="n">LabeledFont</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">alphabet</span><span class="p">:</span>
+      <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+        <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+        <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mapped</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">yield</span> <span class="n">LabeledFont</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">fontname</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">fontname</span><span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Applies a transformation to the input data.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>data (t.Any):</strong>  input data</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#ObjectMapper">ObjectMapper</a></dt>
+                                <dd id="FontMapper.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="FeatureCropperAndResizer">
+                                <div class="attr class">
+        <a class="headerlink" href="#FeatureCropperAndResizer">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">FeatureCropperAndResizer</span><wbr>(<span class="base"><a href="#ObjectMapper">ObjectMapper</a></span>):
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">FeatureCropperAndResizer</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+  
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      cropper (ObjectMapper)</span>
+<span class="sd">      resizer (ObjectMapper)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_size</span> <span class="o">=</span> <span class="mi">64</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        output_size (int, optional): height and width of output array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">cropper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resizer</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">for</span> <span class="n">cropped</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cropper</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+      <span class="k">for</span> <span class="n">resized</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">resizer</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">cropped</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">resized</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.</p>
+
+<h6 id="attributes">Attributes</h6>
+
+<ul>
+<li>cropper (ObjectMapper)</li>
+<li>resizer (ObjectMapper)</li>
+</ul>
+</div>
+
+
+                            <div id="FeatureCropperAndResizer.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FeatureCropperAndResizer.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">FeatureCropperAndResizer</span><span class="signature">(output_size=64)</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_size</span> <span class="o">=</span> <span class="mi">64</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        output_size (int, optional): height and width of output array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">cropper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resizer</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><h6 id="args">Args</h6>
+
+<ul>
+<li><strong>output_size (int, optional):</strong>  height and width of output array</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="FeatureCropperAndResizer.raw_map" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#FeatureCropperAndResizer.raw_map">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">raw_map</span><span class="signature">(
+    self,
+    example: <a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>
+) -&gt; Generator[<a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">for</span> <span class="n">cropped</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cropper</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+      <span class="k">for</span> <span class="n">resized</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">resizer</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">cropped</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">resized</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Applies a transformation to the input data.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>data (t.Any):</strong>  input data</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#ObjectMapper">ObjectMapper</a></dt>
+                                <dd id="FeatureCropperAndResizer.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
                 <section id="Writer">
                                 <div class="attr class">
         <a class="headerlink" href="#Writer">#&nbsp;&nbsp</a>
@@ -1630,7 +2127,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Writer</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">DoFn</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">  Takes instances of LabeledExamples and writes them to a tensorflow record file.</span>
+<span class="sd">  Takes instances of LabeledChar and writes them to a tensorflow record file.</span>
 <span class="sd">  </span>
 <span class="sd">  Attributes:</span>
 <span class="sd">      output_path (str): Output path</span>
@@ -1638,7 +2135,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">BatchWriter</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">writer</span>
-  <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -1650,7 +2147,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 
         </details>
 
-            <div class="docstring"><p>Takes instances of LabeledExamples and writes them to a tensorflow record file.</p>
+            <div class="docstring"><p>Takes instances of LabeledChar and writes them to a tensorflow record file.</p>
 
 <h6 id="attributes">Attributes</h6>
 
@@ -1683,12 +2180,12 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 
         
             <span class="def">def</span>
-            <span class="name">process</span><span class="signature">(self, example: <a href="../io/records.html#LabeledExample">fontai.io.records.LabeledExample</a>) -&gt; None</span>:
+            <span class="name">process</span><span class="signature">(self, example: <a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>) -&gt; None</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">example</span><span class="p">:</span> <span class="n">LabeledExample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">example</span><span class="p">:</span> <span class="n">LabeledChar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -1827,6 +2324,209 @@ side effects, must be performed in <code>DoFn.process</code> or
 
             </div>
                                 </dl>
+                            </div>
+                </section>
+                <section id="PipelineFactory">
+                                <div class="attr class">
+        <a class="headerlink" href="#PipelineFactory">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">PipelineFactory</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PipelineFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+  <span class="sd">&quot;&quot;&quot;Factory class to construct core transformation sequence for preprocessing font files</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> 
+    <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        output_record_class (type): Class of output record schema, inheriting from TfrWritable</span>
+<span class="sd">        charset (str): String with characters to be extracted</span>
+<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
+<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
+<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
+<span class="sd">        output_array_size (int): Final character image size</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        PipelineExecutor: Procesing transformation object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledChar</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledChars</span><span class="p">(</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+            <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+            <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+            <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+        <span class="p">)]</span>
+      <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledFont</span><span class="p">:</span>
+
+      <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledFont</span><span class="p">(</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+            <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+            <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+            <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontMapper</span><span class="p">(</span>
+            <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropperAndResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+        <span class="p">))]</span>
+      <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output schema class not recognised: </span><span class="si">{</span><span class="n">output_record_class</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Factory class to construct core transformation sequence for preprocessing font files</p>
+</div>
+
+
+                            <div id="PipelineFactory.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#PipelineFactory.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">PipelineFactory</span><span class="signature">()</span>
+    </div>
+
+        
+    
+
+                            </div>
+                            <div id="PipelineFactory.create" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#PipelineFactory.create">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">create</span><span class="signature">(
+    cls,
+    output_record_class: type,
+    charset: str,
+    font_extraction_size: int,
+    canvas_size: int,
+    canvas_padding: int,
+    output_array_size: int
+) -&gt; <a href="#PipelineExecutor">fontai.preprocessing.mappings.PipelineExecutor</a></span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> 
+    <span class="n">output_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">font_extraction_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">canvas_padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_array_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineExecutor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build file processing pipeline object</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        output_record_class (type): Class of output record schema, inheriting from TfrWritable</span>
+<span class="sd">        charset (str): String with characters to be extracted</span>
+<span class="sd">        font_extraction_size (int): Font size to use when extracting font images</span>
+<span class="sd">        canvas_size (int): Image canvas size in which fonts will be extracted</span>
+<span class="sd">        canvas_padding (int): Padding in the image extraction canvas</span>
+<span class="sd">        output_array_size (int): Final character image size</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        PipelineExecutor: Procesing transformation object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledChar</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledChars</span><span class="p">(</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+            <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+            <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+            <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropper</span><span class="p">()</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+        <span class="p">)]</span>
+      <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledFont</span><span class="p">:</span>
+
+      <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledFont</span><span class="p">(</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
+            <span class="n">font_extraction_size</span> <span class="o">=</span> <span class="n">font_extraction_size</span><span class="p">,</span>
+            <span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span><span class="p">,</span>
+            <span class="n">canvas_padding</span> <span class="o">=</span> <span class="n">canvas_padding</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ManyToManyMapper</span><span class="p">(</span>
+          <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontMapper</span><span class="p">(</span>
+            <span class="n">mapper</span> <span class="o">=</span> <span class="n">FeatureCropperAndResizer</span><span class="p">(</span><span class="n">output_size</span> <span class="o">=</span> <span class="n">output_array_size</span><span class="p">)</span>
+        <span class="p">))]</span>
+      <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output schema class not recognised: </span><span class="si">{</span><span class="n">output_record_class</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Build file processing pipeline object</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>output_record_class (type):</strong>  Class of output record schema, inheriting from TfrWritable</li>
+<li><strong>charset (str):</strong>  String with characters to be extracted</li>
+<li><strong>font_extraction_size (int):</strong>  Font size to use when extracting font images</li>
+<li><strong>canvas_size (int):</strong>  Image canvas size in which fonts will be extracted</li>
+<li><strong>canvas_padding (int):</strong>  Padding in the image extraction canvas</li>
+<li><strong>output_array_size (int):</strong>  Final character image size</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>PipelineExecutor: Procesing transformation object</p>
+</blockquote>
+</div>
+
+
                             </div>
                 </section>
     </main>

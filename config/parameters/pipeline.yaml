@@ -1,7 +1,0 @@
-stages:
-- class: FontIngestion
-  yaml_config_path: config/parameters/ingestion.yaml
-- class: LabeledCharsExtractor
-  yaml_config_path: config/parameters/preprocessing.yaml
-- class: Predictor
-  yaml_config_path: config/parameters/lowercase-supervised-training.yaml

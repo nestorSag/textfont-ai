@@ -22,13 +22,25 @@ def process_files(args):
       """
       path to YAML file that defines pipeline execution.
       """)
+  parser.add_argument(
+      '--fit',
+      dest='fit',
+      action = 'store_true',      
+      help=
+      """
+      If true, fits stage.
+      """)
+
   args, _ = parser.parse_known_args(args)
 
   logging.basicConfig(filename=Path("logs") / "pipeline.log", level=logging.INFO, filemode = "w")
 
   print(f"Redirecting logs to logs/pipeline.log")
 
-  Pipeline.run_from_config_file(args.config_file)
+  if args.fit:
+    Pipeline.fit_from_config_file(args.config_file)
+  else:
+    Pipeline.run_from_config_file(args.config_file)
   
 if __name__ == "__main__":
 

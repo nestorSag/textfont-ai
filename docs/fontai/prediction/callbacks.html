@@ -87,7 +87,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
-<span class="kn">from</span> <span class="nn">fontai.prediction.input_processing</span> <span class="kn">import</span> <span class="n">LabeledExamplePreprocessor</span> 
+<span class="kn">from</span> <span class="nn">fontai.prediction.input_processing</span> <span class="kn">import</span> <span class="n">RecordPreprocessor</span> 
 
 <span class="k">class</span> <span class="nc">SAAECallback</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">Callback</span><span class="p">):</span>
 
@@ -119,7 +119,7 @@
 
     <span class="k">def</span> <span class="nf">load_minibatch</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
         <span class="c1"># load single minibatch from source</span>
-        <span class="n">loader</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
+        <span class="n">loader</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
             <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span><span class="p">,</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
             <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
@@ -253,7 +253,7 @@
 
     <span class="k">def</span> <span class="nf">load_minibatch</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
         <span class="c1"># load single minibatch from source</span>
-        <span class="n">loader</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
+        <span class="n">loader</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
             <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span><span class="p">,</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
             <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
@@ -392,7 +392,7 @@
 
     <span class="k">def</span> <span class="nf">load_minibatch</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
         <span class="c1"># load single minibatch from source</span>
-        <span class="n">loader</span> <span class="o">=</span> <span class="n">LabeledExamplePreprocessor</span><span class="p">(</span>
+        <span class="n">loader</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
             <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span><span class="p">,</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
             <span class="n">filters</span> <span class="o">=</span> <span class="p">[])</span>
