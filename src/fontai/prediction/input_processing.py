@@ -5,7 +5,6 @@ from __future__ import absolute_import
 from collections.abc import Iterable
 import os
 import logging
-import string
 import zipfile
 import io
 import typing as t
@@ -31,24 +30,16 @@ class RecordPreprocessor(object):
   Attributes:
       batch_size (int): batch size
       charset (char): string with every character that needs to be extracted
-      CHARSET_OPTIONS (TYPE): Dictionary from allowed charsets names to charsets
       charset_tensor (tf.Tensor): charset in tensor form
       custom_filters (t.List[types.Callable]): List of custom_filters to apply to training data
       num_classes (int): number of classes in charset
   """
 
-  CHARSET_OPTIONS = {
-    "uppercase": string.ascii_letters[26::],
-    "lowercase": string.ascii_letters[0:26],
-    "digits": string.digits,
-    "all": string.ascii_letters + string.digits
-    }
-
   def __init__(
     self, 
     input_record_class: type,
     batch_size: t.Optional[int],
-    charset: str,
+    charset_tensor: tf.Tensor,
     custom_filters: t.List[t.Callable] = [],
     custom_mappers: t.List[t.Callable] = []):
     """
@@ -68,14 +59,7 @@ class RecordPreprocessor(object):
 
     self.custom_mappers = custom_mappers
 
-    try:
-      self.charset = self.CHARSET_OPTIONS[charset]
-    except KeyError as e:
-      logger.warning(f"Charset string is not one from {list(self.CHARSET_OPTIONS.keys())}; creating custom charset from provided string instead.")
-      self.charset = "".join(list(set(charset)))
-
-    self.num_classes = len(self.charset)
-    self.charset_tensor = tf.convert_to_tensor(list(self.charset))
+    self.charset_tensor = charset_tensor
 
 
   def fetch(self, dataset: TFRecordDataset, training_format=True):
@@ -84,13 +68,13 @@ class RecordPreprocessor(object):
     
     dataset: List of input files
     
-    training_format: if True, returns features and one hot encoded labels; otherwise, returns TfrWritable record instances
+    training_format: if True, returns features and one hot encoded labels; otherwise, returns a dict of parsed bytestreams with labels as bytes
     
     Returns a MapDataset object
     
     Args:
         dataset (TFRecordDataset): input data
-        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns features, label (as a single character), and fontname
+        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes
     
     Returns:
         TFRecordDataset: Dataset ready for model consumption
@@ -101,20 +85,23 @@ class RecordPreprocessor(object):
       .map(self.input_record_class.from_tf_example)\
       .map(self.input_record_class.parse_bytes_dict)#\
       #.filter(self.filter_charset)
-    
-    #apply custom filters to raw tuples
+
+    # apply custom filters to formatted tuples
     for example_filter in self.custom_filters:
         dataset = dataset.filter(example_filter)
 
-    # apply custom map to raw tuples
+    # apply custom map to formatted tuples
     for example_mapper in self.custom_mappers:
         dataset = dataset.filter(example_mapper)
-
+    
     # if for training, take only features and formatted labels, and batch together
     if training_format:
       dataset = dataset\
         .map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))\
         .filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
+
+      #dataset = dataset.map(self.trim_for_training)\
+        #.filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
 
       dataset = self.batch_dataset(dataset)
     return dataset
@@ -155,3 +142,15 @@ class RecordPreprocessor(object):
         Tensor
     """
     return tf.math.logical_not(tf.equal(tf.size(label), 0))
+
+  # def trim_for_training(self, kwargs):
+  #   """
+  #   Filters out things other than features and labels for training
+    
+  #   Args:
+  #       kwargs (dict): dict of passed objects
+    
+  #   Returns:
+  #       t.Tuple[Tensor, Tensor]
+  #   """
+  #   return kwargs["features"], kwargs["label"]

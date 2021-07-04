@@ -8,6 +8,7 @@ from pathlib import Path
 import typing
 import zipfile
 import io
+import string
 import sys
 import signal
 import typing as t
@@ -40,6 +41,7 @@ from fontai.io.records import TfrWritable
 from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFRecordDataset
 from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
+from numpy import array as np_array
 
 logger = logging.Logger(__name__)
   
@@ -203,8 +205,9 @@ class Predictor(FittableTransform):
 
   Attributes:
       model (keras.Model): Scoring model
+      CHARSET_OPTIONS (t.Dict): Dictionary from allowed charsets names to charsets
       training_config (TrainingConfig): training configuration wrapper
-      charset (str): charset to use for training and batch scoring
+      charset_tensor (Tensor): Tensor with an entry per character in the current charset
   
 
   YAML configuration schema:
@@ -230,8 +233,8 @@ class Predictor(FittableTransform):
   loss: subyaml with keys `class` and `kwargs` to instantiate a Keras loss function
   optimizer (optional, defaults to Adam with default parameters): subyaml with keys `class` and `kwargs` to instantiate a Keras optimizer
   callbacks (optional, defaults to []): subyaml with keys `class` and `kwargs` to instantiate a Keras callback or a custome one defined in `fontai.prediction.callbacks`
-  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised
-  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised
+  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised for training
+  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised for training
 
   model subyaml schema:
 
@@ -245,6 +248,12 @@ class Predictor(FittableTransform):
 
   
   """
+  CHARSET_OPTIONS = {
+    "uppercase": string.ascii_letters[26::],
+    "lowercase": string.ascii_letters[0:26],
+    "digits": string.digits,
+    "all": string.ascii_letters + string.digits
+    }
 
   input_file_format = TFRecordDataset
   output_file_format = TFRecordDataset
@@ -259,16 +268,21 @@ class Predictor(FittableTransform):
     Args:
         model (tf.keras.Model): Scoring model
         training_config (TrainingConfig, optional): Training configuration wrapper
-        charset (str): charset to use for training and batch scoring
+        charset (str): charset to use for training and batch scoring. It must be one of 'lowercase', 'uppercase' or 'digits', or otherwise a string with all characters under consideration
     """
     self.model = model
     self.training_config = training_config
     self.charset = charset
 
-    # physical_devices = tf.config.experimental.list_physical_devices('GPU')
-    # if len(physical_devices) > 0:
-    #   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+    try:
+      self.charset = self.CHARSET_OPTIONS[charset]
+    except KeyError as e:
+      logger.warning(f"Charset string is not one from {list(self.CHARSET_OPTIONS.keys())}; creating custom charset from provided string instead.")
+      self.charset = "".join(list(set(charset)))
+
+    self.num_classes = len(self.charset)
+    self.charset_tensor = np_array([str.encode(x) for x in list(self.charset)])
 
   def add_batch_shape_signature(self, data: TFRecordDataset) -> TFRecordDataset:
     """Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures
@@ -354,12 +368,14 @@ class Predictor(FittableTransform):
       x = x.reshape((1,) + x.shape)
     return x
 
-  def transform(self, input_data: t.Union[ndarray, Tensor, TfrWritable]) -> t.Union[Tensor, ndarray, TfrWritable]:
+  def transform(self, input_data: t.Union[ndarray, Tensor, TfrWritable], charset: t.Optional[str] = None) -> t.Union[Tensor, ndarray, TfrWritable]:
     """
     Process a single instance
     
     Args:
         input_data (t.Union[ndarray, Tensor, TfrWritable]): Input instance
+
+        charset (str): charset used by the scoring model
     
     Returns:
         t.Union[Tensor, ndarray, TfrWritable]: Scored example in the corresponding format, depending on the input type.
@@ -372,7 +388,11 @@ class Predictor(FittableTransform):
     if isinstance(input_data, (ndarray, Tensor)):
       return self.model.predict(self._to_shape(input_data))
     elif isinstance(input_data, TfrWritable):
-      return input_data.add_score(self.model.predict(self._to_shape(input_data.features)))
+      if charset is None:
+        raise ValueError("When scoring an instance of TfrWritable, the scoring model's charset must also be specified.")
+      return input_data.add_score(
+        score = self.model.predict(self._to_shape(input_data.features)), 
+        charset_tensor=self.charset_tensor)
     else:
       raise TypeError("Input type is not one of ndarray, Tensor or TfrWritable")
 
@@ -422,16 +442,17 @@ class Predictor(FittableTransform):
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
-      charset = predictor.charset,
+      charset_tensor = tf.convert_to_tensor(predictor.charset_tensor),
       custom_filters = [],
       custom_mappers = [])
 
     writer = predictor.writer_class(config.output_path)
 
     data = predictor.reader_class(config.input_path).get_files()
+    
     for example in data_fetcher.fetch(data, training_format=False):
       formatted = config.input_record_class.from_parsed_bytes_dict(example)
-      writer.write(predictor.transform(formatted))
+      writer.write(predictor.transform(formatted, charset=predictor.charset))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
@@ -447,7 +468,7 @@ class Predictor(FittableTransform):
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
-      charset = predictor.charset,
+      charset_tensor = tf.convert_to_tensor(predictor.charset_tensor),
       custom_filters = predictor.training_config.custom_filters,
       custom_mappers = predictor.training_config.custom_mappers)
 

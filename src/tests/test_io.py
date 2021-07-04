@@ -10,12 +10,12 @@ from fontai.io.records import LabeledChar, ScoredLabeledChar, LabeledFont, Score
 from fontai.io.readers import ReaderClassFactory, TfrReader, FileReader, ZipReader, FontfileReader
 from fontai.io.writers import WriterClassFactory, TfrWriter, ZipWriter, FileWriter
 
-from tensorflow import constant as tf_constant, convert_to_tensor, Tensor
+from tensorflow import constant as tf_constant, convert_to_tensor, Tensor, reduce_all
 from tensorflow.train import Example as TFExample
 from tensorflow.data import TFRecordDataset
 
 
-from numpy import empty as np_empty , ones as np_ones, zeros as np_zeros, uint8 as np_uint8, array as np_array
+from numpy import empty as np_empty , ones as np_ones, zeros as np_zeros, uint8 as np_uint8, array as np_array, float32 as np_float, all as np_all
 
 TEST_DATA_PATHS = [
 ("src/tests/data/io/input", "src/tests/data/io/output"),
@@ -27,8 +27,11 @@ TEST_TTF_FOLDER = "src/tests/data/io/formats/ttf"
 TEST_ZIPFILE = "src/tests/data/io/formats/zip/achilles"
 TEST_TTF_FILE = "src/tests/data/io/formats/ttf/0AFE_Jen.ttf"
 
+charset = "ab"
 
-charset_tensor = convert_to_tensor(np_array(list("ab")))
+charset_tensor = np_array([str.encode(x) for x in list(charset)])
+
+score = convert_to_tensor(np_empty((len(charset),), dtype=np_float))
 
 dummy_char_features = 255 * np_ones((64,64), dtype=np_uint8)
 dummy_char_label = "a"
@@ -62,33 +65,21 @@ def test_formats():
   assert from_bundle.namelist() == zipped_files
 
 
-@pytest.mark.parametrize("record_class, record_args, charset",[
+@pytest.mark.parametrize("record_class, record_args, charset_tensor, score",[
   (
     LabeledChar, 
     {"features": dummy_char_features, "label": dummy_char_label, "fontname": "dummyfont"}, 
-    charset_tensor
-  ),
-  (
-    ScoredLabeledChar, 
-    {
-      "example": LabeledChar(features = dummy_char_features, label = dummy_char_label, fontname =  "dummyfont"), 
-      "score": dummy_char_score},
-    charset_tensor
+    charset_tensor,
+    score
   ),
   (
     LabeledFont, 
     {"features": dummy_font_features, "label": dummy_font_label, "fontname": "dummyfont"}, 
-    charset_tensor
-  ),
-  (
-    ScoredLabeledFont, 
-    {
-      "example": LabeledFont(features = dummy_font_features, label =  dummy_font_label, fontname = "dummyfont"),
-      "score": dummy_font_scores}, 
-    charset_tensor
+    charset_tensor,
+    score
   )
   ])
-def test_records(record_class, record_args, charset):
+def test_records(record_class, record_args, charset_tensor, score):
 
   # create record instance
   sample_record = record_class(**record_args)
@@ -100,10 +91,6 @@ def test_records(record_class, record_args, charset):
   bytes_dict = record_class.from_tf_example(convert_to_tensor(serialised))
   #bytes_dict = sample_rcord.parse_bytes_dict(bytes_dict)
 
-  # parse for model training
-  # features, label = record_class.parse_dict_for_training(
-  #   bytes_dict, 
-  #   charset_tensor = charset_tensor)
   parsed_dict = record_class.parse_bytes_dict(bytes_dict)
   features, label = record_class.get_training_parser(charset_tensor=charset_tensor)(parsed_dict)
   
@@ -113,10 +100,20 @@ def test_records(record_class, record_args, charset):
   #assert features.shape == sample_record.features.shape
 
   # recover original record instance
-  #record = record_class.parse_dict_for_scoring(bytes_dict)
   parsed_dict = record_class.parse_bytes_dict(record_class.from_tf_example(convert_to_tensor(serialised)))
-  record = record_class.from_parsed_bytes_dict(parsed_dict)
-  assert isinstance(record, record_class)
+  recovered = record_class.from_parsed_bytes_dict(parsed_dict)
+  assert isinstance(recovered, sample_record.__class__)
+
+  ## test scored records
+  scored_record = sample_record.add_score(score=score.numpy(), charset_tensor=charset_tensor)
+  serialised = scored_record.to_tf_example().SerializeToString()
+  parsed_dict = scored_record.parse_bytes_dict(scored_record.from_tf_example(convert_to_tensor(serialised)))
+  recovered = scored_record.from_parsed_bytes_dict(parsed_dict)
+  recovered.example.features = (255 * recovered.example.features).astype(np_uint8)
+  # cannot try directly recovered == scored_record because when a font example is serialised and deserialised, the features are 4-dimensional (instead of 3-dimensional) to comply with TF training shape requirements
+  assert isinstance(recovered, scored_record.__class__)
+  assert np_all(recovered.score == scored_record.score)
+  assert reduce_all(recovered.charset_tensor == scored_record.charset_tensor)
 
 @pytest.mark.parametrize("input_path, output_path", TEST_DATA_PATHS)
 def test_storage_interface(input_path, output_path):

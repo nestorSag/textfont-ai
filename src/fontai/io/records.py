@@ -117,13 +117,16 @@ class TfrWritable(ABC):
     bf.close()
     return val
 
-  def add_score(self, score: Tensor) -> TfrWritable:
+  def add_score(self, score: Tensor, charset_tensor: Tensor) -> TfrWritable:
     """Adds a model's score and return the appropriate record instance
     
     Args:
-        score (Tensor): Model record
+        score (Tensor): Model score
+
+        charset (Tensor): charset used by the scoring model
     
     Returns:
+
         TfrWritable: scored record instance
     """
     return NotImplementError("Adding a score is not implemented for this schema.")
@@ -211,9 +214,9 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
     "features": self.bytes_feature(self.img_to_png_bytes(self.features))
     }
 
-  def add_score(self, score: ndarray) -> TfrWritable:
+  def add_score(self, score: Tensor, charset_tensor: Tensor) -> TfrWritable:
 
-    return ScoredLabeledChar(example = self, score = score)
+    return ScoredLabeledChar(example = self, score = score, charset_tensor = charset_tensor)
 
 
   @classmethod
@@ -241,6 +244,9 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
       else:
         label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
       
+      #return kwargs["features"], label
+      #kwargs["label"] = label
+      #return kwargs
       return kwargs["features"], label
 
     return parser
@@ -287,9 +293,9 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
     "fontname": self.bytes_feature(bytes(str.encode(self.fontname))),
     }
 
-  def add_score(self, score: ndarray) -> TfrWritable:
+  def add_score(self, score: Tensor, charset_tensor: Tensor) -> TfrWritable:
 
-    return ScoredLabeledFont(example = self, score = score)
+    return ScoredLabeledFont(example = self, score = score, charset_tensor = charset_tensor)
 
   @classmethod
   def parse_bytes_dict(cls, record):
@@ -306,7 +312,12 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
     cls, 
     charset_tensor: Tensor) -> t.Callable:
 
-    def parser(kwargs):
+    def parser(kwargs: t.Dict):
+
+      #if label is empty, pass empty for downstream deletion
+      if tf.equal(tf.size(kwargs["label"]), 0):
+        return kwargs["features"], tf.zeros((0,),dtype=tf.float32)
+
       num_classes = len(charset_tensor)
 
       raw_one_hot = tf.cast(
@@ -326,6 +337,9 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
 
 
       return features, label
+      # kwargs["label"] = label
+      # kwargs["features"] = features
+      # return kwargs
 
 
     return parser
@@ -355,31 +369,48 @@ class ScoredRecordFactory(object):
         #
 
         record_type = T
-        _tfr_schema = {**record_type._tfr_schema, **{'score': FixedLenFeature([], tf_str)}}
 
-        def __init__(self, example: TfrWritable, score: ndarray):
-          if not isinstance(example, T) or not isinstance(score, ndarray):
-            return TypeError(f"example must be an instance of {T} and score must be a numpy array")
+        _tfr_schema = {
+          **record_type._tfr_schema, 
+          **{'charset_tensor': FixedLenFeature([], tf_str),'score': FixedLenFeature([], tf_str)}
+        }
+
+        def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: Tensor):
+          if not isinstance(example, T):
+            raise TypeError(f"example must be an instance of {T}")
+          elif not isinstance(score, ndarray):
+            raise TypeError(f"score must be an instance of ndarray")
+          elif not isinstance(charset_tensor, ndarray):
+            raise TypeError(f"charset_tensor must be an instance of {ndarray}; found {charset_tensor.__class__}")
+          # elif len(charset_tensor) != len(score):
+          #   raise ValueError("charset_tensor must be the same length as score")
 
           self.example = example
           self.score = score
+          self.charset_tensor = charset_tensor
 
 
         def __eq__(self,other):
-          return self.example == other.example and np_all(self.score == other.score)
+          return self.example == other.example and np_all(self.score == other.score) and np_all(self.charset_tensor == other.charset_tensor)
         #
         def to_bytes_dict(self) -> t.Dict:
           #
           return {
-          **{"score": self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32))},
+          "charset_tensor": self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+          "score": self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
           **self.example.to_bytes_dict()
           }
         #
         @classmethod
         def parse_bytes_dict(cls, record):
           parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
           score = tf.io.parse_tensor(record["score"], out_type=tf.float32)
           parsed_record_bytes_dict["score"] = score
+
+          charset_tensor = tf.io.parse_tensor(record["charset_tensor"], out_type=tf.string)
+          parsed_record_bytes_dict["charset_tensor"] = charset_tensor
+
           return parsed_record_bytes_dict 
 
         @classmethod
@@ -387,20 +418,18 @@ class ScoredRecordFactory(object):
 
           kwargs = {key: kwargs[key].numpy() for key in kwargs}
           score = kwargs.pop("score")
+          charset_tensor = kwargs.pop("charset_tensor")
 
-          return cls(example = cls.record_type(**kwargs), score = score)
+          return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)
 
         @classmethod
         def get_training_parser(
           cls, 
           charset_tensor: Tensor) -> t.Callable:
 
-          base_parser = cls.record_type.get_training_parser(charset_tensor=charset_tensor)
-
           def parser(kwargs):
-            score = kwargs.pop("score")
 
-            return base_parser(kwargs)
+            return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
 
           return parser
         
