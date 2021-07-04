@@ -214,7 +214,7 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
     "features": self.bytes_feature(self.img_to_png_bytes(self.features))
     }
 
-  def add_score(self, score: Tensor, charset_tensor: Tensor) -> TfrWritable:
+  def add_score(self, score: ndarray, charset_tensor: ndarray) -> TfrWritable:
 
     return ScoredLabeledChar(example = self, score = score, charset_tensor = charset_tensor)
 
@@ -293,7 +293,7 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
     "fontname": self.bytes_feature(bytes(str.encode(self.fontname))),
     }
 
-  def add_score(self, score: Tensor, charset_tensor: Tensor) -> TfrWritable:
+  def add_score(self, score: ndarray, charset_tensor: ndarray) -> TfrWritable:
 
     return ScoredLabeledFont(example = self, score = score, charset_tensor = charset_tensor)
 
@@ -375,7 +375,7 @@ class ScoredRecordFactory(object):
           **{'charset_tensor': FixedLenFeature([], tf_str),'score': FixedLenFeature([], tf_str)}
         }
 
-        def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: Tensor):
+        def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
           if not isinstance(example, T):
             raise TypeError(f"example must be an instance of {T}")
           elif not isinstance(score, ndarray):

@@ -8,6 +8,7 @@ from pathlib import Path
 import typing
 import zipfile
 import io
+import os
 import string
 import sys
 import signal
@@ -169,6 +170,10 @@ class LabeledExampleExtractor(ConfigurableTransform):
   @classmethod
   def run_from_config_object(cls, config: ProcessingConfig):
 
+    # set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.
+    visible_devices = os.getenv("CUDA_VISIBLE_DEVICES")
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
     output_path, input_path = config.output_path, config.input_path
 
     processor = cls.from_config_object(config)
@@ -196,6 +201,12 @@ class LabeledExampleExtractor(ConfigurableTransform):
         )
       )
       | "write to storage" >> beam.ParDo(Writer(processor.writer_class(output_path, config.max_output_file_size))))
+
+    # unset provisional value for env variable
+    if visible_devices is None:
+      del os.environ["CUDA_VISIBLE_DEVICES"]
+    else:
+      os.environ["CUDA_VISIBLE_DEVICES"] = visible_devices
 
 
 
@@ -330,14 +341,12 @@ class Predictor(FittableTransform):
       x = x.reshape((1,) + x.shape)
     return x
 
-  def transform(self, input_data: t.Union[ndarray, Tensor, TfrWritable], charset: t.Optional[str] = None) -> t.Union[Tensor, ndarray, TfrWritable]:
+  def transform(self, input_data: t.Union[ndarray, Tensor, TfrWritable]) -> t.Union[Tensor, ndarray, TfrWritable]:
     """
     Process a single instance
     
     Args:
         input_data (t.Union[ndarray, Tensor, TfrWritable]): Input instance
-
-        charset (str): charset used by the scoring model
     
     Returns:
         t.Union[Tensor, ndarray, TfrWritable]: Scored example in the corresponding format, depending on the input type.
@@ -350,8 +359,6 @@ class Predictor(FittableTransform):
     if isinstance(input_data, (ndarray, Tensor)):
       return self.model.predict(self._to_shape(input_data))
     elif isinstance(input_data, TfrWritable):
-      if charset is None:
-        raise ValueError("When scoring an instance of TfrWritable, the scoring model's charset must also be specified.")
       return input_data.add_score(
         score = self.model.predict(self._to_shape(input_data.features)), 
         charset_tensor=self.charset_tensor)
@@ -414,7 +421,7 @@ class Predictor(FittableTransform):
     
     for example in data_fetcher.fetch(data, training_format=False):
       formatted = config.input_record_class.from_parsed_bytes_dict(example)
-      writer.write(predictor.transform(formatted, charset=predictor.charset))
+      writer.write(predictor.transform(formatted))
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
