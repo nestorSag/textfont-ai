@@ -5,8 +5,10 @@ import argparse
 import logging
 from pathlib import Path
 
+
 from fontai.pipeline.base import FittableTransform
 from fontai.pipeline.stages import LabeledExampleExtractor, FontIngestion, Predictor
+from fontai.pipeline.test import LabeledExampleExtractor as test
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true' #this is needed to run models o
 def process_files(args):
   stage_classes = {
     "ingestion": FontIngestion,
-    "preprocessing": LabeledExampleExtractor,
+    "preprocessing": test,
     "prediction": Predictor
   }
   

@@ -59,7 +59,7 @@ class RecordPreprocessor(object):
 
     self.custom_mappers = custom_mappers
 
-    self.charset_tensor = charset_tensor
+    self.charset_tensor = tf.convert_to_tensor(charset_tensor)
 
 
   def fetch(self, dataset: TFRecordDataset, training_format=True):
@@ -104,6 +104,7 @@ class RecordPreprocessor(object):
         #.filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
 
       dataset = self.batch_dataset(dataset)
+      dataset = self.add_batch_shape_signature(dataset)
     return dataset
 
 
@@ -143,14 +144,39 @@ class RecordPreprocessor(object):
     """
     return tf.math.logical_not(tf.equal(tf.size(label), 0))
 
-  # def trim_for_training(self, kwargs):
-  #   """
-  #   Filters out things other than features and labels for training
+  def add_batch_shape_signature(self, data: TFRecordDataset) -> TFRecordDataset:
+    """Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures
     
-  #   Args:
-  #       kwargs (dict): dict of passed objects
+    Args:
+        data (TFRecordDataset): Input training data
     
-  #   Returns:
-  #       t.Tuple[Tensor, Tensor]
-  #   """
-  #   return kwargs["features"], kwargs["label"]
+    Returns:
+        TFRecordDataset
+    
+    Raises:
+        ValueError
+    """
+    def callable_data():
+      return data
+
+    features, labels = next(iter(data))
+    # drop batch size form shape tuples
+    ftr_shape = features.shape[1::]
+    lbl_shape = labels.shape[1::]
+
+    if len(ftr_shape) != 3 or len(lbl_shape) != 1:
+      raise ValueError(f"Input shapes don't match expected: got shapes {features.shape} and {labels.shape}")
+
+    training_data = tf.data.Dataset.from_generator(
+      callable_data, 
+      output_types = (
+        features.dtype, 
+        labels.dtype
+      ),
+      output_shapes=(
+        tf.TensorShape((None,) + ftr_shape),
+        tf.TensorShape((None,) + lbl_shape)
+      )
+    )
+
+    return training_data

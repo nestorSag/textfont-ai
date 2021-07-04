@@ -18,7 +18,6 @@ from PIL import ImageFont
 
 #from tensorflow import string as tf_str
 #from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList)
-from tensorflow.data import TFRecordDataset
 
 from tensorflow.io import FixedLenFeature, parse_single_example
 from fontai.io.storage import BytestreamPath
@@ -139,19 +138,6 @@ class InMemoryFontfileHolder(InMemoryFile):
 
   def serialise(self, font: ImageFont.FreeTypeFont):
     raise NotImplementError("Serialisation to InMemoryFontfileHolder is not implemented.")
-
-
-
-# class TFDatasetWrapper(TFRecordDataset):
-
-#   def to_format(self, file_format: type):
-#     if file_format != TFDatasetWrapper:
-#       raise TypeError("Tensorflow datasets cannot be converted to other custom file types.")
-
-#     return self
-
-#   def deserialise(self):
-#     return self
 
 
 class InMemoryZipBundler(object):

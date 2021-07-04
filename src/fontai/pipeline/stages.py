@@ -16,8 +16,9 @@ import pickle
 
 from PIL import ImageFont
 from numpy import ndarray
-from tensorflow import Tensor
 from strictyaml import as_document
+
+from tensorflow import Tensor
 import tensorflow as tf
 from tensorflow.data import TFRecordDataset
 
@@ -38,7 +39,7 @@ from fontai.preprocessing.mappings import PipelineFactory, BeamCompatibleWrapper
 from fontai.io.storage import BytestreamPath
 from fontai.io.readers import ScrapperReader
 from fontai.io.records import TfrWritable
-from fontai.io.formats import InMemoryFile, InMemoryZipHolder, TFRecordDataset
+from fontai.io.formats import InMemoryFile, InMemoryZipHolder
 from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
 from numpy import array as np_array
@@ -284,43 +285,6 @@ class Predictor(FittableTransform):
     self.num_classes = len(self.charset)
     self.charset_tensor = np_array([str.encode(x) for x in list(self.charset)])
 
-  def add_batch_shape_signature(self, data: TFRecordDataset) -> TFRecordDataset:
-    """Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures
-    
-    Args:
-        data (TFRecordDataset): Input training data
-    
-    Returns:
-        TFRecordDataset
-    
-    Raises:
-        ValueError
-    """
-    def callable_data():
-      return data
-
-    features, labels = next(iter(data))
-    # drop batch size form shape tuples
-    ftr_shape = features.shape[1::]
-    lbl_shape = labels.shape[1::]
-
-    if len(ftr_shape) != 3 or len(lbl_shape) != 1:
-      raise ValueError(f"Input shapes don't match expected: got shapes {features.shape} and {labels.shape}")
-
-    training_data = tf.data.Dataset.from_generator(
-      callable_data, 
-      output_types = (
-        features.dtype, 
-        labels.dtype
-      ),
-      output_shapes=(
-        tf.TensorShape((None,) + ftr_shape),
-        tf.TensorShape((None,) + lbl_shape)
-      )
-    )
-
-    return training_data
-
 
   def fit(self, data: TFRecordDataset):
     """Fits the scoring model with the passed data
@@ -342,11 +306,9 @@ class Predictor(FittableTransform):
       optimizer = self.training_config.optimizer,
       metrics = self.training_config.metrics)
 
-    training_data = self.add_batch_shape_signature(data)
-
     self.model.fit(
-      #data,
-      training_data,
+      data,
+      #training_data,
       steps_per_epoch = self.training_config.steps_per_epoch, 
       epochs = self.training_config.epochs,
       callbacks = self.training_config.callbacks)
@@ -442,7 +404,7 @@ class Predictor(FittableTransform):
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
-      charset_tensor = tf.convert_to_tensor(predictor.charset_tensor),
+      charset_tensor = predictor.charset_tensor,
       custom_filters = [],
       custom_mappers = [])
 
@@ -468,7 +430,7 @@ class Predictor(FittableTransform):
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
       batch_size = predictor.training_config.batch_size,
-      charset_tensor = tf.convert_to_tensor(predictor.charset_tensor),
+      charset_tensor = predictor.charset_tensor,
       custom_filters = predictor.training_config.custom_filters,
       custom_mappers = predictor.training_config.custom_mappers)
 

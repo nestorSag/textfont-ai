@@ -1,0 +1,16 @@
+# This config outputs grouped images for each font; this is useful to traing some custom architectures
+output_record_class: LabeledFont
+input_path: data/raw
+output_path: "data/preprocessed/fonts"
+output_array_size: 64
+max_output_file_size: 64 #in MB
+font_extraction_size: 100
+canvas_size: 500
+canvas_padding: 100
+beam_cmd_line_args:
+-  --runner
+-  DirectRunner
+- --direct_num_workers
+- 6
+- --direct_running_mode
+- multi_processing
