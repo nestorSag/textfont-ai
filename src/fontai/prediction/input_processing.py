@@ -77,9 +77,8 @@ class RecordPreprocessor(object):
     # bytes -> dict -> tuple of objs
     dataset = dataset\
       .map(self.input_record_class.from_tf_example)\
-      .map(self.input_record_class.parse_bytes_dict)#\
-      #.filter(self.filter_charset)
-    
+      .map(self.input_record_class.parse_bytes_dict)
+        
     # if for training, take only features and formatted labels, and batch together
     if training_format:
 
@@ -103,6 +102,7 @@ class RecordPreprocessor(object):
       dataset = self.add_batch_shape_signature(dataset)
 
     else:
+      dataset = self.input_record_class.filter_charset_for_scoring(dataset, self.charset_tensor)
       # split record dictionary for batching
       dataset = dataset.map(self.split_parsed_dict)
 

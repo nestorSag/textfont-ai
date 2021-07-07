@@ -21,6 +21,8 @@ from tensorflow.train import (Example as TFExample, Feature as TFFeature, Featur
 from tensorflow.io import FixedLenFeature, parse_single_example, serialize_tensor
 
 import tensorflow as tf
+from tensorflow.data import TFRecordDataset
+
 
 
 logger = logging.getLogger(__name__)
@@ -195,6 +197,18 @@ class TfrWritable(ABC):
     """
     return NotImplementError("This method is only implemented for subclasses")
 
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+    """This function is needed because filtering by character requires different logic for individual char images and for entire fonts.
+    
+    Args:
+        dataset (TFRecordDataset): input dataset
+        charset_tensor (ndarray): tensor with a single char element per charset element
+    """
+
+    return NotImplementError("This method is only implemented for subclasses")
+
+
 
 
 
@@ -296,6 +310,15 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
         ).add_score(
         score = scores[k],
         charset_tensor = charset_tensor)
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    def filter_func(kwargs):
+      idx = tf.where(charset_tensor == kwargs["label"])
+      return tf.math.logical_not(tf.equal(tf.size(idx), 0))
+
+    return dataset.filter(filter_func)
   
 
 
@@ -412,6 +435,21 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
       score = scores,
       charset_tensor = charset_tensor)
 
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    def filter_func(kwargs):
+      reshaped_labels = tf.reshape(kwargs["label"], (-1,1))
+      in_charset = tf.reduce_sum(tf.cast(reshaped_labels == charset_tensor, tf.int32), axis=-1)
+      index = in_charset > 0
+      kwargs["features"] = kwargs["features"][index]
+      kwargs["label"] = kwargs["label"][index]
+
+      return kwargs
+
+    return dataset.map(filter_func)
+
 class ScoredRecordFactory(object):
 
   """Creates classes for scored TfrWritable records
@@ -516,8 +554,15 @@ class ScoredRecordFactory(object):
             fontnames,
             scores,
             charset_tensor)
+
+        @classmethod
+        def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+          return cls.record_type(dataset, charset_tensor)
         
       return ScoredRecord
+
+
 
 
 ScoredLabeledChar = ScoredRecordFactory.create(LabeledChar)

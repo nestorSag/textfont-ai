@@ -419,6 +419,7 @@ class Predictor(FittableTransform):
     files = predictor.reader_class(config.input_path).get_files()
     data = data_fetcher.fetch(files, training_format=False, batch_size = predictor.training_config.batch_size)
 
+    
     for features, labels, fontnames in data:
       scores = predictor.transform(features)
       
