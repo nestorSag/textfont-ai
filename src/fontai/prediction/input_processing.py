@@ -103,8 +103,9 @@ class RecordPreprocessor(object):
 
     else:
       dataset = self.input_record_class.filter_charset_for_scoring(dataset, self.charset_tensor)
-      # split record dictionary for batching
-      dataset = dataset.map(self.split_parsed_dict)
+      # split record dictionary for batching and filter out empty examples
+      dataset = dataset.map(self.split_parsed_dict)\
+      .filter(self.label_is_nonempty)
 
       if batch_size is not None:
         dataset = dataset.batch(batch_size) 
@@ -131,12 +132,14 @@ class RecordPreprocessor(object):
 
     return dataset
 
-  def label_is_nonempty(self, features, label):
+  def label_is_nonempty(self, features, label, *args):
     """
     Filters out training examples without rows or correctly formatted labels
     
     Args:
-        record (tf.train.TFExample): Input example
+        features (tf.Tensor)
+        labels (tf.Tensor)
+        args: other arguments
     
     Returns:
         Tensor

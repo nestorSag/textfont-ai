@@ -7,6 +7,7 @@ from collections import OrderedDict
 from pathlib import Path
 import typing
 import zipfile
+import traceback
 import io
 import os
 import string
@@ -421,17 +422,20 @@ class Predictor(FittableTransform):
 
     
     for features, labels, fontnames in data:
-      scores = predictor.transform(features)
-      
-      scored_records = config.input_record_class.from_scored_batch(
-        features = features.numpy(),
-        labels = labels.numpy(),
-        fontnames = fontnames.numpy(), 
-        scores = scores,
-        charset_tensor = predictor.charset_tensor)
+      try:
+        scores = predictor.transform(features)
+        
+        scored_records = config.input_record_class.from_scored_batch(
+          features = features.numpy(),
+          labels = labels.numpy(),
+          fontnames = fontnames.numpy(), 
+          scores = scores,
+          charset_tensor = predictor.charset_tensor)
 
-      for record in scored_records:
-        writer.write(record)
+        for record in scored_records:
+          writer.write(record)
+      except Exception as e:
+        logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
