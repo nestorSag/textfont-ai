@@ -1,11 +1,11 @@
 # score new images or retrain model
-input_path: data/preprocessed-chars
-input_record_class: LabeledChar
-output_path: data/uppercase-scored
+input_path: data/preprocessed/chars
+input_record_class: LabeledFont
+output_path: data/scored/uppercase/fonts
 model_path: models/supervised-uppercase
 charset: uppercase
 training:
-  batch_size: 64
+  batch_size: 128
   epochs: 50
   steps_per_epoch: 5000
   optimizer:

@@ -28,7 +28,6 @@ class RecordPreprocessor(object):
   Fetches and processes a list of Tensorflow record files to be consumed by an ML model
   
   Attributes:
-      batch_size (int): batch size
       charset (char): string with every character that needs to be extracted
       charset_tensor (tf.Tensor): charset in tensor form
       custom_filters (t.List[types.Callable]): List of custom_filters to apply to training data
@@ -38,22 +37,22 @@ class RecordPreprocessor(object):
   def __init__(
     self, 
     input_record_class: type,
-    batch_size: t.Optional[int],
     charset_tensor: tf.Tensor,
     custom_filters: t.List[t.Callable] = [],
     custom_mappers: t.List[t.Callable] = []):
     """
-    
     Args:
-        batch_size (int): training batch size
-        charset (str): One of 'lowercase', 'uppercase', 'digits' or 'all'; otherwise, chracters in the provided string are used as acustom charset.
-
+        input_record_class (type): Subclass of `fontai.io.records.TfrWritable` that corresponds to the schema of the input records
+        charset_tensor (tf.Tensor): Tensor with one entry per character in the charset under consideration
         custom_filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels
+        custom_mappers (t.List[t.Callable], optional): Mapping  functions for sets of image tensors and one-hot-encoded labels
+    
+    Deleted Parameters:
+        charset (str): One of 'lowercase', 'uppercase', 'digits' or 'all'; otherwise, chracters in the provided string are used as acustom charset.
+    
     """
 
     self.input_record_class = input_record_class
-
-    self.batch_size = batch_size
 
     self.custom_filters = custom_filters
 
@@ -62,18 +61,13 @@ class RecordPreprocessor(object):
     self.charset_tensor = tf.convert_to_tensor(charset_tensor)
 
 
-  def fetch(self, dataset: TFRecordDataset, training_format=True):
+  def fetch(self, dataset: TFRecordDataset, batch_size = 32, training_format=True):
     """
     Fetches a list of input Tensorflow record files and prepares them for training or scoring
-    
-    dataset: List of input files
-    
-    training_format: if True, returns features and one hot encoded labels; otherwise, returns a dict of parsed bytestreams with labels as bytes
-    
-    Returns a MapDataset object
-    
+        
     Args:
         dataset (TFRecordDataset): input data
+        batch_size (int): training batch size
         training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes
     
     Returns:
@@ -85,52 +79,57 @@ class RecordPreprocessor(object):
       .map(self.input_record_class.from_tf_example)\
       .map(self.input_record_class.parse_bytes_dict)#\
       #.filter(self.filter_charset)
-
-    # apply custom filters to formatted tuples
-    for example_filter in self.custom_filters:
-        dataset = dataset.filter(example_filter)
-
-    # apply custom map to formatted tuples
-    for example_mapper in self.custom_mappers:
-        dataset = dataset.filter(example_mapper)
     
     # if for training, take only features and formatted labels, and batch together
     if training_format:
+
+      # apply custom filters to formatted tuples
+      for example_filter in self.custom_filters:
+          dataset = dataset.filter(example_filter)
+
+      # apply custom map to formatted tuples
+      for example_mapper in self.custom_mappers:
+          dataset = dataset.filter(example_mapper)
+
       dataset = dataset\
         .map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))\
         .filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
 
-      #dataset = dataset.map(self.trim_for_training)\
-        #.filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
+      dataset = self.scramble(dataset, batch_size)
 
-      dataset = self.batch_dataset(dataset)
+      if batch_size is not None:
+        dataset = dataset.batch(batch_size) 
+
       dataset = self.add_batch_shape_signature(dataset)
+
+    else:
+      # split record dictionary for batching
+      dataset = dataset.map(self.split_parsed_dict)
+
+      if batch_size is not None:
+        dataset = dataset.batch(batch_size) 
+    
     return dataset
 
-
-  def batch_dataset(self, dataset, buffered_batches = 512):
+  def scramble(self, dataset, batch_size, buffered_batches = 512):
     """
     Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
     
     Args:
         dataset (TFRecordDataset): Input dataset
+        batch_size (int): training batch size
         buffered_batches (int, optional): Number of batches to fetch in memory buffer
     
     Returns:
         TFRecordDataset
     """
 
-    buffer_size = buffered_batches*self.batch_size if self.batch_size is not None else 1000
-
+    buffer_size = buffered_batches*batch_size if batch_size is not None else 512
     dataset = dataset\
-      .shuffle(buffer_size=buffer_size)
+      .shuffle(buffer_size=buffer_size)\
+      .repeat()
 
-    dataset = dataset.repeat()
-
-    if self.batch_size is not None:
-      return dataset.batch(self.batch_size)
-    else:
-      return dataset
+    return dataset
 
   def label_is_nonempty(self, features, label):
     """
@@ -180,3 +179,14 @@ class RecordPreprocessor(object):
     )
 
     return training_data
+
+  def split_parsed_dict(self, parsed_dict: t.Dict):
+    """Split a parsed record dictionary into features, labels and fontname
+    
+    Args:
+        parsed_dict (t.Dict): parsed record dictionary
+    
+    Returns:
+        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]
+    """
+    return parsed_dict["features"], parsed_dict["label"], parsed_dict["fontname"]

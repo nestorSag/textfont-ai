@@ -172,6 +172,29 @@ class TfrWritable(ABC):
     """
     return cls(**{key: kwargs[key].numpy() for key in kwargs})
 
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    label: ndarray,
+    fontname: t.Union[str, ndarray],
+    scores: ndarray,
+    charset_tensor: ndarray) -> t.Generator[TfrWritable, None, None]:
+    """Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.
+    
+    Args:
+        features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.
+        label (ndarray): batch labels
+        fontname (t.Union[str, ndarray]): batch fontnames
+        scores (ndarray): batch scores
+        charset_tensor (ndarray): tensor with a single char element per charset element
+    
+    Returns:
+        t.Generator[TfrWritable, None, None]: Generator of formatted records
+    
+    """
+    return NotImplementError("This method is only implemented for subclasses")
+
 
 
 
@@ -250,6 +273,29 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
       return kwargs["features"], label
 
     return parser
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -> t.Generator[LabeledChar, None, None]:
+
+    try:
+      batch_size, height, width, channels = features.shape
+    except ValueError as e:
+      raise ValueError("Features should have 4 dimensions, including batch and channels")
+
+    for k in range(batch_size):
+      yield cls(
+        features = (255 * features[k].reshape((height, width))).astype(uint8),
+        label = labels[k],
+        fontname = fontnames[k]
+        ).add_score(
+        score = scores[k],
+        charset_tensor = charset_tensor)
   
 
 
@@ -344,6 +390,28 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
 
     return parser
 
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -> t.Generator[LabeledChar, None, None]:
+
+    try:
+      font_size, height, width, channels = features.shape
+    except ValueError as e:
+      raise ValueError("Features should have 4 dimensions, including batch and channels; make sure that batch size parameter in RecordProcessor.fetch is null for font records)")
+
+    yield cls(
+      features = (255 * features.reshape((font_size, height, width))).astype(uint8),
+      label = labels,
+      fontname = fontnames
+      ).add_score(
+      score = scores,
+      charset_tensor = charset_tensor)
+
 class ScoredRecordFactory(object):
 
   """Creates classes for scored TfrWritable records
@@ -432,6 +500,22 @@ class ScoredRecordFactory(object):
             return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
 
           return parser
+
+        @classmethod
+        def from_scored_batch(
+          cls,
+          features: ndarray,
+          labels: ndarray,
+          fontnames: ndarray,
+          scores: ndarray,
+          charset_tensor: ndarray) -> t.Generator[LabeledChar, None, None]:
+
+          return cls.record_type.from_scored_batch(
+            features,
+            labels,
+            fontnames,
+            scores,
+            charset_tensor)
         
       return ScoredRecord
 

@@ -1,0 +1,30 @@
+# score new images or retrain model
+input_path: data/preprocessed/chars
+input_record_class: LabeledChar
+output_path: data/scored/uppercase/chars
+model_path: models/supervised-uppercase
+charset: uppercase
+training:
+  batch_size: 128
+  epochs: 50
+  steps_per_epoch: 5000
+  optimizer:
+    class: Adam
+    kwargs:
+      learning_rate: 0.001
+  loss:
+    class: CategoricalCrossentropy
+  metrics:
+  - accuracy
+  callbacks:
+  - class: TensorBoard
+    kwargs:
+      log_dir: logs/tensorboard/supervised-uppercase
+  - class: ReduceLROnPlateau
+    kwargs:
+      min_lr: 0.0001
+      factor: 0.5
+      patience: 2
+      monitor: accuracy
+model:
+  path: models/supervised-uppercase

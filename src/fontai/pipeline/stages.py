@@ -410,18 +410,27 @@ class Predictor(FittableTransform):
 
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
-      batch_size = predictor.training_config.batch_size,
       charset_tensor = predictor.charset_tensor,
-      custom_filters = [],
-      custom_mappers = [])
+      custom_filters = predictor.training_config.custom_filters,
+      custom_mappers = predictor.training_config.custom_mappers)
 
     writer = predictor.writer_class(config.output_path)
 
-    data = predictor.reader_class(config.input_path).get_files()
-    
-    for example in data_fetcher.fetch(data, training_format=False):
-      formatted = config.input_record_class.from_parsed_bytes_dict(example)
-      writer.write(predictor.transform(formatted))
+    files = predictor.reader_class(config.input_path).get_files()
+    data = data_fetcher.fetch(files, training_format=False, batch_size = predictor.training_config.batch_size)
+
+    for features, labels, fontnames in data:
+      scores = predictor.transform(features)
+      
+      scored_records = config.input_record_class.from_scored_batch(
+        features = features.numpy(),
+        labels = labels.numpy(),
+        fontnames = fontnames.numpy(), 
+        scores = scores,
+        charset_tensor = predictor.charset_tensor)
+
+      for record in scored_records:
+        writer.write(record)
 
   @classmethod
   def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
@@ -436,14 +445,13 @@ class Predictor(FittableTransform):
 
     data_fetcher = RecordPreprocessor(
       input_record_class = config.input_record_class,
-      batch_size = predictor.training_config.batch_size,
       charset_tensor = predictor.charset_tensor,
       custom_filters = predictor.training_config.custom_filters,
       custom_mappers = predictor.training_config.custom_mappers)
 
     data = predictor.reader_class(config.input_path).get_files()
 
-    predictor.fit(data_fetcher.fetch(data, training_format=True))
+    predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
 
     logger.info(f"Saving trained model to {config.model_path}")
     predictor.model.save(config.model_path)
