@@ -31,10 +31,10 @@
                     <h2>API Documentation</h2>
                         <ul class="memberlist">
             <li>
-                    <a class="function" href="#filter_misclassified_in_font">filter_misclassified_in_font</a>
+                    <a class="function" href="#drop_misclassified_in_font">drop_misclassified_in_font</a>
             </li>
             <li>
-                    <a class="function" href="#filter_by_score_in_font">filter_by_score_in_font</a>
+                    <a class="function" href="#keep_high_scores_in_font">keep_high_scores_in_font</a>
             </li>
     </ul>
 
@@ -51,36 +51,91 @@
                     <h1 class="modulename">
 <a href="./../../fontai.html">fontai</a><wbr>.<a href="./../prediction.html">prediction</a><wbr>.custom_mappers    </h1>
 
-                
+                        <div class="docstring"><p>This module contains mapper functions to be applied to Tensorflow examples right after being deserialised to be used at training time; at the moment available functions filter examples based on the score's accuracy and values, and do so for scored font records.</p>
+</div>
+
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+            <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains mapper functions to be applied to Tensorflow examples right after being deserialised to be used at training time; at the moment available functions filter examples based on the score&#39;s accuracy and values, and do so for scored font records.</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
-<span class="k">def</span> <span class="nf">filter_misclassified_in_font</span><span class="p">():</span>
-  <span class="sd">&quot;&quot;&quot;Returns a function for Tensorflow datasets that filter out misclassified examples in a font image set; examples must be a scored record.</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+
+<span class="k">def</span> <span class="nf">drop_misclassified_in_font</span><span class="p">():</span>
+  <span class="sd">&quot;&quot;&quot;Returns a mapper function for Tensorflow datasets that drops misclassified images in a font batch; examples must have the schema as in ScoredLabeledChars._tfr_schema</span>
 <span class="sd">  </span>
 <span class="sd">  Returns:</span>
-<span class="sd">      callable: Filtering function for Tensorflow datasets</span>
+<span class="sd">      t.Callable: Mapping function for Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
+  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Dict: dictionary with filtered features and scores</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#if label is empty, do nothings</span>
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="n">predicted_label_idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">predicted_labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">predicted_label_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="n">predicted_labels</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="c1">#if no accurate scores are left, pass empty label for downstream deletion</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">kwargs</span>
 
   <span class="k">return</span> <span class="n">f</span>
 
-<span class="k">def</span> <span class="nf">filter_by_score_in_font</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Returns a function for Tensorflow datasets that filter out scores lower than a given threshold in a font image set</span>
+<span class="k">def</span> <span class="nf">keep_high_scores_in_font</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Returns a function for Tensorflow datasets that drops images with low classification score in a font batch</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
 <span class="sd">      threshold (float): Score threshold</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">      t.Callable: Mapping function fot Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="k">if</span> <span class="n">threshold</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">threshold</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Threshold value must be in (0,1]&quot;</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
+  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Dict: dictionary with filtered features and scores</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#if label is empty, d nothings</span>
+    <span class="c1">#if label is empty, do nothings</span>
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">score</span>
+
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="c1">#if no accurate scores are left, pass empty label for downstream deletion</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">kwargs</span>
 
   <span class="k">return</span> <span class="n">f</span>
 </pre></div>
@@ -88,78 +143,132 @@
         </details>
 
             </section>
-                <section id="filter_misclassified_in_font">
-                            <div class="attr function"><a class="headerlink" href="#filter_misclassified_in_font">#&nbsp;&nbsp</a>
+                <section id="drop_misclassified_in_font">
+                            <div class="attr function"><a class="headerlink" href="#drop_misclassified_in_font">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">filter_misclassified_in_font</span><span class="signature">()</span>:
+            <span class="name">drop_misclassified_in_font</span><span class="signature">()</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">filter_misclassified_in_font</span><span class="p">():</span>
-  <span class="sd">&quot;&quot;&quot;Returns a function for Tensorflow datasets that filter out misclassified examples in a font image set; examples must be a scored record.</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">drop_misclassified_in_font</span><span class="p">():</span>
+  <span class="sd">&quot;&quot;&quot;Returns a mapper function for Tensorflow datasets that drops misclassified images in a font batch; examples must have the schema as in ScoredLabeledChars._tfr_schema</span>
 <span class="sd">  </span>
 <span class="sd">  Returns:</span>
-<span class="sd">      callable: Filtering function for Tensorflow datasets</span>
+<span class="sd">      t.Callable: Mapping function for Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
+  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Dict: dictionary with filtered features and scores</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#if label is empty, do nothings</span>
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="n">predicted_label_idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">predicted_labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">predicted_label_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="n">predicted_labels</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="c1">#if no accurate scores are left, pass empty label for downstream deletion</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">kwargs</span>
 
   <span class="k">return</span> <span class="n">f</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns a function for Tensorflow datasets that filter out misclassified examples in a font image set; examples must be a scored record.</p>
+            <div class="docstring"><p>Returns a mapper function for Tensorflow datasets that drops misclassified images in a font batch; examples must have the schema as in ScoredLabeledChars._tfr_schema</p>
 
 <h6 id="returns">Returns</h6>
 
 <blockquote>
-  <p>callable: Filtering function for Tensorflow datasets</p>
+  <p>t.Callable: Mapping function for Tensorflow datasets</p>
 </blockquote>
 </div>
 
 
                 </section>
-                <section id="filter_by_score_in_font">
-                            <div class="attr function"><a class="headerlink" href="#filter_by_score_in_font">#&nbsp;&nbsp</a>
+                <section id="keep_high_scores_in_font">
+                            <div class="attr function"><a class="headerlink" href="#keep_high_scores_in_font">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">filter_by_score_in_font</span><span class="signature">(threshold: float)</span>:
+            <span class="name">keep_high_scores_in_font</span><span class="signature">(threshold: float)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">filter_by_score_in_font</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Returns a function for Tensorflow datasets that filter out scores lower than a given threshold in a font image set</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">keep_high_scores_in_font</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Returns a function for Tensorflow datasets that drops images with low classification score in a font batch</span>
 <span class="sd">  </span>
 <span class="sd">  Args:</span>
 <span class="sd">      threshold (float): Score threshold</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">      t.Callable: Mapping function fot Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="k">if</span> <span class="n">threshold</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">threshold</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Threshold value must be in (0,1]&quot;</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
+  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Dict: dictionary with filtered features and scores</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#if label is empty, d nothings</span>
+    <span class="c1">#if label is empty, do nothings</span>
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">score</span>
+
+    <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)),</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="c1">#if no accurate scores are left, pass empty label for downstream deletion</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">kwargs</span>
 
   <span class="k">return</span> <span class="n">f</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns a function for Tensorflow datasets that filter out scores lower than a given threshold in a font image set</p>
+            <div class="docstring"><p>Returns a function for Tensorflow datasets that drops images with low classification score in a font batch</p>
 
 <h6 id="args">Args</h6>
 
 <ul>
 <li><strong>threshold (float):</strong>  Score threshold</li>
 </ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>t.Callable: Mapping function fot Tensorflow datasets</p>
+</blockquote>
 </div>
 
 

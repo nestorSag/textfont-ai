@@ -37,16 +37,19 @@
                                 <a class="function" href="#RecordPreprocessor.__init__">RecordPreprocessor</a>
                         </li>
                         <li>
-                                <a class="variable" href="#RecordPreprocessor.CHARSET_OPTIONS">CHARSET_OPTIONS</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#RecordPreprocessor.fetch">fetch</a>
                         </li>
                         <li>
-                                <a class="function" href="#RecordPreprocessor.batch_dataset">batch_dataset</a>
+                                <a class="function" href="#RecordPreprocessor.scramble">scramble</a>
                         </li>
                         <li>
                                 <a class="function" href="#RecordPreprocessor.label_is_nonempty">label_is_nonempty</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#RecordPreprocessor.add_batch_shape_signature">add_batch_shape_signature</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#RecordPreprocessor.split_parsed_dict">split_parsed_dict</a>
                         </li>
                 </ul>
 
@@ -78,7 +81,6 @@
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">string</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
@@ -102,68 +104,47 @@
 <span class="sd">  Fetches and processes a list of Tensorflow record files to be consumed by an ML model</span>
 <span class="sd">  </span>
 <span class="sd">  Attributes:</span>
-<span class="sd">      batch_size (int): batch size</span>
 <span class="sd">      charset (char): string with every character that needs to be extracted</span>
-<span class="sd">      CHARSET_OPTIONS (TYPE): Dictionary from allowed charsets names to charsets</span>
 <span class="sd">      charset_tensor (tf.Tensor): charset in tensor form</span>
 <span class="sd">      custom_filters (t.List[types.Callable]): List of custom_filters to apply to training data</span>
 <span class="sd">      num_classes (int): number of classes in charset</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="n">CHARSET_OPTIONS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;uppercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">26</span><span class="p">::],</span>
-    <span class="s2">&quot;lowercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">26</span><span class="p">],</span>
-    <span class="s2">&quot;digits&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
-    <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
-    <span class="p">}</span>
-
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
     <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="n">custom_filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="n">custom_mappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        batch_size (int): training batch size</span>
-<span class="sd">        charset (str): One of &#39;lowercase&#39;, &#39;uppercase&#39;, &#39;digits&#39; or &#39;all&#39;; otherwise, chracters in the provided string are used as acustom charset.</span>
-
+<span class="sd">        input_record_class (type): Subclass of `fontai.io.records.TfrWritable` that corresponds to the schema of the input records</span>
+<span class="sd">        charset_tensor (tf.Tensor): Tensor with one entry per character in the charset under consideration</span>
 <span class="sd">        custom_filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels</span>
+<span class="sd">        custom_mappers (t.List[t.Callable], optional): Mapping  functions for sets of image tensors and one-hot-encoded labels</span>
+<span class="sd">    </span>
+<span class="sd">    Deleted Parameters:</span>
+<span class="sd">        charset (str): One of &#39;lowercase&#39;, &#39;uppercase&#39;, &#39;digits&#39; or &#39;all&#39;; otherwise, chracters in the provided string are used as acustom charset.</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span> <span class="o">=</span> <span class="n">input_record_class</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span> <span class="o">=</span> <span class="n">custom_filters</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">custom_mappers</span>
 
-    <span class="k">try</span><span class="p">:</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="p">[</span><span class="n">charset</span><span class="p">]</span>
-    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Charset string is not one from </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">; creating custom charset from provided string instead.&quot;</span><span class="p">)</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">charset</span><span class="p">)))</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
 
-  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fetches a list of input Tensorflow record files and prepares them for training or scoring</span>
-<span class="sd">    </span>
-<span class="sd">    dataset: List of input files</span>
-<span class="sd">    </span>
-<span class="sd">    training_format: if True, returns features and one hot encoded labels; otherwise, returns TfrWritable record instances</span>
-<span class="sd">    </span>
-<span class="sd">    Returns a MapDataset object</span>
-<span class="sd">    </span>
+<span class="sd">        </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): input data</span>
-<span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns features, label (as a single character), and fontname</span>
+<span class="sd">        batch_size (int): training batch size</span>
+<span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset: Dataset ready for model consumption</span>
@@ -172,62 +153,122 @@
     <span class="c1"># bytes -&gt; dict -&gt; tuple of objs</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_tf_example</span><span class="p">)</span>\
-      <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">)</span><span class="c1">#\</span>
-      <span class="c1">#.filter(self.filter_charset)</span>
-    
-    <span class="c1">#apply custom filters to raw tuples</span>
-    <span class="k">for</span> <span class="n">example_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_filter</span><span class="p">)</span>
-
-    <span class="c1"># apply custom map to raw tuples</span>
-    <span class="k">for</span> <span class="n">example_mapper</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_mapper</span><span class="p">)</span>
-
+      <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">)</span>
+        
     <span class="c1"># if for training, take only features and formatted labels, and batch together</span>
     <span class="k">if</span> <span class="n">training_format</span><span class="p">:</span>
+
+      <span class="c1"># apply custom filters to formatted tuples</span>
+      <span class="k">for</span> <span class="n">example_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">:</span>
+          <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_filter</span><span class="p">)</span>
+
+      <span class="c1"># apply custom map to formatted tuples</span>
+      <span class="k">for</span> <span class="n">example_mapper</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">:</span>
+          <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_mapper</span><span class="p">)</span>
+
       <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">))</span>\
         <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span> <span class="c1">#enmpty labels signal something went wrong while parsing</span>
 
-      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
+
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">filter_charset_for_scoring</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
+      <span class="c1"># split record dictionary for batching and filter out empty examples</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_parsed_dict</span><span class="p">)</span>\
+      <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
+    
     <span class="k">return</span> <span class="n">dataset</span>
 
-
-  <span class="k">def</span> <span class="nf">batch_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">scramble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): Input dataset</span>
+<span class="sd">        batch_size (int): training batch size</span>
 <span class="sd">        buffered_batches (int, optional): Number of batches to fetch in memory buffer</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1000</span>
-
+    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">512</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
-      <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>\
+      <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
 
-    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">dataset</span>
 
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">dataset</span>
-
-  <span class="k">def</span> <span class="nf">label_is_nonempty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">label_is_nonempty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Filters out training examples without rows or correctly formatted labels</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        record (tf.train.TFExample): Input example</span>
+<span class="sd">        features (tf.Tensor)</span>
+<span class="sd">        labels (tf.Tensor)</span>
+<span class="sd">        args: other arguments</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        Tensor</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">label</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+
+  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data (TFRecordDataset): Input training data</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        TFRecordDataset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="c1"># drop batch size form shape tuples</span>
+    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+      <span class="n">callable_data</span><span class="p">,</span> 
+      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
+        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="p">),</span>
+      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">training_data</span>
+
+  <span class="k">def</span> <span class="nf">split_parsed_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_dict</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Split a parsed record dictionary into features, labels and fontname</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        parsed_dict (t.Dict): parsed record dictionary</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;fontname&quot;</span><span class="p">]</span>
 </pre></div>
 
         </details>
@@ -249,68 +290,47 @@
 <span class="sd">  Fetches and processes a list of Tensorflow record files to be consumed by an ML model</span>
 <span class="sd">  </span>
 <span class="sd">  Attributes:</span>
-<span class="sd">      batch_size (int): batch size</span>
 <span class="sd">      charset (char): string with every character that needs to be extracted</span>
-<span class="sd">      CHARSET_OPTIONS (TYPE): Dictionary from allowed charsets names to charsets</span>
 <span class="sd">      charset_tensor (tf.Tensor): charset in tensor form</span>
 <span class="sd">      custom_filters (t.List[types.Callable]): List of custom_filters to apply to training data</span>
 <span class="sd">      num_classes (int): number of classes in charset</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="n">CHARSET_OPTIONS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;uppercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">26</span><span class="p">::],</span>
-    <span class="s2">&quot;lowercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">26</span><span class="p">],</span>
-    <span class="s2">&quot;digits&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
-    <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
-    <span class="p">}</span>
-
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
     <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="n">custom_filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="n">custom_mappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        batch_size (int): training batch size</span>
-<span class="sd">        charset (str): One of &#39;lowercase&#39;, &#39;uppercase&#39;, &#39;digits&#39; or &#39;all&#39;; otherwise, chracters in the provided string are used as acustom charset.</span>
-
+<span class="sd">        input_record_class (type): Subclass of `fontai.io.records.TfrWritable` that corresponds to the schema of the input records</span>
+<span class="sd">        charset_tensor (tf.Tensor): Tensor with one entry per character in the charset under consideration</span>
 <span class="sd">        custom_filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels</span>
+<span class="sd">        custom_mappers (t.List[t.Callable], optional): Mapping  functions for sets of image tensors and one-hot-encoded labels</span>
+<span class="sd">    </span>
+<span class="sd">    Deleted Parameters:</span>
+<span class="sd">        charset (str): One of &#39;lowercase&#39;, &#39;uppercase&#39;, &#39;digits&#39; or &#39;all&#39;; otherwise, chracters in the provided string are used as acustom charset.</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span> <span class="o">=</span> <span class="n">input_record_class</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span> <span class="o">=</span> <span class="n">custom_filters</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">custom_mappers</span>
 
-    <span class="k">try</span><span class="p">:</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="p">[</span><span class="n">charset</span><span class="p">]</span>
-    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Charset string is not one from </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">; creating custom charset from provided string instead.&quot;</span><span class="p">)</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">charset</span><span class="p">)))</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
 
-  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fetches a list of input Tensorflow record files and prepares them for training or scoring</span>
-<span class="sd">    </span>
-<span class="sd">    dataset: List of input files</span>
-<span class="sd">    </span>
-<span class="sd">    training_format: if True, returns features and one hot encoded labels; otherwise, returns TfrWritable record instances</span>
-<span class="sd">    </span>
-<span class="sd">    Returns a MapDataset object</span>
-<span class="sd">    </span>
+<span class="sd">        </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): input data</span>
-<span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns features, label (as a single character), and fontname</span>
+<span class="sd">        batch_size (int): training batch size</span>
+<span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset: Dataset ready for model consumption</span>
@@ -319,62 +339,122 @@
     <span class="c1"># bytes -&gt; dict -&gt; tuple of objs</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_tf_example</span><span class="p">)</span>\
-      <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">)</span><span class="c1">#\</span>
-      <span class="c1">#.filter(self.filter_charset)</span>
-    
-    <span class="c1">#apply custom filters to raw tuples</span>
-    <span class="k">for</span> <span class="n">example_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_filter</span><span class="p">)</span>
-
-    <span class="c1"># apply custom map to raw tuples</span>
-    <span class="k">for</span> <span class="n">example_mapper</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_mapper</span><span class="p">)</span>
-
+      <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">)</span>
+        
     <span class="c1"># if for training, take only features and formatted labels, and batch together</span>
     <span class="k">if</span> <span class="n">training_format</span><span class="p">:</span>
+
+      <span class="c1"># apply custom filters to formatted tuples</span>
+      <span class="k">for</span> <span class="n">example_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">:</span>
+          <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_filter</span><span class="p">)</span>
+
+      <span class="c1"># apply custom map to formatted tuples</span>
+      <span class="k">for</span> <span class="n">example_mapper</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">:</span>
+          <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_mapper</span><span class="p">)</span>
+
       <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">))</span>\
         <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span> <span class="c1">#enmpty labels signal something went wrong while parsing</span>
 
-      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
+
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">filter_charset_for_scoring</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
+      <span class="c1"># split record dictionary for batching and filter out empty examples</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_parsed_dict</span><span class="p">)</span>\
+      <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
+    
     <span class="k">return</span> <span class="n">dataset</span>
 
-
-  <span class="k">def</span> <span class="nf">batch_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">scramble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): Input dataset</span>
+<span class="sd">        batch_size (int): training batch size</span>
 <span class="sd">        buffered_batches (int, optional): Number of batches to fetch in memory buffer</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1000</span>
-
+    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">512</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
-      <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>\
+      <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
 
-    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">dataset</span>
 
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">dataset</span>
-
-  <span class="k">def</span> <span class="nf">label_is_nonempty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">label_is_nonempty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Filters out training examples without rows or correctly formatted labels</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        record (tf.train.TFExample): Input example</span>
+<span class="sd">        features (tf.Tensor)</span>
+<span class="sd">        labels (tf.Tensor)</span>
+<span class="sd">        args: other arguments</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        Tensor</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">label</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+
+  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data (TFRecordDataset): Input training data</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        TFRecordDataset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="c1"># drop batch size form shape tuples</span>
+    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+      <span class="n">callable_data</span><span class="p">,</span> 
+      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
+        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="p">),</span>
+      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">training_data</span>
+
+  <span class="k">def</span> <span class="nf">split_parsed_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_dict</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Split a parsed record dictionary into features, labels and fontname</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        parsed_dict (t.Dict): parsed record dictionary</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;fontname&quot;</span><span class="p">]</span>
 </pre></div>
 
         </details>
@@ -384,9 +464,7 @@
 <h6 id="attributes">Attributes</h6>
 
 <ul>
-<li><strong>batch_size (int):</strong>  batch size</li>
 <li><strong>charset (char):</strong>  string with every character that needs to be extracted</li>
-<li><strong>CHARSET_OPTIONS (TYPE):</strong>  Dictionary from allowed charsets names to charsets</li>
 <li><strong>charset_tensor (tf.Tensor):</strong>  charset in tensor form</li>
 <li><strong>custom_filters (t.List[types.Callable]):</strong>  List of custom_filters to apply to training data</li>
 <li><strong>num_classes (int):</strong>  number of classes in charset</li>
@@ -400,8 +478,7 @@
         
             <span class="name">RecordPreprocessor</span><span class="signature">(
     input_record_class: type,
-    batch_size: Union[int, NoneType],
-    charset: str,
+    charset_tensor: tensorflow.python.framework.ops.Tensor,
     custom_filters: List[Callable] = [],
     custom_mappers: List[Callable] = []
 )</span>
@@ -412,35 +489,28 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
     <span class="n">input_record_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-    <span class="n">charset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="n">custom_filters</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="n">custom_mappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        batch_size (int): training batch size</span>
-<span class="sd">        charset (str): One of &#39;lowercase&#39;, &#39;uppercase&#39;, &#39;digits&#39; or &#39;all&#39;; otherwise, chracters in the provided string are used as acustom charset.</span>
-
+<span class="sd">        input_record_class (type): Subclass of `fontai.io.records.TfrWritable` that corresponds to the schema of the input records</span>
+<span class="sd">        charset_tensor (tf.Tensor): Tensor with one entry per character in the charset under consideration</span>
 <span class="sd">        custom_filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels</span>
+<span class="sd">        custom_mappers (t.List[t.Callable], optional): Mapping  functions for sets of image tensors and one-hot-encoded labels</span>
+<span class="sd">    </span>
+<span class="sd">    Deleted Parameters:</span>
+<span class="sd">        charset (str): One of &#39;lowercase&#39;, &#39;uppercase&#39;, &#39;digits&#39; or &#39;all&#39;; otherwise, chracters in the provided string are used as acustom charset.</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span> <span class="o">=</span> <span class="n">input_record_class</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span> <span class="o">=</span> <span class="n">custom_filters</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">custom_mappers</span>
 
-    <span class="k">try</span><span class="p">:</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="p">[</span><span class="n">charset</span><span class="p">]</span>
-    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Charset string is not one from </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">; creating custom charset from provided string instead.&quot;</span><span class="p">)</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">charset</span><span class="p">)))</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -448,21 +518,16 @@
             <div class="docstring"><h6 id="args">Args</h6>
 
 <ul>
-<li><strong>batch_size (int):</strong>  training batch size</li>
-<li><strong>charset (str):</strong>  One of 'lowercase', 'uppercase', 'digits' or 'all'; otherwise, chracters in the provided string are used as acustom charset.</li>
+<li><strong>input_record_class (type):</strong>  Subclass of <code><a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a></code> that corresponds to the schema of the input records</li>
+<li><strong>charset_tensor (tf.Tensor):</strong>  Tensor with one entry per character in the charset under consideration</li>
 <li><strong>custom_filters (t.List[t.Callable], optional):</strong>  Filtering functions for sets of image tensors and one-hot-encoded labels</li>
+<li><strong>custom_mappers (t.List[t.Callable], optional):</strong>  Mapping  functions for sets of image tensors and one-hot-encoded labels</li>
 </ul>
+
+<p>Deleted Parameters:
+    charset (str): One of 'lowercase', 'uppercase', 'digits' or 'all'; otherwise, chracters in the provided string are used as acustom charset.</p>
 </div>
 
-
-                            </div>
-                            <div id="RecordPreprocessor.CHARSET_OPTIONS" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#RecordPreprocessor.CHARSET_OPTIONS">#&nbsp;&nbsp</a>
-
-        <span class="name">CHARSET_OPTIONS</span><span class="default_value"> = {&#39;uppercase&#39;: &#39;ABCDEFGHIJKLMNOPQRSTUVWXYZ&#39;, &#39;lowercase&#39;: &#39;abcdefghijklmnopqrstuvwxyz&#39;, &#39;digits&#39;: &#39;0123456789&#39;, &#39;all&#39;: &#39;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&#39;}</span>
-    </div>
-
-    
 
                             </div>
                             <div id="RecordPreprocessor.fetch" class="classattr">
@@ -473,25 +538,21 @@
             <span class="name">fetch</span><span class="signature">(
     self,
     dataset: tensorflow.python.data.ops.readers.TFRecordDatasetV2,
+    batch_size=32,
     training_format=True
 )</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fetches a list of input Tensorflow record files and prepares them for training or scoring</span>
-<span class="sd">    </span>
-<span class="sd">    dataset: List of input files</span>
-<span class="sd">    </span>
-<span class="sd">    training_format: if True, returns features and one hot encoded labels; otherwise, returns TfrWritable record instances</span>
-<span class="sd">    </span>
-<span class="sd">    Returns a MapDataset object</span>
-<span class="sd">    </span>
+<span class="sd">        </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): input data</span>
-<span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns features, label (as a single character), and fontname</span>
+<span class="sd">        batch_size (int): training batch size</span>
+<span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset: Dataset ready for model consumption</span>
@@ -500,24 +561,39 @@
     <span class="c1"># bytes -&gt; dict -&gt; tuple of objs</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_tf_example</span><span class="p">)</span>\
-      <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">)</span><span class="c1">#\</span>
-      <span class="c1">#.filter(self.filter_charset)</span>
-    
-    <span class="c1">#apply custom filters to raw tuples</span>
-    <span class="k">for</span> <span class="n">example_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_filter</span><span class="p">)</span>
-
-    <span class="c1"># apply custom map to raw tuples</span>
-    <span class="k">for</span> <span class="n">example_mapper</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_mapper</span><span class="p">)</span>
-
+      <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">)</span>
+        
     <span class="c1"># if for training, take only features and formatted labels, and batch together</span>
     <span class="k">if</span> <span class="n">training_format</span><span class="p">:</span>
+
+      <span class="c1"># apply custom filters to formatted tuples</span>
+      <span class="k">for</span> <span class="n">example_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">:</span>
+          <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_filter</span><span class="p">)</span>
+
+      <span class="c1"># apply custom map to formatted tuples</span>
+      <span class="k">for</span> <span class="n">example_mapper</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">:</span>
+          <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">example_mapper</span><span class="p">)</span>
+
       <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">))</span>\
         <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span> <span class="c1">#enmpty labels signal something went wrong while parsing</span>
 
-      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
+
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">filter_charset_for_scoring</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
+      <span class="c1"># split record dictionary for batching and filter out empty examples</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_parsed_dict</span><span class="p">)</span>\
+      <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
+    
     <span class="k">return</span> <span class="n">dataset</span>
 </pre></div>
 
@@ -525,17 +601,12 @@
 
             <div class="docstring"><p>Fetches a list of input Tensorflow record files and prepares them for training or scoring</p>
 
-<p>dataset: List of input files</p>
-
-<p>training_format: if True, returns features and one hot encoded labels; otherwise, returns TfrWritable record instances</p>
-
-<p>Returns a MapDataset object</p>
-
 <h6 id="args">Args</h6>
 
 <ul>
 <li><strong>dataset (TFRecordDataset):</strong>  input data</li>
-<li><strong>training_format (bool, optional):</strong>  If True, returns features and a one hot encoded label; otherwise, returns features, label (as a single character), and fontname</li>
+<li><strong>batch_size (int):</strong>  training batch size</li>
+<li><strong>training_format (bool, optional):</strong>  If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -547,39 +618,35 @@
 
 
                             </div>
-                            <div id="RecordPreprocessor.batch_dataset" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#RecordPreprocessor.batch_dataset">#&nbsp;&nbsp</a>
+                            <div id="RecordPreprocessor.scramble" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#RecordPreprocessor.scramble">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">batch_dataset</span><span class="signature">(self, dataset, buffered_batches=512)</span>:
+            <span class="name">scramble</span><span class="signature">(self, dataset, batch_size, buffered_batches=512)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">batch_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">scramble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): Input dataset</span>
+<span class="sd">        batch_size (int): training batch size</span>
 <span class="sd">        buffered_batches (int, optional): Number of batches to fetch in memory buffer</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1000</span>
-
+    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">512</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
-      <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>\
+      <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
 
-    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">dataset</span>
+    <span class="k">return</span> <span class="n">dataset</span>
 </pre></div>
 
         </details>
@@ -590,6 +657,7 @@
 
 <ul>
 <li><strong>dataset (TFRecordDataset):</strong>  Input dataset</li>
+<li><strong>batch_size (int):</strong>  training batch size</li>
 <li><strong>buffered_batches (int, optional):</strong>  Number of batches to fetch in memory buffer</li>
 </ul>
 
@@ -607,17 +675,19 @@
 
         
             <span class="def">def</span>
-            <span class="name">label_is_nonempty</span><span class="signature">(self, features, label)</span>:
+            <span class="name">label_is_nonempty</span><span class="signature">(self, features, label, *args)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">label_is_nonempty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">label_is_nonempty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Filters out training examples without rows or correctly formatted labels</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        record (tf.train.TFExample): Input example</span>
+<span class="sd">        features (tf.Tensor)</span>
+<span class="sd">        labels (tf.Tensor)</span>
+<span class="sd">        args: other arguments</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        Tensor</span>
@@ -632,13 +702,132 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>record (tf.train.TFExample):</strong>  Input example</li>
+<li>features (tf.Tensor)</li>
+<li>labels (tf.Tensor)</li>
+<li><strong>args:</strong>  other arguments</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <blockquote>
   <p>Tensor</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="RecordPreprocessor.add_batch_shape_signature" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#RecordPreprocessor.add_batch_shape_signature">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">add_batch_shape_signature</span><span class="signature">(
+    self,
+    data: tensorflow.python.data.ops.readers.TFRecordDatasetV2
+) -&gt; tensorflow.python.data.ops.readers.TFRecordDatasetV2</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data (TFRecordDataset): Input training data</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        TFRecordDataset</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="c1"># drop batch size form shape tuples</span>
+    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+      <span class="n">callable_data</span><span class="p">,</span> 
+      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
+        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="p">),</span>
+      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">training_data</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>data (TFRecordDataset):</strong>  Input training data</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>TFRecordDataset</p>
+</blockquote>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li>ValueError</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="RecordPreprocessor.split_parsed_dict" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#RecordPreprocessor.split_parsed_dict">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">split_parsed_dict</span><span class="signature">(self, parsed_dict: Dict)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">split_parsed_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_dict</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Split a parsed record dictionary into features, labels and fontname</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        parsed_dict (t.Dict): parsed record dictionary</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">parsed_dict</span><span class="p">[</span><span class="s2">&quot;fontname&quot;</span><span class="p">]</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Split a parsed record dictionary into features, labels and fontname</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>parsed_dict (t.Dict):</strong>  parsed record dictionary</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor]</p>
 </blockquote>
 </div>
 

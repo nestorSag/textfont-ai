@@ -66,6 +66,12 @@
                         <li>
                                 <a class="function" href="#TfrWritable.from_parsed_bytes_dict">from_parsed_bytes_dict</a>
                         </li>
+                        <li>
+                                <a class="function" href="#TfrWritable.from_scored_batch">from_scored_batch</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TfrWritable.filter_charset_for_scoring">filter_charset_for_scoring</a>
+                        </li>
                 </ul>
 
             </li>
@@ -111,6 +117,12 @@
                         <li>
                                 <a class="function" href="#LabeledChar.get_training_parser">get_training_parser</a>
                         </li>
+                        <li>
+                                <a class="function" href="#LabeledChar.from_scored_batch">from_scored_batch</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LabeledChar.filter_charset_for_scoring">filter_charset_for_scoring</a>
+                        </li>
                 </ul>
 
             </li>
@@ -137,6 +149,12 @@
                         </li>
                         <li>
                                 <a class="function" href="#LabeledFont.get_training_parser">get_training_parser</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LabeledFont.from_scored_batch">from_scored_batch</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LabeledFont.filter_charset_for_scoring">filter_charset_for_scoring</a>
                         </li>
                 </ul>
 
@@ -202,6 +220,8 @@
 <span class="kn">from</span> <span class="nn">tensorflow.io</span> <span class="kn">import</span> <span class="n">FixedLenFeature</span><span class="p">,</span> <span class="n">parse_single_example</span><span class="p">,</span> <span class="n">serialize_tensor</span>
 
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">from</span> <span class="nn">tensorflow.data</span> <span class="kn">import</span> <span class="n">TFRecordDataset</span>
+
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -298,13 +318,16 @@
     <span class="n">bf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">val</span>
 
-  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Adds a model&#39;s score and return the appropriate record instance</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        score (Tensor): Model record</span>
+<span class="sd">        score (Tensor): Model score</span>
+
+<span class="sd">        charset (Tensor): charset used by the scoring model</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
+
 <span class="sd">        TfrWritable: scored record instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Adding a score is not implemented for this schema.&quot;</span><span class="p">)</span>
@@ -350,6 +373,41 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">})</span>
 
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontname</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">TfrWritable</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</span>
+<span class="sd">        label (ndarray): batch labels</span>
+<span class="sd">        fontname (t.Union[str, ndarray]): batch fontnames</span>
+<span class="sd">        scores (ndarray): batch scores</span>
+<span class="sd">        charset_tensor (ndarray): tensor with a single char element per charset element</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Generator[TfrWritable, None, None]: Generator of formatted records</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;This method is only implemented for subclasses&quot;</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        dataset (TFRecordDataset): input dataset</span>
+<span class="sd">        charset_tensor (ndarray): tensor with a single char element per charset element</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;This method is only implemented for subclasses&quot;</span><span class="p">)</span>
+
+
 
 
 
@@ -392,9 +450,9 @@
     <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img_to_png_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">))</span>
     <span class="p">}</span>
 
-  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
 
-    <span class="k">return</span> <span class="n">ScoredLabeledChar</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ScoredLabeledChar</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
 
   <span class="nd">@classmethod</span>
@@ -422,9 +480,44 @@
       <span class="k">else</span><span class="p">:</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="n">one_hot_label</span><span class="p">,</span><span class="n">depth</span><span class="o">=</span><span class="n">num_classes</span><span class="p">),(</span><span class="n">num_classes</span><span class="p">,))</span>
       
+      <span class="c1">#return kwargs[&quot;features&quot;], label</span>
+      <span class="c1">#kwargs[&quot;label&quot;] = label</span>
+      <span class="c1">#return kwargs</span>
       <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">label</span>
 
     <span class="k">return</span> <span class="n">parser</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">batch_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Features should have 4 dimensions, including batch and channels&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+      <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">uint8</span><span class="p">),</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="n">idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+      <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">filter_func</span><span class="p">)</span>
   
 
 
@@ -468,9 +561,9 @@
     <span class="s2">&quot;fontname&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fontname</span><span class="p">))),</span>
     <span class="p">}</span>
 
-  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
 
-    <span class="k">return</span> <span class="n">ScoredLabeledFont</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ScoredLabeledFont</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
@@ -487,7 +580,12 @@
     <span class="bp">cls</span><span class="p">,</span> 
     <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+
+      <span class="c1">#if label is empty, pass empty for downstream deletion</span>
+      <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
       <span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
       <span class="n">raw_one_hot</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span>
@@ -507,9 +605,49 @@
 
 
       <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span>
+      <span class="c1"># kwargs[&quot;label&quot;] = label</span>
+      <span class="c1"># kwargs[&quot;features&quot;] = features</span>
+      <span class="c1"># return kwargs</span>
 
 
     <span class="k">return</span> <span class="n">parser</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">font_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Features should have 4 dimensions, including batch and channels; make sure that batch size parameter in RecordProcessor.fetch is null for font records)&quot;</span><span class="p">)</span>
+
+    <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span>
+      <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">font_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">uint8</span><span class="p">),</span>
+      <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">,</span>
+      <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span>
+      <span class="p">)</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+      <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">,</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
+
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="n">reshaped_labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+      <span class="n">in_charset</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">reshaped_labels</span> <span class="o">==</span> <span class="n">charset_tensor</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">index</span> <span class="o">=</span> <span class="n">in_charset</span> <span class="o">&gt;</span> <span class="mi">0</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">filter_func</span><span class="p">)</span>
 
 <span class="k">class</span> <span class="nc">ScoredRecordFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
@@ -536,31 +674,48 @@
         <span class="c1">#</span>
 
         <span class="n">record_type</span> <span class="o">=</span> <span class="n">T</span>
-        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}}</span>
 
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
-          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
-            <span class="k">return</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> and score must be a numpy array&quot;</span><span class="p">)</span>
+        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
+          <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;score must be an instance of ndarray&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset_tensor must be an instance of </span><span class="si">{</span><span class="n">ndarray</span><span class="si">}</span><span class="s2">; found </span><span class="si">{</span><span class="n">charset_tensor</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="c1"># elif len(charset_tensor) != len(score):</span>
+          <span class="c1">#   raise ValueError(&quot;charset_tensor must be the same length as score&quot;)</span>
 
           <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">=</span> <span class="n">example</span>
           <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span>
 
 
         <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
         <span class="c1">#</span>
         <span class="k">def</span> <span class="nf">to_bytes_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
           <span class="c1">#</span>
           <span class="k">return</span> <span class="p">{</span>
-          <span class="o">**</span><span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">))},</span>
+          <span class="s2">&quot;charset_tensor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)),</span> 
+          <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)),</span>
           <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">to_bytes_dict</span><span class="p">()</span>
           <span class="p">}</span>
         <span class="c1">#</span>
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
           <span class="n">parsed_record_bytes_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
           <span class="n">score</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
           <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+          <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">charset_tensor</span>
+
           <span class="k">return</span> <span class="n">parsed_record_bytes_dict</span> 
 
         <span class="nd">@classmethod</span>
@@ -568,24 +723,45 @@
 
           <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
           <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">)</span>
 
-          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">get_training_parser</span><span class="p">(</span>
           <span class="bp">cls</span><span class="p">,</span> 
           <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-          <span class="n">base_parser</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
-
           <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">base_parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
 
           <span class="k">return</span> <span class="n">parser</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+          <span class="bp">cls</span><span class="p">,</span>
+          <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+            <span class="n">features</span><span class="p">,</span>
+            <span class="n">labels</span><span class="p">,</span>
+            <span class="n">fontnames</span><span class="p">,</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">)</span>
         
       <span class="k">return</span> <span class="n">ScoredRecord</span>
+
+
 
 
 <span class="n">ScoredLabeledChar</span> <span class="o">=</span> <span class="n">ScoredRecordFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">LabeledChar</span><span class="p">)</span>
@@ -699,13 +875,16 @@
     <span class="n">bf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">val</span>
 
-  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Adds a model&#39;s score and return the appropriate record instance</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        score (Tensor): Model record</span>
+<span class="sd">        score (Tensor): Model score</span>
+
+<span class="sd">        charset (Tensor): charset used by the scoring model</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
+
 <span class="sd">        TfrWritable: scored record instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Adding a score is not implemented for this schema.&quot;</span><span class="p">)</span>
@@ -750,6 +929,40 @@
 <span class="sd">        TfrWritable</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">})</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontname</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">TfrWritable</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</span>
+<span class="sd">        label (ndarray): batch labels</span>
+<span class="sd">        fontname (t.Union[str, ndarray]): batch fontnames</span>
+<span class="sd">        scores (ndarray): batch scores</span>
+<span class="sd">        charset_tensor (ndarray): tensor with a single char element per charset element</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Generator[TfrWritable, None, None]: Generator of formatted records</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;This method is only implemented for subclasses&quot;</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        dataset (TFRecordDataset): input dataset</span>
+<span class="sd">        charset_tensor (ndarray): tensor with a single char element per charset element</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;This method is only implemented for subclasses&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1039,19 +1252,23 @@
             <span class="def">def</span>
             <span class="name">add_score</span><span class="signature">(
     self,
-    score: tensorflow.python.framework.ops.Tensor
+    score: tensorflow.python.framework.ops.Tensor,
+    charset_tensor: tensorflow.python.framework.ops.Tensor
 ) -&gt; <a href="#TfrWritable">fontai.io.records.TfrWritable</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Adds a model&#39;s score and return the appropriate record instance</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        score (Tensor): Model record</span>
+<span class="sd">        score (Tensor): Model score</span>
+
+<span class="sd">        charset (Tensor): charset used by the scoring model</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
+
 <span class="sd">        TfrWritable: scored record instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Adding a score is not implemented for this schema.&quot;</span><span class="p">)</span>
@@ -1064,7 +1281,8 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>score (Tensor):</strong>  Model record</li>
+<li><strong>score (Tensor):</strong>  Model score</li>
+<li><strong>charset (Tensor):</strong>  charset used by the scoring model</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1214,6 +1432,112 @@
 
 
                             </div>
+                            <div id="TfrWritable.from_scored_batch" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#TfrWritable.from_scored_batch">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">from_scored_batch</span><span class="signature">(
+    cls,
+    features: numpy.ndarray,
+    label: numpy.ndarray,
+    fontname: Union[str, numpy.ndarray],
+    scores: numpy.ndarray,
+    charset_tensor: numpy.ndarray
+) -&gt; Generator[<a href="#TfrWritable">fontai.io.records.TfrWritable</a>, NoneType, NoneType]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontname</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">TfrWritable</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</span>
+<span class="sd">        label (ndarray): batch labels</span>
+<span class="sd">        fontname (t.Union[str, ndarray]): batch fontnames</span>
+<span class="sd">        scores (ndarray): batch scores</span>
+<span class="sd">        charset_tensor (ndarray): tensor with a single char element per charset element</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        t.Generator[TfrWritable, None, None]: Generator of formatted records</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;This method is only implemented for subclasses&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>features (ndarray):</strong>  batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</li>
+<li><strong>label (ndarray):</strong>  batch labels</li>
+<li><strong>fontname (t.Union[str, ndarray]):</strong>  batch fontnames</li>
+<li><strong>scores (ndarray):</strong>  batch scores</li>
+<li><strong>charset_tensor (ndarray):</strong>  tensor with a single char element per charset element</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>t.Generator[TfrWritable, None, None]: Generator of formatted records</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="TfrWritable.filter_charset_for_scoring" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#TfrWritable.filter_charset_for_scoring">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">filter_charset_for_scoring</span><span class="signature">(
+    self,
+    dataset: tensorflow.python.data.ops.readers.TFRecordDatasetV2,
+    charset_tensor: numpy.ndarray
+)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        dataset (TFRecordDataset): input dataset</span>
+<span class="sd">        charset_tensor (ndarray): tensor with a single char element per charset element</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;This method is only implemented for subclasses&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>dataset (TFRecordDataset):</strong>  input dataset</li>
+<li><strong>charset_tensor (ndarray):</strong>  tensor with a single char element per charset element</li>
+</ul>
+</div>
+
+
+                            </div>
                 </section>
                 <section id="ModelWithAnyType">
                                 <div class="attr class">
@@ -1341,9 +1665,9 @@
     <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img_to_png_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">))</span>
     <span class="p">}</span>
 
-  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
 
-    <span class="k">return</span> <span class="n">ScoredLabeledChar</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ScoredLabeledChar</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
 
   <span class="nd">@classmethod</span>
@@ -1371,9 +1695,44 @@
       <span class="k">else</span><span class="p">:</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="n">one_hot_label</span><span class="p">,</span><span class="n">depth</span><span class="o">=</span><span class="n">num_classes</span><span class="p">),(</span><span class="n">num_classes</span><span class="p">,))</span>
       
+      <span class="c1">#return kwargs[&quot;features&quot;], label</span>
+      <span class="c1">#kwargs[&quot;label&quot;] = label</span>
+      <span class="c1">#return kwargs</span>
       <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">label</span>
 
     <span class="k">return</span> <span class="n">parser</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">batch_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Features should have 4 dimensions, including batch and channels&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+      <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">uint8</span><span class="p">),</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="n">idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+      <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">filter_func</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1445,14 +1804,18 @@
 
         
             <span class="def">def</span>
-            <span class="name">add_score</span><span class="signature">(self, score: numpy.ndarray) -&gt; <a href="#TfrWritable">fontai.io.records.TfrWritable</a></span>:
+            <span class="name">add_score</span><span class="signature">(
+    self,
+    score: numpy.ndarray,
+    charset_tensor: numpy.ndarray
+) -&gt; <a href="#TfrWritable">fontai.io.records.TfrWritable</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
 
-    <span class="k">return</span> <span class="n">ScoredLabeledChar</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ScoredLabeledChar</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1462,7 +1825,8 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>score (Tensor):</strong>  Model record</li>
+<li><strong>score (Tensor):</strong>  Model score</li>
+<li><strong>charset (Tensor):</strong>  charset used by the scoring model</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1543,6 +1907,9 @@
       <span class="k">else</span><span class="p">:</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="n">one_hot_label</span><span class="p">,</span><span class="n">depth</span><span class="o">=</span><span class="n">num_classes</span><span class="p">),(</span><span class="n">num_classes</span><span class="p">,))</span>
       
+      <span class="c1">#return kwargs[&quot;features&quot;], label</span>
+      <span class="c1">#kwargs[&quot;label&quot;] = label</span>
+      <span class="c1">#return kwargs</span>
       <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">label</span>
 
     <span class="k">return</span> <span class="n">parser</span>
@@ -1563,6 +1930,110 @@
 <blockquote>
   <p>t.Callable: Parser function</p>
 </blockquote>
+</div>
+
+
+                            </div>
+                            <div id="LabeledChar.from_scored_batch" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#LabeledChar.from_scored_batch">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">from_scored_batch</span><span class="signature">(
+    cls,
+    features: numpy.ndarray,
+    labels: numpy.ndarray,
+    fontnames: numpy.ndarray,
+    scores: numpy.ndarray,
+    charset_tensor: numpy.ndarray
+) -&gt; Generator[<a href="#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">batch_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Features should have 4 dimensions, including batch and channels&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+      <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">uint8</span><span class="p">),</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>features (ndarray):</strong>  batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</li>
+<li><strong>label (ndarray):</strong>  batch labels</li>
+<li><strong>fontname (t.Union[str, ndarray]):</strong>  batch fontnames</li>
+<li><strong>scores (ndarray):</strong>  batch scores</li>
+<li><strong>charset_tensor (ndarray):</strong>  tensor with a single char element per charset element</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>t.Generator[TfrWritable, None, None]: Generator of formatted records</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="LabeledChar.filter_charset_for_scoring" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#LabeledChar.filter_charset_for_scoring">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">filter_charset_for_scoring</span><span class="signature">(
+    self,
+    dataset: tensorflow.python.data.ops.readers.TFRecordDatasetV2,
+    charset_tensor: numpy.ndarray
+)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="n">idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+      <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">filter_func</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>dataset (TFRecordDataset):</strong>  input dataset</li>
+<li><strong>charset_tensor (ndarray):</strong>  tensor with a single char element per charset element</li>
+</ul>
 </div>
 
 
@@ -1653,9 +2124,9 @@
     <span class="s2">&quot;fontname&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fontname</span><span class="p">))),</span>
     <span class="p">}</span>
 
-  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
 
-    <span class="k">return</span> <span class="n">ScoredLabeledFont</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ScoredLabeledFont</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
@@ -1672,7 +2143,12 @@
     <span class="bp">cls</span><span class="p">,</span> 
     <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+
+      <span class="c1">#if label is empty, pass empty for downstream deletion</span>
+      <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
       <span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
       <span class="n">raw_one_hot</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span>
@@ -1692,9 +2168,49 @@
 
 
       <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span>
+      <span class="c1"># kwargs[&quot;label&quot;] = label</span>
+      <span class="c1"># kwargs[&quot;features&quot;] = features</span>
+      <span class="c1"># return kwargs</span>
 
 
     <span class="k">return</span> <span class="n">parser</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">font_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Features should have 4 dimensions, including batch and channels; make sure that batch size parameter in RecordProcessor.fetch is null for font records)&quot;</span><span class="p">)</span>
+
+    <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span>
+      <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">font_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">uint8</span><span class="p">),</span>
+      <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">,</span>
+      <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span>
+      <span class="p">)</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+      <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">,</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
+
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="n">reshaped_labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+      <span class="n">in_charset</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">reshaped_labels</span> <span class="o">==</span> <span class="n">charset_tensor</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">index</span> <span class="o">=</span> <span class="n">in_charset</span> <span class="o">&gt;</span> <span class="mi">0</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">filter_func</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1770,14 +2286,18 @@
 
         
             <span class="def">def</span>
-            <span class="name">add_score</span><span class="signature">(self, score: numpy.ndarray) -&gt; <a href="#TfrWritable">fontai.io.records.TfrWritable</a></span>:
+            <span class="name">add_score</span><span class="signature">(
+    self,
+    score: numpy.ndarray,
+    charset_tensor: numpy.ndarray
+) -&gt; <a href="#TfrWritable">fontai.io.records.TfrWritable</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TfrWritable</span><span class="p">:</span>
 
-    <span class="k">return</span> <span class="n">ScoredLabeledFont</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ScoredLabeledFont</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1787,7 +2307,8 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>score (Tensor):</strong>  Model record</li>
+<li><strong>score (Tensor):</strong>  Model score</li>
+<li><strong>charset (Tensor):</strong>  charset used by the scoring model</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1859,7 +2380,12 @@
     <span class="bp">cls</span><span class="p">,</span> 
     <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">):</span>
+
+      <span class="c1">#if label is empty, pass empty for downstream deletion</span>
+      <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
       <span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
       <span class="n">raw_one_hot</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span>
@@ -1879,6 +2405,9 @@
 
 
       <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">label</span>
+      <span class="c1"># kwargs[&quot;label&quot;] = label</span>
+      <span class="c1"># kwargs[&quot;features&quot;] = features</span>
+      <span class="c1"># return kwargs</span>
 
 
     <span class="k">return</span> <span class="n">parser</span>
@@ -1899,6 +2428,114 @@
 <blockquote>
   <p>t.Callable: Parser function</p>
 </blockquote>
+</div>
+
+
+                            </div>
+                            <div id="LabeledFont.from_scored_batch" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#LabeledFont.from_scored_batch">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">from_scored_batch</span><span class="signature">(
+    cls,
+    features: numpy.ndarray,
+    labels: numpy.ndarray,
+    fontnames: numpy.ndarray,
+    scores: numpy.ndarray,
+    charset_tensor: numpy.ndarray
+) -&gt; Generator[<a href="#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">font_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Features should have 4 dimensions, including batch and channels; make sure that batch size parameter in RecordProcessor.fetch is null for font records)&quot;</span><span class="p">)</span>
+
+    <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span>
+      <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">font_size</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">uint8</span><span class="p">),</span>
+      <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">,</span>
+      <span class="n">fontname</span> <span class="o">=</span> <span class="n">fontnames</span>
+      <span class="p">)</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+      <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">,</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>features (ndarray):</strong>  batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</li>
+<li><strong>label (ndarray):</strong>  batch labels</li>
+<li><strong>fontname (t.Union[str, ndarray]):</strong>  batch fontnames</li>
+<li><strong>scores (ndarray):</strong>  batch scores</li>
+<li><strong>charset_tensor (ndarray):</strong>  tensor with a single char element per charset element</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>t.Generator[TfrWritable, None, None]: Generator of formatted records</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="LabeledFont.filter_charset_for_scoring" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#LabeledFont.filter_charset_for_scoring">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@classmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">filter_charset_for_scoring</span><span class="signature">(
+    self,
+    dataset: tensorflow.python.data.ops.readers.TFRecordDatasetV2,
+    charset_tensor: numpy.ndarray
+)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="n">reshaped_labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+      <span class="n">in_charset</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">reshaped_labels</span> <span class="o">==</span> <span class="n">charset_tensor</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">index</span> <span class="o">=</span> <span class="n">in_charset</span> <span class="o">&gt;</span> <span class="mi">0</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+      <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">filter_func</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>dataset (TFRecordDataset):</strong>  input dataset</li>
+<li><strong>charset_tensor (ndarray):</strong>  tensor with a single char element per charset element</li>
+</ul>
 </div>
 
 
@@ -1975,31 +2612,48 @@
         <span class="c1">#</span>
 
         <span class="n">record_type</span> <span class="o">=</span> <span class="n">T</span>
-        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}}</span>
 
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
-          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
-            <span class="k">return</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> and score must be a numpy array&quot;</span><span class="p">)</span>
+        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
+          <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;score must be an instance of ndarray&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset_tensor must be an instance of </span><span class="si">{</span><span class="n">ndarray</span><span class="si">}</span><span class="s2">; found </span><span class="si">{</span><span class="n">charset_tensor</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="c1"># elif len(charset_tensor) != len(score):</span>
+          <span class="c1">#   raise ValueError(&quot;charset_tensor must be the same length as score&quot;)</span>
 
           <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">=</span> <span class="n">example</span>
           <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span>
 
 
         <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
         <span class="c1">#</span>
         <span class="k">def</span> <span class="nf">to_bytes_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
           <span class="c1">#</span>
           <span class="k">return</span> <span class="p">{</span>
-          <span class="o">**</span><span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">))},</span>
+          <span class="s2">&quot;charset_tensor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)),</span> 
+          <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)),</span>
           <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">to_bytes_dict</span><span class="p">()</span>
           <span class="p">}</span>
         <span class="c1">#</span>
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
           <span class="n">parsed_record_bytes_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
           <span class="n">score</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
           <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+          <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">charset_tensor</span>
+
           <span class="k">return</span> <span class="n">parsed_record_bytes_dict</span> 
 
         <span class="nd">@classmethod</span>
@@ -2007,22 +2661,41 @@
 
           <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
           <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">)</span>
 
-          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">get_training_parser</span><span class="p">(</span>
           <span class="bp">cls</span><span class="p">,</span> 
           <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-          <span class="n">base_parser</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
-
           <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">base_parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
 
           <span class="k">return</span> <span class="n">parser</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+          <span class="bp">cls</span><span class="p">,</span>
+          <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+            <span class="n">features</span><span class="p">,</span>
+            <span class="n">labels</span><span class="p">,</span>
+            <span class="n">fontnames</span><span class="p">,</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">)</span>
         
       <span class="k">return</span> <span class="n">ScoredRecord</span>
 </pre></div>
@@ -2075,31 +2748,48 @@
         <span class="c1">#</span>
 
         <span class="n">record_type</span> <span class="o">=</span> <span class="n">T</span>
-        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}}</span>
 
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
-          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
-            <span class="k">return</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> and score must be a numpy array&quot;</span><span class="p">)</span>
+        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
+          <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;score must be an instance of ndarray&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset_tensor must be an instance of </span><span class="si">{</span><span class="n">ndarray</span><span class="si">}</span><span class="s2">; found </span><span class="si">{</span><span class="n">charset_tensor</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="c1"># elif len(charset_tensor) != len(score):</span>
+          <span class="c1">#   raise ValueError(&quot;charset_tensor must be the same length as score&quot;)</span>
 
           <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">=</span> <span class="n">example</span>
           <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span>
 
 
         <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
         <span class="c1">#</span>
         <span class="k">def</span> <span class="nf">to_bytes_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
           <span class="c1">#</span>
           <span class="k">return</span> <span class="p">{</span>
-          <span class="o">**</span><span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">))},</span>
+          <span class="s2">&quot;charset_tensor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)),</span> 
+          <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)),</span>
           <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">to_bytes_dict</span><span class="p">()</span>
           <span class="p">}</span>
         <span class="c1">#</span>
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
           <span class="n">parsed_record_bytes_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
           <span class="n">score</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
           <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+          <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">charset_tensor</span>
+
           <span class="k">return</span> <span class="n">parsed_record_bytes_dict</span> 
 
         <span class="nd">@classmethod</span>
@@ -2107,22 +2797,41 @@
 
           <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
           <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">)</span>
 
-          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">get_training_parser</span><span class="p">(</span>
           <span class="bp">cls</span><span class="p">,</span> 
           <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-          <span class="n">base_parser</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
-
           <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">base_parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
 
           <span class="k">return</span> <span class="n">parser</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+          <span class="bp">cls</span><span class="p">,</span>
+          <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+            <span class="n">features</span><span class="p">,</span>
+            <span class="n">labels</span><span class="p">,</span>
+            <span class="n">fontnames</span><span class="p">,</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">)</span>
         
       <span class="k">return</span> <span class="n">ScoredRecord</span>
 </pre></div>
@@ -2168,31 +2877,48 @@
         <span class="c1">#</span>
 
         <span class="n">record_type</span> <span class="o">=</span> <span class="n">T</span>
-        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}}</span>
 
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
-          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
-            <span class="k">return</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> and score must be a numpy array&quot;</span><span class="p">)</span>
+        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
+          <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;score must be an instance of ndarray&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset_tensor must be an instance of </span><span class="si">{</span><span class="n">ndarray</span><span class="si">}</span><span class="s2">; found </span><span class="si">{</span><span class="n">charset_tensor</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="c1"># elif len(charset_tensor) != len(score):</span>
+          <span class="c1">#   raise ValueError(&quot;charset_tensor must be the same length as score&quot;)</span>
 
           <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">=</span> <span class="n">example</span>
           <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span>
 
 
         <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
         <span class="c1">#</span>
         <span class="k">def</span> <span class="nf">to_bytes_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
           <span class="c1">#</span>
           <span class="k">return</span> <span class="p">{</span>
-          <span class="o">**</span><span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">))},</span>
+          <span class="s2">&quot;charset_tensor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)),</span> 
+          <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)),</span>
           <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">to_bytes_dict</span><span class="p">()</span>
           <span class="p">}</span>
         <span class="c1">#</span>
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
           <span class="n">parsed_record_bytes_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
           <span class="n">score</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
           <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+          <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">charset_tensor</span>
+
           <span class="k">return</span> <span class="n">parsed_record_bytes_dict</span> 
 
         <span class="nd">@classmethod</span>
@@ -2200,22 +2926,41 @@
 
           <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
           <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">)</span>
 
-          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">get_training_parser</span><span class="p">(</span>
           <span class="bp">cls</span><span class="p">,</span> 
           <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-          <span class="n">base_parser</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
-
           <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">base_parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
 
           <span class="k">return</span> <span class="n">parser</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+          <span class="bp">cls</span><span class="p">,</span>
+          <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+            <span class="n">features</span><span class="p">,</span>
+            <span class="n">labels</span><span class="p">,</span>
+            <span class="n">fontnames</span><span class="p">,</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -2234,6 +2979,8 @@
                 <dd id="ScoredLabeledChar.parse_bytes_dict" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.parse_bytes_dict">parse_bytes_dict</a></dd>
                 <dd id="ScoredLabeledChar.from_parsed_bytes_dict" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.from_parsed_bytes_dict">from_parsed_bytes_dict</a></dd>
                 <dd id="ScoredLabeledChar.get_training_parser" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.get_training_parser">get_training_parser</a></dd>
+                <dd id="ScoredLabeledChar.from_scored_batch" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.from_scored_batch">from_scored_batch</a></dd>
+                <dd id="ScoredLabeledChar.filter_charset_for_scoring" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.filter_charset_for_scoring">filter_charset_for_scoring</a></dd>
 
             </div>
             <div><dt><a href="#TfrWritable">TfrWritable</a></dt>
@@ -2264,31 +3011,48 @@
         <span class="c1">#</span>
 
         <span class="n">record_type</span> <span class="o">=</span> <span class="n">T</span>
-        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}}</span>
 
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
-          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
-            <span class="k">return</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> and score must be a numpy array&quot;</span><span class="p">)</span>
+        <span class="n">_tfr_schema</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
+          <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;score must be an instance of ndarray&quot;</span><span class="p">)</span>
+          <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;charset_tensor must be an instance of </span><span class="si">{</span><span class="n">ndarray</span><span class="si">}</span><span class="s2">; found </span><span class="si">{</span><span class="n">charset_tensor</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+          <span class="c1"># elif len(charset_tensor) != len(score):</span>
+          <span class="c1">#   raise ValueError(&quot;charset_tensor must be the same length as score&quot;)</span>
 
           <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">=</span> <span class="n">example</span>
           <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span>
 
 
         <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">example</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">example</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
         <span class="c1">#</span>
         <span class="k">def</span> <span class="nf">to_bytes_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
           <span class="c1">#</span>
           <span class="k">return</span> <span class="p">{</span>
-          <span class="o">**</span><span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">))},</span>
+          <span class="s2">&quot;charset_tensor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)),</span> 
+          <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">bytes_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">array_to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)),</span>
           <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">to_bytes_dict</span><span class="p">()</span>
           <span class="p">}</span>
         <span class="c1">#</span>
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">parse_bytes_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
           <span class="n">parsed_record_bytes_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">parse_bytes_dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
           <span class="n">score</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
           <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">],</span> <span class="n">out_type</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+          <span class="n">parsed_record_bytes_dict</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">charset_tensor</span>
+
           <span class="k">return</span> <span class="n">parsed_record_bytes_dict</span> 
 
         <span class="nd">@classmethod</span>
@@ -2296,22 +3060,41 @@
 
           <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
           <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">)</span>
 
-          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">)</span>
+          <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">example</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">charset_tensor</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
         <span class="k">def</span> <span class="nf">get_training_parser</span><span class="p">(</span>
           <span class="bp">cls</span><span class="p">,</span> 
           <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
 
-          <span class="n">base_parser</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
-
           <span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">base_parser</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span><span class="o">=</span><span class="n">charset_tensor</span><span class="p">)</span>
 
           <span class="k">return</span> <span class="n">parser</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">from_scored_batch</span><span class="p">(</span>
+          <span class="bp">cls</span><span class="p">,</span>
+          <span class="n">features</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">labels</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">fontnames</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">scores</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+            <span class="n">features</span><span class="p">,</span>
+            <span class="n">labels</span><span class="p">,</span>
+            <span class="n">fontnames</span><span class="p">,</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">filter_charset_for_scoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
+
+          <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">record_type</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -2330,6 +3113,8 @@
                 <dd id="ScoredLabeledFont.parse_bytes_dict" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.parse_bytes_dict">parse_bytes_dict</a></dd>
                 <dd id="ScoredLabeledFont.from_parsed_bytes_dict" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.from_parsed_bytes_dict">from_parsed_bytes_dict</a></dd>
                 <dd id="ScoredLabeledFont.get_training_parser" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.get_training_parser">get_training_parser</a></dd>
+                <dd id="ScoredLabeledFont.from_scored_batch" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.from_scored_batch">from_scored_batch</a></dd>
+                <dd id="ScoredLabeledFont.filter_charset_for_scoring" class="function"><a href="#ScoredRecordFactory.create.<locals>.ScoredRecord.filter_charset_for_scoring">filter_charset_for_scoring</a></dd>
 
             </div>
             <div><dt><a href="#TfrWritable">TfrWritable</a></dt>

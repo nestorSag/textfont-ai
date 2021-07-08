@@ -678,6 +678,7 @@
       <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Path (</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">) does not point to file&quot;</span><span class="p">)</span>
+      <span class="c1">#raise Exception(f&quot;An error occurred while trying to read {str(path)}: {e}&quot;)</span>
 </pre></div>
 
         </details>

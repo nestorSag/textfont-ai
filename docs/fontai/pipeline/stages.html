@@ -100,13 +100,13 @@
                                 <a class="function" href="#Predictor.__init__">Predictor</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Predictor.CHARSET_OPTIONS">CHARSET_OPTIONS</a>
+                        </li>
+                        <li>
                                 <a class="class" href="#Predictor.input_file_format">Predictor.input_file_format</a>
                         </li>
                         <li>
                                 <a class="class" href="#Predictor.output_file_format">Predictor.output_file_format</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#Predictor.add_batch_shape_signature">add_batch_shape_signature</a>
                         </li>
                         <li>
                                 <a class="function" href="#Predictor.fit">fit</a>
@@ -161,7 +161,10 @@
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
 <span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">string</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
@@ -169,8 +172,9 @@
 
 <span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">ImageFont</span>
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
-<span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">Tensor</span>
 <span class="kn">from</span> <span class="nn">strictyaml</span> <span class="kn">import</span> <span class="n">as_document</span>
+
+<span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">Tensor</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">tensorflow.data</span> <span class="kn">import</span> <span class="n">TFRecordDataset</span>
 
@@ -191,9 +195,10 @@
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
 <span class="kn">from</span> <span class="nn">fontai.io.readers</span> <span class="kn">import</span> <span class="n">ScrapperReader</span>
 <span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">TfrWritable</span>
-<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">TFRecordDataset</span>
+<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipHolder</span>
 <span class="kn">from</span> <span class="nn">fontai.pipeline.base</span> <span class="kn">import</span> <span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">,</span> <span class="n">FittableTransform</span>
 
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">array</span> <span class="k">as</span> <span class="n">np_array</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
   
@@ -320,6 +325,10 @@
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
 
+    <span class="c1"># set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.</span>
+    <span class="n">visible_devices</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-1&quot;</span>
+
     <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
 
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
@@ -348,6 +357,12 @@
       <span class="p">)</span>
       <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 
+    <span class="c1"># unset provisional value for env variable</span>
+    <span class="k">if</span> <span class="n">visible_devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">del</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">visible_devices</span>
+
 
 
 <span class="k">class</span> <span class="nc">Predictor</span><span class="p">(</span><span class="n">FittableTransform</span><span class="p">):</span>
@@ -357,8 +372,9 @@
 
 <span class="sd">  Attributes:</span>
 <span class="sd">      model (keras.Model): Scoring model</span>
+<span class="sd">      CHARSET_OPTIONS (t.Dict): Dictionary from allowed charsets names to charsets</span>
 <span class="sd">      training_config (TrainingConfig): training configuration wrapper</span>
-<span class="sd">      charset (str): charset to use for training and batch scoring</span>
+<span class="sd">      charset_tensor (Tensor): Tensor with an entry per character in the current charset</span>
 <span class="sd">  </span>
 
 <span class="sd">  YAML configuration schema:</span>
@@ -384,8 +400,8 @@
 <span class="sd">  loss: subyaml with keys `class` and `kwargs` to instantiate a Keras loss function</span>
 <span class="sd">  optimizer (optional, defaults to Adam with default parameters): subyaml with keys `class` and `kwargs` to instantiate a Keras optimizer</span>
 <span class="sd">  callbacks (optional, defaults to []): subyaml with keys `class` and `kwargs` to instantiate a Keras callback or a custome one defined in `fontai.prediction.callbacks`</span>
-<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised</span>
-<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised for training</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised for training</span>
 
 <span class="sd">  model subyaml schema:</span>
 
@@ -399,6 +415,12 @@
 
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">CHARSET_OPTIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;uppercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">26</span><span class="p">::],</span>
+    <span class="s2">&quot;lowercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">26</span><span class="p">],</span>
+    <span class="s2">&quot;digits&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
+    <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
+    <span class="p">}</span>
 
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
   <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
@@ -413,53 +435,21 @@
 <span class="sd">    Args:</span>
 <span class="sd">        model (tf.keras.Model): Scoring model</span>
 <span class="sd">        training_config (TrainingConfig, optional): Training configuration wrapper</span>
-<span class="sd">        charset (str): charset to use for training and batch scoring</span>
+<span class="sd">        charset (str): charset to use for training and batch scoring. It must be one of &#39;lowercase&#39;, &#39;uppercase&#39; or &#39;digits&#39;, or otherwise a string with all characters under consideration</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 
-    <span class="c1"># physical_devices = tf.config.experimental.list_physical_devices(&#39;GPU&#39;)</span>
-    <span class="c1"># if len(physical_devices) &gt; 0:</span>
-    <span class="c1">#   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)</span>
 
+    <span class="k">try</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="p">[</span><span class="n">charset</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Charset string is not one from </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">; creating custom charset from provided string instead.&quot;</span><span class="p">)</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">charset</span><span class="p">)))</span>
 
-  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        data (TFRecordDataset): Input training data</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        TFRecordDataset</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
-      <span class="k">return</span> <span class="n">data</span>
-
-    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-    <span class="c1"># drop batch size form shape tuples</span>
-    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
-    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
-      <span class="n">callable_data</span><span class="p">,</span> 
-      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
-        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
-      <span class="p">),</span>
-      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
-      <span class="p">)</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">training_data</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">np_array</span><span class="p">([</span><span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)])</span>
 
 
   <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">):</span>
@@ -482,11 +472,9 @@
       <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
       <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">metrics</span><span class="p">)</span>
 
-    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-      <span class="c1">#data,</span>
-      <span class="n">training_data</span><span class="p">,</span>
+      <span class="n">data</span><span class="p">,</span>
+      <span class="c1">#training_data,</span>
       <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">steps_per_epoch</span><span class="p">,</span> 
       <span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
       <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
@@ -526,7 +514,9 @@
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">)):</span>
       <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="p">))</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)))</span>
+      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)),</span> 
+        <span class="n">charset_tensor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or TfrWritable&quot;</span><span class="p">)</span>
 
@@ -575,17 +565,31 @@
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
       <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
-      <span class="n">custom_filters</span> <span class="o">=</span> <span class="p">[],</span>
-      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="p">[])</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-      <span class="n">formatted</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_parsed_bytes_dict</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
-      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">formatted</span><span class="p">))</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+    
+    <span class="k">for</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fontnames</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+        
+        <span class="n">scored_records</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+          <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+          <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+          <span class="n">fontnames</span> <span class="o">=</span> <span class="n">fontnames</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> 
+          <span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span><span class="p">,</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">scored_records</span><span class="p">:</span>
+          <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception scoring batch with features: </span><span class="si">{</span><span class="n">features</span><span class="si">}</span><span class="s2">. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
@@ -600,14 +604,13 @@
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
       <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span>
       <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
       <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
-    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
@@ -1189,6 +1192,10 @@ output_path: target output folder</p>
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
 
+    <span class="c1"># set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.</span>
+    <span class="n">visible_devices</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-1&quot;</span>
+
     <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
 
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
@@ -1216,6 +1223,12 @@ output_path: target output folder</p>
         <span class="p">)</span>
       <span class="p">)</span>
       <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
+
+    <span class="c1"># unset provisional value for env variable</span>
+    <span class="k">if</span> <span class="n">visible_devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">del</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">visible_devices</span>
 </pre></div>
 
         </details>
@@ -1422,6 +1435,10 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
 
+    <span class="c1"># set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.</span>
+    <span class="n">visible_devices</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-1&quot;</span>
+
     <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
 
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
@@ -1449,6 +1466,12 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
         <span class="p">)</span>
       <span class="p">)</span>
       <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
+
+    <span class="c1"># unset provisional value for env variable</span>
+    <span class="k">if</span> <span class="n">visible_devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">del</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">visible_devices</span>
 </pre></div>
 
         </details>
@@ -1511,6 +1534,12 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">):</span>
     <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipHolder is not implemented.&quot;</span><span class="p">)</span>
+    <span class="c1"># bf = io.BytesIO()</span>
+    <span class="c1"># zipped = zipfile.ZipFile(bf,&quot;w&quot;)</span>
+    <span class="c1"># for file in obj.filelist():</span>
+    <span class="c1">#   zipped.writestr(file, obj.read(file))</span>
+
+    <span class="c1"># return InMemoryZipHolder(filename=&quot;holder&quot;, content = bf.getvalue())</span>
 </pre></div>
 
         </details>
@@ -1696,8 +1725,9 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 
 <span class="sd">  Attributes:</span>
 <span class="sd">      model (keras.Model): Scoring model</span>
+<span class="sd">      CHARSET_OPTIONS (t.Dict): Dictionary from allowed charsets names to charsets</span>
 <span class="sd">      training_config (TrainingConfig): training configuration wrapper</span>
-<span class="sd">      charset (str): charset to use for training and batch scoring</span>
+<span class="sd">      charset_tensor (Tensor): Tensor with an entry per character in the current charset</span>
 <span class="sd">  </span>
 
 <span class="sd">  YAML configuration schema:</span>
@@ -1723,8 +1753,8 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 <span class="sd">  loss: subyaml with keys `class` and `kwargs` to instantiate a Keras loss function</span>
 <span class="sd">  optimizer (optional, defaults to Adam with default parameters): subyaml with keys `class` and `kwargs` to instantiate a Keras optimizer</span>
 <span class="sd">  callbacks (optional, defaults to []): subyaml with keys `class` and `kwargs` to instantiate a Keras callback or a custome one defined in `fontai.prediction.callbacks`</span>
-<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised</span>
-<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised for training</span>
+<span class="sd">  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised for training</span>
 
 <span class="sd">  model subyaml schema:</span>
 
@@ -1738,6 +1768,12 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">CHARSET_OPTIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;uppercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">26</span><span class="p">::],</span>
+    <span class="s2">&quot;lowercase&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">26</span><span class="p">],</span>
+    <span class="s2">&quot;digits&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
+    <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
+    <span class="p">}</span>
 
   <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
   <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
@@ -1752,53 +1788,21 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 <span class="sd">    Args:</span>
 <span class="sd">        model (tf.keras.Model): Scoring model</span>
 <span class="sd">        training_config (TrainingConfig, optional): Training configuration wrapper</span>
-<span class="sd">        charset (str): charset to use for training and batch scoring</span>
+<span class="sd">        charset (str): charset to use for training and batch scoring. It must be one of &#39;lowercase&#39;, &#39;uppercase&#39; or &#39;digits&#39;, or otherwise a string with all characters under consideration</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 
-    <span class="c1"># physical_devices = tf.config.experimental.list_physical_devices(&#39;GPU&#39;)</span>
-    <span class="c1"># if len(physical_devices) &gt; 0:</span>
-    <span class="c1">#   tf_config = tf.config.experimental.set_memory_growth(physical_devices[0], True)</span>
 
+    <span class="k">try</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="p">[</span><span class="n">charset</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Charset string is not one from </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">; creating custom charset from provided string instead.&quot;</span><span class="p">)</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">charset</span><span class="p">)))</span>
 
-  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        data (TFRecordDataset): Input training data</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        TFRecordDataset</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
-      <span class="k">return</span> <span class="n">data</span>
-
-    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-    <span class="c1"># drop batch size form shape tuples</span>
-    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
-    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
-      <span class="n">callable_data</span><span class="p">,</span> 
-      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
-        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
-      <span class="p">),</span>
-      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
-      <span class="p">)</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">training_data</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">np_array</span><span class="p">([</span><span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)])</span>
 
 
   <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">):</span>
@@ -1821,11 +1825,9 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
       <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
       <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">metrics</span><span class="p">)</span>
 
-    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-      <span class="c1">#data,</span>
-      <span class="n">training_data</span><span class="p">,</span>
+      <span class="n">data</span><span class="p">,</span>
+      <span class="c1">#training_data,</span>
       <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">steps_per_epoch</span><span class="p">,</span> 
       <span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
       <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
@@ -1865,7 +1867,9 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">)):</span>
       <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="p">))</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)))</span>
+      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)),</span> 
+        <span class="n">charset_tensor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or TfrWritable&quot;</span><span class="p">)</span>
 
@@ -1914,17 +1918,31 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
       <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
-      <span class="n">custom_filters</span> <span class="o">=</span> <span class="p">[],</span>
-      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="p">[])</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-      <span class="n">formatted</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_parsed_bytes_dict</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
-      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">formatted</span><span class="p">))</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+    
+    <span class="k">for</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fontnames</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+        
+        <span class="n">scored_records</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+          <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+          <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+          <span class="n">fontnames</span> <span class="o">=</span> <span class="n">fontnames</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> 
+          <span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span><span class="p">,</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">scored_records</span><span class="p">:</span>
+          <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception scoring batch with features: </span><span class="si">{</span><span class="n">features</span><span class="si">}</span><span class="s2">. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PredictorConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
@@ -1939,14 +1957,13 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
       <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span>
       <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
       <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
-    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
@@ -1962,8 +1979,9 @@ beam_cmd_line_args: list of Apache Beam's command line aeguments</p>
 
 <ul>
 <li><strong>model (keras.Model):</strong>  Scoring model</li>
+<li><strong>CHARSET_OPTIONS (t.Dict):</strong>  Dictionary from allowed charsets names to charsets</li>
 <li><strong>training_config (TrainingConfig):</strong>  training configuration wrapper</li>
-<li><strong>charset (str):</strong>  charset to use for training and batch scoring</li>
+<li><strong>charset_tensor (Tensor):</strong>  Tensor with an entry per character in the current charset</li>
 </ul>
 
 <p>YAML configuration schema:</p>
@@ -1986,8 +2004,8 @@ metrics: List of TF metrics as strings
 loss: subyaml with keys <code>class</code> and <code>kwargs</code> to instantiate a Keras loss function
 optimizer (optional, defaults to Adam with default parameters): subyaml with keys <code>class</code> and <code>kwargs</code> to instantiate a Keras optimizer
 callbacks (optional, defaults to []): subyaml with keys <code>class</code> and <code>kwargs</code> to instantiate a Keras callback or a custome one defined in <code><a href="../prediction/callbacks.html">fontai.prediction.callbacks</a></code>
-custom_filters (optional, defaults to []): subyaml with keys <code>name</code> and <code>kwargs</code> to instantiate a filtering function defined in <code><a href="../prediction/custom_filters.html">fontai.prediction.custom_filters</a></code> to apply just after records are deserialised
-custom_filters (optional, defaults to []): subyaml with keys <code>name</code> and <code>kwargs</code> to instantiate a mapping function defined in <code><a href="../prediction.html#custom_mappings">fontai.prediction.custom_mappings</a></code> to apply just after records are deserialised</p>
+custom_filters (optional, defaults to []): subyaml with keys <code>name</code> and <code>kwargs</code> to instantiate a filtering function defined in <code><a href="../prediction/custom_filters.html">fontai.prediction.custom_filters</a></code> to apply just after records are deserialised for training
+custom_filters (optional, defaults to []): subyaml with keys <code>name</code> and <code>kwargs</code> to instantiate a mapping function defined in <code><a href="../prediction.html#custom_mappings">fontai.prediction.custom_mappings</a></code> to apply just after records are deserialised for training</p>
 
 <p>model subyaml schema:</p>
 
@@ -2023,11 +2041,21 @@ custom_filters (optional, defaults to []): subyaml with keys <code>name</code> a
 <span class="sd">    Args:</span>
 <span class="sd">        model (tf.keras.Model): Scoring model</span>
 <span class="sd">        training_config (TrainingConfig, optional): Training configuration wrapper</span>
-<span class="sd">        charset (str): charset to use for training and batch scoring</span>
+<span class="sd">        charset (str): charset to use for training and batch scoring. It must be one of &#39;lowercase&#39;, &#39;uppercase&#39; or &#39;digits&#39;, or otherwise a string with all characters under consideration</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
+
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="p">[</span><span class="n">charset</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Charset string is not one from </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHARSET_OPTIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">; creating custom charset from provided string instead.&quot;</span><span class="p">)</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">charset</span><span class="p">)))</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">np_array</span><span class="p">([</span><span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)])</span>
 </pre></div>
 
         </details>
@@ -2037,86 +2065,19 @@ custom_filters (optional, defaults to []): subyaml with keys <code>name</code> a
 <ul>
 <li><strong>model (tf.keras.Model):</strong>  Scoring model</li>
 <li><strong>training_config (TrainingConfig, optional):</strong>  Training configuration wrapper</li>
-<li><strong>charset (str):</strong>  charset to use for training and batch scoring</li>
+<li><strong>charset (str):</strong>  charset to use for training and batch scoring. It must be one of 'lowercase', 'uppercase' or 'digits', or otherwise a string with all characters under consideration</li>
 </ul>
 </div>
 
 
                             </div>
-                            <div id="Predictor.add_batch_shape_signature" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Predictor.add_batch_shape_signature">#&nbsp;&nbsp</a>
+                            <div id="Predictor.CHARSET_OPTIONS" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Predictor.CHARSET_OPTIONS">#&nbsp;&nbsp</a>
 
-        
-            <span class="def">def</span>
-            <span class="name">add_batch_shape_signature</span><span class="signature">(
-    self,
-    data: tensorflow.python.data.ops.readers.TFRecordDatasetV2
-) -&gt; tensorflow.python.data.ops.readers.TFRecordDatasetV2</span>:
+        <span class="name">CHARSET_OPTIONS</span><span class="default_value"> = {&#39;uppercase&#39;: &#39;ABCDEFGHIJKLMNOPQRSTUVWXYZ&#39;, &#39;lowercase&#39;: &#39;abcdefghijklmnopqrstuvwxyz&#39;, &#39;digits&#39;: &#39;0123456789&#39;, &#39;all&#39;: &#39;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&#39;}</span>
     </div>
 
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">add_batch_shape_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        data (TFRecordDataset): Input training data</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        TFRecordDataset</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">callable_data</span><span class="p">():</span>
-      <span class="k">return</span> <span class="n">data</span>
-
-    <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-    <span class="c1"># drop batch size form shape tuples</span>
-    <span class="n">ftr_shape</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
-    <span class="n">lbl_shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ftr_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">lbl_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input shapes don&#39;t match expected: got shapes </span><span class="si">{</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">training_data</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
-      <span class="n">callable_data</span><span class="p">,</span> 
-      <span class="n">output_types</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">features</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> 
-        <span class="n">labels</span><span class="o">.</span><span class="n">dtype</span>
-      <span class="p">),</span>
-      <span class="n">output_shapes</span><span class="o">=</span><span class="p">(</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ftr_shape</span><span class="p">),</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">TensorShape</span><span class="p">((</span><span class="kc">None</span><span class="p">,)</span> <span class="o">+</span> <span class="n">lbl_shape</span><span class="p">)</span>
-      <span class="p">)</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">training_data</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Intermediate method required to make training data shapes known at graph compile time. Returns the passed data wrapped in a callable object with explicit output shape signatures</p>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>data (TFRecordDataset):</strong>  Input training data</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<blockquote>
-  <p>TFRecordDataset</p>
-</blockquote>
-
-<h6 id="raises">Raises</h6>
-
-<ul>
-<li>ValueError</li>
-</ul>
-</div>
-
+    
 
                             </div>
                             <div id="Predictor.fit" class="classattr">
@@ -2149,11 +2110,9 @@ custom_filters (optional, defaults to []): subyaml with keys <code>name</code> a
       <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
       <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">metrics</span><span class="p">)</span>
 
-    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_batch_shape_signature</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-      <span class="c1">#data,</span>
-      <span class="n">training_data</span><span class="p">,</span>
+      <span class="n">data</span><span class="p">,</span>
+      <span class="c1">#training_data,</span>
       <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">steps_per_epoch</span><span class="p">,</span> 
       <span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
       <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">callbacks</span><span class="p">)</span>
@@ -2217,7 +2176,9 @@ custom_filters (optional, defaults to []): subyaml with keys <code>name</code> a
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">)):</span>
       <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="p">))</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">TfrWritable</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)))</span>
+      <span class="k">return</span> <span class="n">input_data</span><span class="o">.</span><span class="n">add_score</span><span class="p">(</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_shape</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">features</span><span class="p">)),</span> 
+        <span class="n">charset_tensor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input type is not one of ndarray, Tensor or TfrWritable&quot;</span><span class="p">)</span>
 </pre></div>
@@ -2378,17 +2339,31 @@ custom_filters (optional, defaults to []): subyaml with keys <code>name</code> a
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
       <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
-      <span class="n">custom_filters</span> <span class="o">=</span> <span class="p">[],</span>
-      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="p">[])</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span>
+      <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
+      <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
     <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-      <span class="n">formatted</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_parsed_bytes_dict</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
-      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">formatted</span><span class="p">))</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+    
+    <span class="k">for</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fontnames</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+        
+        <span class="n">scored_records</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">from_scored_batch</span><span class="p">(</span>
+          <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+          <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+          <span class="n">fontnames</span> <span class="o">=</span> <span class="n">fontnames</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> 
+          <span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span><span class="p">,</span>
+          <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">scored_records</span><span class="p">:</span>
+          <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception scoring batch with features: </span><span class="si">{</span><span class="n">features</span><span class="si">}</span><span class="s2">. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -2433,14 +2408,13 @@ custom_filters (optional, defaults to []): subyaml with keys <code>name</code> a
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
       <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
-      <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-      <span class="n">charset</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset</span><span class="p">,</span>
+      <span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">,</span>
       <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
       <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
-    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>

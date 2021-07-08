@@ -1606,6 +1606,8 @@
       <span class="bp">self</span><span class="o">.</span><span class="n">SEQUENTIAL_MODEL_SCHEMA</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;KERAS SEQUENTIAL&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_keras_sequential</span><span class="p">),</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">MULTI_SEQUENTIAL_MODEL_SCHEMA</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;MULTI SEQUENTIAL&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_multi_sequential</span><span class="p">)</span>
     <span class="p">}</span>
+
+    <span class="c1">#self.MODEL_CONFIG_SCHEMA = reduce(lambda schema1, schema2: schema1 | schema2, list(self.schema_constructors.keys()))</span>
 </pre></div>
 
         </details>

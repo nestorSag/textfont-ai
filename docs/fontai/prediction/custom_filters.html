@@ -34,7 +34,10 @@
                     <a class="function" href="#filter_misclassified_chars">filter_misclassified_chars</a>
             </li>
             <li>
-                    <a class="function" href="#filter_by_score">filter_by_score</a>
+                    <a class="function" href="#filter_chars_by_score">filter_chars_by_score</a>
+            </li>
+            <li>
+                    <a class="function" href="#filter_fonts_by_size">filter_fonts_by_size</a>
             </li>
     </ul>
 
@@ -51,34 +54,81 @@
                     <h1 class="modulename">
 <a href="./../../fontai.html">fontai</a><wbr>.<a href="./../prediction.html">prediction</a><wbr>.custom_filters    </h1>
 
-                
+                        <div class="docstring"><p>This module contains filtering functions for Tensorflow dataset operations that are applied to model inputs right after being deserialised to be used at training time</p>
+</div>
+
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+            <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains filtering functions for Tensorflow dataset operations that are applied to model inputs right after being deserialised to be used at training time</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
 
 <span class="k">def</span> <span class="nf">filter_misclassified_chars</span><span class="p">():</span>
   <span class="sd">&quot;&quot;&quot;Returns a filtering function for Tensorflow datasets that filter out misclassified examples; examples must have the schema as in ScoredLabeledChars._tfr_schema</span>
-<span class="sd">  </span>
+
 <span class="sd">  Returns:</span>
-<span class="sd">      callable: Filtering function for Tensorflow datasets</span>
+<span class="sd">      t.Callable: Filtering function for Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;scores&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">classification_index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">][</span><span class="n">classification_index</span><span class="p">]</span>
 
   <span class="k">return</span> <span class="n">f</span>
 
-<span class="k">def</span> <span class="nf">filter_by_score</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">filter_chars_by_score</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;Returns a Filtering function for Tensorflow datasets that filter out scores lower than a given threshold.</span>
-<span class="sd">  </span>
-<span class="sd">  Args:</span>
-<span class="sd">      threshold (float): Score threshold</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">      t.Callable: Filtering function for Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="k">if</span> <span class="n">threshold</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">threshold</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Threshold value must be in (0,1]&quot;</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;scores&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+
+  <span class="k">return</span> <span class="n">f</span>
+
+<span class="k">def</span> <span class="nf">filter_fonts_by_size</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Returns a Filtering function for Tensorflow datasets that filter out fonts with too few remaining characters.</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">      t.Callable: Filtering function for Tensorflow datasets</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n must me non-negative&quot;</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">n</span>
 
   <span class="k">return</span> <span class="n">f</span>
 </pre></div>
@@ -98,12 +148,22 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">filter_misclassified_chars</span><span class="p">():</span>
   <span class="sd">&quot;&quot;&quot;Returns a filtering function for Tensorflow datasets that filter out misclassified examples; examples must have the schema as in ScoredLabeledChars._tfr_schema</span>
-<span class="sd">  </span>
+
 <span class="sd">  Returns:</span>
-<span class="sd">      callable: Filtering function for Tensorflow datasets</span>
+<span class="sd">      t.Callable: Filtering function for Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;scores&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">classification_index</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;charset_tensor&quot;</span><span class="p">][</span><span class="n">classification_index</span><span class="p">]</span>
 
   <span class="k">return</span> <span class="n">f</span>
 </pre></div>
@@ -115,34 +175,42 @@
 <h6 id="returns">Returns</h6>
 
 <blockquote>
-  <p>callable: Filtering function for Tensorflow datasets</p>
+  <p>t.Callable: Filtering function for Tensorflow datasets</p>
 </blockquote>
 </div>
 
 
                 </section>
-                <section id="filter_by_score">
-                            <div class="attr function"><a class="headerlink" href="#filter_by_score">#&nbsp;&nbsp</a>
+                <section id="filter_chars_by_score">
+                            <div class="attr function"><a class="headerlink" href="#filter_chars_by_score">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">filter_by_score</span><span class="signature">(threshold: float)</span>:
+            <span class="name">filter_chars_by_score</span><span class="signature">(threshold: float)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">filter_by_score</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">filter_chars_by_score</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;Returns a Filtering function for Tensorflow datasets that filter out scores lower than a given threshold.</span>
-<span class="sd">  </span>
-<span class="sd">  Args:</span>
-<span class="sd">      threshold (float): Score threshold</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">      t.Callable: Filtering function for Tensorflow datasets</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
   <span class="k">if</span> <span class="n">threshold</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">threshold</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Threshold value must be in (0,1]&quot;</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;scores&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
 
   <span class="k">return</span> <span class="n">f</span>
 </pre></div>
@@ -151,11 +219,58 @@
 
             <div class="docstring"><p>Returns a Filtering function for Tensorflow datasets that filter out scores lower than a given threshold.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="returns">Returns</h6>
 
-<ul>
-<li><strong>threshold (float):</strong>  Score threshold</li>
-</ul>
+<blockquote>
+  <p>t.Callable: Filtering function for Tensorflow datasets</p>
+</blockquote>
+</div>
+
+
+                </section>
+                <section id="filter_fonts_by_size">
+                            <div class="attr function"><a class="headerlink" href="#filter_fonts_by_size">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">filter_fonts_by_size</span><span class="signature">(n: int)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">filter_fonts_by_size</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Returns a Filtering function for Tensorflow datasets that filter out fonts with too few remaining characters.</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">      t.Callable: Filtering function for Tensorflow datasets</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n must me non-negative&quot;</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including &quot;features&quot; and &quot;label&quot; entries.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">n</span>
+
+  <span class="k">return</span> <span class="n">f</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Returns a Filtering function for Tensorflow datasets that filter out fonts with too few remaining characters.</p>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>t.Callable: Filtering function for Tensorflow datasets</p>
+</blockquote>
 </div>
 
 
