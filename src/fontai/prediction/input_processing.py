@@ -82,13 +82,13 @@ class RecordPreprocessor(object):
     # if for training, take only features and formatted labels, and batch together
     if training_format:
 
+      # apply custom map to formatted tuples
+      for example_mapper in self.custom_mappers:
+          dataset = dataset.map(example_mapper)
+
       # apply custom filters to formatted tuples
       for example_filter in self.custom_filters:
           dataset = dataset.filter(example_filter)
-
-      # apply custom map to formatted tuples
-      for example_mapper in self.custom_mappers:
-          dataset = dataset.filter(example_mapper)
 
       dataset = dataset\
         .map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))\

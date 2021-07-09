@@ -4,6 +4,10 @@ This module contains filtering functions for Tensorflow dataset operations that 
 import tensorflow as tf
 import typing as t
 
+__all__ = ["filter_misclassified_chars",
+  "filter_chars_by_score",
+  "filter_fonts_by_size"]
+
 def filter_misclassified_chars():
   """Returns a filtering function for Tensorflow datasets that filter out misclassified examples; examples must have the schema as in ScoredLabeledChars._tfr_schema
 
@@ -67,7 +71,8 @@ def filter_fonts_by_size(n: int):
     Returns:
         boolean
     """
-    return kwargs["label"].shape[0] >= n
+    return tf.size(kwargs["label"]) >= n
+    #return tf.logical_and(tf.size(kwargs["features"]) > 0, kwargs["features"].shape[0] >= n)
 
   return f
 

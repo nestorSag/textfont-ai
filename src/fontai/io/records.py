@@ -533,11 +533,7 @@ class ScoredRecordFactory(object):
           cls, 
           charset_tensor: Tensor) -> t.Callable:
 
-          def parser(kwargs):
-
-            return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
-
-          return parser
+          return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
 
         @classmethod
         def from_scored_batch(
@@ -556,9 +552,9 @@ class ScoredRecordFactory(object):
             charset_tensor)
 
         @classmethod
-        def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+        def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
 
-          return cls.record_type(dataset, charset_tensor)
+          return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)
         
       return ScoredRecord
 

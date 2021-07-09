@@ -5,6 +5,9 @@ This module contains mapper functions to be applied to Tensorflow examples right
 import tensorflow as tf
 import typing as t
 
+__all__ = ["drop_misclassified_in_font",
+  "keep_high_scores_in_font"]
+
 def drop_misclassified_in_font():
   """Returns a mapper function for Tensorflow datasets that drops misclassified images in a font batch; examples must have the schema as in ScoredLabeledChars._tfr_schema
   
@@ -24,18 +27,18 @@ def drop_misclassified_in_font():
     if tf.equal(tf.size(kwargs["label"]), 0):
       return kwargs
 
-    predicted_label_idx = tf.math.reduce_max(kwargs["score"], axis=-1)
+    predicted_label_idx = tf.argmax(kwargs["score"], axis=-1)
     predicted_labels = tf.gather(kwargs["charset_tensor"], predicted_label_idx, axis=-1)
 
-    index = predicted_labels == kwargs["label"]
+    index = tf.reshape(predicted_labels == kwargs["label"], (-1,)) #flatten
 
     if tf.equal(tf.reduce_sum(tf.cast(index, dtype=tf.int32)), 0):
-      kwargs["label"] = tf.zeros((0,),dtype=tf.float32) #if no accurate scores are left, pass empty label for downstream deletion
-      kwargs["score"] = kwargs["score"][index]
+      kwargs["label"] = tf.zeros((0,),dtype=tf.string) #if no accurate scores are left, pass empty label for downstream deletion
     else:
-      kwargs["features"] = kwargs["features"][index]
       kwargs["label"] = kwargs["label"][index]
-      kwargs["score"] = kwargs["score"][index]
+
+    kwargs["features"] = kwargs["features"][index]
+    kwargs["score"] = kwargs["score"][index]
 
     return kwargs
 
@@ -68,14 +71,15 @@ def keep_high_scores_in_font(threshold: float):
     if tf.equal(tf.size(kwargs["label"]), 0):
       return kwargs
 
-    index = tf.reduce_max(kwargs["score"], axis=-1) >= score
+    index = tf.reshape(tf.reduce_max(kwargs["score"], axis=-1) >= threshold, (-1,))
 
     if tf.equal(tf.reduce_sum(tf.cast(index, dtype=tf.int32)), 0):
-      kwargs["label"] = tf.zeros((0,),dtype=tf.float32) #if no accurate scores are left, pass empty label for downstream deletion
+      kwargs["label"] = tf.zeros((0,),dtype=tf.string) #if no accurate scores are left, pass empty label for downstream deletion
     else:
-      kwargs["features"] = kwargs["features"][index]
       kwargs["label"] = kwargs["label"][index]
-      kwargs["score"] = kwargs["score"][index]
+      
+    kwargs["features"] = kwargs["features"][index]
+    kwargs["score"] = kwargs["score"][index]
 
     return kwargs
 
