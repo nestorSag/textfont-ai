@@ -46,6 +46,8 @@ from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, Fitta
 
 from numpy import array as np_array
 
+import mlflow 
+
 logger = logging.Logger(__name__)
   
 
@@ -310,6 +312,7 @@ class Predictor(FittableTransform):
     Raises:
         ValueError: If training_config is None (not provided).
     """
+
     if self.training_config is None:
       raise ValueError("Training configuration not provided at instantiation time.")
     
@@ -438,28 +441,36 @@ class Predictor(FittableTransform):
         logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
 
   @classmethod
-  def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
-    predictor = cls.from_config_object(config, load_from_model_path)
-    
-    def save_on_sigint(sig, frame):
-      predictor.model.save(config.model_path)
-      logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
-      sys.exit(0)
+  def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False, run_name: str = None):
+
+    # start tracked mlflow run
+    with mlflow.start_run(name=run_name) as run:
+
+      mlflow.keras.autolog() #start keras autologging
+      mlflow.log_params(config.yaml.data)# log stage configuration
+
+      predictor = cls.from_config_object(config, load_from_model_path)
       
-    signal.signal(signal.SIGINT, save_on_sigint)
+      def save_on_sigint(sig, frame):
+        predictor.model.save(config.model_path)
+        logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
+        mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
+        sys.exit(0)
+        
+      signal.signal(signal.SIGINT, save_on_sigint)
 
-    data_fetcher = RecordPreprocessor(
-      input_record_class = config.input_record_class,
-      charset_tensor = predictor.charset_tensor,
-      custom_filters = predictor.training_config.custom_filters,
-      custom_mappers = predictor.training_config.custom_mappers)
+      data_fetcher = RecordPreprocessor(
+        input_record_class = config.input_record_class,
+        charset_tensor = predictor.charset_tensor,
+        custom_filters = predictor.training_config.custom_filters,
+        custom_mappers = predictor.training_config.custom_mappers)
 
-    data = predictor.reader_class(config.input_path).get_files()
+      data = predictor.reader_class(config.input_path).get_files()
 
-    predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
+      predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
 
-    logger.info(f"Saving trained model to {config.model_path}")
-    predictor.model.save(config.model_path)
+      logger.info(f"Saving trained model to {config.model_path}")
+      predictor.model.save(config.model_path)
+      mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
 
-    return predictor
 

@@ -95,3 +95,23 @@ class Pipeline(ConfigurableTransform):
         t.fit_from_config_object(config)
       else:
         t.run_from_config_object(config)
+
+  # @classmethod
+  # def run_from_config_object(self, pipeline_output: str, pipeline_input: str = None, staging_folder: str = None):
+    
+  #   with mlflow.start_run():
+  #     mlflow_client = mlflow.MlflowClient()
+  #     stage_id = 0
+  #     stage_input = pipeline_input if pipeline_input is not None else config.input_path
+  #     for t, config in zip(self.transforms, self.configs):
+  #       stage_output = BytestreamPath(staging_folder) / f"{stage_id}_output"
+        
+  #       # impute input and output paths
+  #       config.input_path = stage_input
+  #       config.output_path = stage_output
+  #       # run stage
+  #       t.run_from_config_object(config)
+  #       # log output artifacts
+  #       mlflow.log_artifacts(output_path, f"{t.stage_type}_output")
+  #       # update input path for next stage
+  #       stage_input = stage_output
