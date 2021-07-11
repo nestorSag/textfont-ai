@@ -1,13 +1,13 @@
 # Train classification model for uppercase characters only; training all characters is problematic because some char images cannot really be classified correctly without context, e.g. c, k, o, s, u, v, x, y, z
-input_path: data/preprocessed-chars
+input_path: data/preprocessed/chars
 input_record_class: LabeledChar
-output_path: data/uppercase-scored
-model_path: models/supervised-uppercase
+output_path: data/scored/uppercase/chars
+model_path: models/supervised-uppercase-mlflow
 charset: uppercase
 training:
   batch_size: 64
-  epochs: 50
-  steps_per_epoch: 5000
+  epochs: 4
+  steps_per_epoch: 1000
   optimizer:
     class: Adam
     kwargs:

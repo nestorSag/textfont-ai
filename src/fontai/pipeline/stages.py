@@ -441,14 +441,14 @@ class Predictor(FittableTransform):
         logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
 
   @classmethod
-  def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False, run_name: str = None):
+  def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False, run_id: str = None):
 
     # start tracked mlflow run
-    with mlflow.start_run(name=run_name) as run:
+    with mlflow.start_run(run_id=run_id) as run:
 
-      mlflow.keras.autolog() #start keras autologging
-      mlflow.log_params(config.yaml.data)# log stage configuration
-
+      mlflow.tensorflow.autolog() #start keras autologging
+      mlflow.log_param("config", config.yaml.whole_document()) # log stage configuration
+      
       predictor = cls.from_config_object(config, load_from_model_path)
       
       def save_on_sigint(sig, frame):
