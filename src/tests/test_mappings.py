@@ -5,7 +5,7 @@ from pathlib import Path
 import logging
 from functools import reduce
 
-from fontai.pipeline.stages import LabeledExampleExtractor
+from fontai.runners.stages import Preprocessing
 from fontai.io.storage import BytestreamPath
 from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder
 from fontai.io.records import LabeledChar, LabeledFont
@@ -21,7 +21,7 @@ from config_builders import full_processing_config_str
 @pytest.mark.parametrize("input_file, processing_config, output_schemas", [
     (
       "src/tests/data/raw/afe_jen",
-      LabeledExampleExtractor.parse_config_str(full_processing_config_str("LabeledChar")),
+      Preprocessing.parse_config_str(full_processing_config_str("LabeledChar")),
       (LabeledChar, LabeledFont))
   ])
 

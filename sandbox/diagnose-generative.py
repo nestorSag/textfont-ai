@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import string
-from fontai.pipeline.stages import Predictor
+from fontai.runners.stages import Predictor
 
 from tensorflow.data import TFRecordDataset
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as t
 import types
 from fontai.config.pipeline import Config as PipelineConfig, ConfigHandler as PipelineConfigHandler
-from fontai.pipeline.base import ConfigurableTransform, FittableTransform
+from fontai.runners.base import ConfigurableTransform, FittableTransform
 from fontai.config.core import BasePipelineTransformConfig
 
 
@@ -41,23 +41,26 @@ class ManyToManyTransform(object):
 
 class Pipeline(ConfigurableTransform):
 
-  """Pipeline class to execute a sequence of ConfigurableTransforms; this allows to perform the whole set of transformations from raw data to trained model
+  """Pipeline class to execute a sequence of ConfigurableTransforms; this allows to perform the whole set of transformations from raw data to (possible multiple) trained models
   
   Attributes:
-      configs (t.List[BasePipelineTransformConfig]): Sequence of configuration files, one per tranformation in the pipeline
       streaming_pipeline (t.List[ConfigurableTransform]): List of instantiated transforms
-      transforms (type): types of transforms in the pipeline, in order
+      transforms (type): classes of pipeline stages inheriting from ConfigurableTransform. Possible choices are defined in the fontai.runners.stages module
+      configs (t.List[BasePipelineTransformConfig]): Sequence of configuration files to instantiate and execute each stage
+      fit_stage (t.List[bool]): If True, fit the corresponding pipeline stage instead of using it for scoring. It is ignored if the stage is not fittable.
   """
 
-  def __init__(self, transforms: t.List[type], configs: t.List[BasePipelineTransformConfig]):
+  def __init__(self, transforms: t.List[type], configs: t.List[BasePipelineTransformConfig], fit_stage: t.List[bool]):
     """Summary
     
     Args:
         transforms (t.List[type]): List of transformations in the pipeline
         configs (t.List[BasePipelineTransformConfig]): List of parsed configurations, one per stage in the pipeline
+        fit_stage (t.List[bool]): If True, fit the corresponding pipeline stage instead of using it for scoring. It is ignored if the stage is not fittable.
     """
     self.transforms = transforms
     self.configs = configs
+    self.fit_stage = fit_stage
 
     self.streaming_pipeline = [
       ManyToManyTransform(core_transform = transform.from_config_object(config)) for transform, config in zip(self.transforms, self.configs)]
@@ -72,29 +75,32 @@ class Pipeline(ConfigurableTransform):
 
   @classmethod
   def from_config_object(cls, config: PipelineConfig) -> Pipeline:
-    return cls(config.stages, config.configs)
+    return cls(config.stages, config.configs, config.fit_stage)
 
   @classmethod
   def run_from_config_object(cls, config: PipelineConfig) -> None:
     pipeline = cls.from_config_object(config)
-    for t, config in zip(pipeline.transforms, pipeline.configs):
-      t.run_from_config_object(config)
+    for transform, config, fit in zip(pipeline.transforms, pipeline.configs, pipeline.fit_stage):
+      if fit and issubclass(transform, FittableTransform):
+        transform.fit_from_config_object(config)
+      else:
+        transform.run_from_config_object(config)
 
   @classmethod
   def get_config_parser(cls) -> PipelineConfigHandler:
     return PipelineConfigHandler()
 
-  def fit(self, data: t.Any) -> FittableTransform:
-    raise NotImplementedError("This class does not implement a fit() method")
+  # def fit(self, data: t.Any) -> FittableTransform:
+  #   raise NotImplementedError("This class does not implement a fit() method")
 
-  @classmethod
-  def fit_from_config_object(cls, config: PipelineConfig) -> FittableTransform:
-    pipeline = cls.from_config_object(config)
-    for t, config in zip(pipeline.transforms, pipeline.configs):
-      if issubclass(t, FittableTransform):
-        t.fit_from_config_object(config)
-      else:
-        t.run_from_config_object(config)
+  # @classmethod
+  # def fit_from_config_object(cls, config: PipelineConfig) -> FittableTransform:
+  #   pipeline = cls.from_config_object(config)
+  #   for t, config in zip(pipeline.transforms, pipeline.configs):
+  #     if issubclass(t, FittableTransform):
+  #       t.fit_from_config_object(config)
+  #     else:
+  #       t.run_from_config_object(config)
 
   # @classmethod
   # def run_from_config_object(self, pipeline_output: str, pipeline_input: str = None, staging_folder: str = None):

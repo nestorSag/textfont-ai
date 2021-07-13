@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class TrainingConfig(BaseModel):
 
   """
-  Training configuration wrapper for a Predictor ML stage
+  Training configuration wrapper for a Scoring ML stage
   
   Args:
       batch_size (int): batch size
@@ -364,7 +364,7 @@ class ConfigHandler(BaseConfigHandler):
         config (yml.YAML): YAML object
     
     Returns:
-        Config: Instantiated configuration for a Predictor ML stage
+        Config: Instantiated configuration for a Scoring ML stage
     
     """
     input_path, output_path = config.get("input_path").text, config.get("output_path").text

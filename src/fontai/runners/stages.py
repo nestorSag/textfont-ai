@@ -6,15 +6,12 @@ import logging
 from collections import OrderedDict
 from pathlib import Path
 import typing
-import zipfile
 import traceback
-import io
 import os
 import string
 import sys
 import signal
 import typing as t
-import pickle
 
 from PIL import ImageFont
 from numpy import ndarray
@@ -31,18 +28,18 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
-from fontai.config.prediction import ModelFactory, TrainingConfig, Config as PredictorConfig, ConfigHandler as PredictorConfigHandler
+from fontai.config.prediction import ModelFactory, TrainingConfig, Config as ScoringConfig, ConfigHandler as ScoringConfigHandler
 
 
 from fontai.prediction.input_processing import RecordPreprocessor
 from fontai.preprocessing.mappings import PipelineFactory, BeamCompatibleWrapper, Writer
 
-#from fontai.pipeline.base import MLPipelineTransform
+#from fontai.runners.base import MLPipelineTransform
 from fontai.io.storage import BytestreamPath
 from fontai.io.readers import ScrapperReader
 from fontai.io.records import TfrWritable
 from fontai.io.formats import InMemoryFile, InMemoryZipHolder
-from fontai.pipeline.base import ConfigurableTransform, IdentityTransform, FittableTransform
+from fontai.runners.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
 from numpy import array as np_array
 
@@ -51,7 +48,7 @@ import mlflow
 logger = logging.Logger(__name__)
   
 
-class FontIngestion(ConfigurableTransform, IdentityTransform):
+class Ingestion(ConfigurableTransform, IdentityTransform):
 
   """Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.
 
@@ -96,7 +93,7 @@ class FontIngestion(ConfigurableTransform, IdentityTransform):
     raise NotImplementedError("This method is not implemented for ingestion.")
 
 
-class LabeledExampleExtractor(ConfigurableTransform):
+class Preprocessing(ConfigurableTransform):
   """
   File preprocessing executable stage that maps zipped font files to Tensorflow records consisting of labeled images for ML consumption; takes a Config object that defines its execution.
 
@@ -213,7 +210,7 @@ class LabeledExampleExtractor(ConfigurableTransform):
 
 
 
-class Predictor(FittableTransform):
+class Scoring(FittableTransform):
   """
   This class trains a prediction model or scores new exaples with an existing prediction model.
   
@@ -307,7 +304,7 @@ class Predictor(FittableTransform):
         data (TFRecordDataset): training data
     
     Returns:
-        Predictor: Predictor with trained model
+        Scoring: Scoring with trained model
     
     Raises:
         ValueError: If training_config is None (not provided).
@@ -371,7 +368,7 @@ class Predictor(FittableTransform):
 
   @classmethod
   def get_config_parser(cls):
-    return PredictorConfigHandler()
+    return ScoringConfigHandler()
 
   @classmethod
   def get_stage_name(cls):
@@ -379,15 +376,15 @@ class Predictor(FittableTransform):
 
 
   @classmethod
-  def from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
-    """Initialises a Predictor instance from a configuration object
+  def from_config_object(cls, config: ScoringConfig, load_from_model_path = False):
+    """Initialises a Scoring instance from a configuration object
     
     Args:
-        config (PredictorConfig): COnfiguration object
+        config (ScoringConfig): COnfiguration object
         load_from_model_path (bool, optional): If True, the model is loaded from the model_path argument in the configuration object.
     
     Returns:
-        Predictor: Instantiated Predictor object.
+        Scoring: Instantiated Scoring object.
     """
     if load_from_model_path:
       model_class_name = config.model.__class__.__name__
@@ -404,11 +401,11 @@ class Predictor(FittableTransform):
     else:
       model = config.model
 
-    predictor = Predictor(model = model, training_config = config.training_config, charset = config.charset)
+    predictor = Scoring(model = model, training_config = config.training_config, charset = config.charset)
     return predictor
 
   @classmethod
-  def run_from_config_object(cls, config: PredictorConfig, load_from_model_path = False):
+  def run_from_config_object(cls, config: ScoringConfig, load_from_model_path = False):
 
     predictor = cls.from_config_object(config, load_from_model_path)
 
@@ -441,20 +438,28 @@ class Predictor(FittableTransform):
         logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
 
   @classmethod
-  def fit_from_config_object(cls, config: PredictorConfig, load_from_model_path = False, run_id: str = None):
-
+  def fit_from_config_object(cls, config: ScoringConfig, load_from_model_path = False, run_id: str = None):
+    tmp_config_copy = "tmp-local-config-copy.yaml"
     # start tracked mlflow run
-    with mlflow.start_run(run_id=run_id) as run:
+    with mlflow.start_run(run_id=run_id, nested=False) as run:
+
+      logger.info(f"MLFlow run id: {run.info.run_id}")
+
+      # log stage configuration to MLFlow
+      with open(tmp_config_copy,"w") as f:
+        f.write(config.yaml.as_yaml())
+      mlflow.log_artifact(tmp_config_copy)
+      os.remove(tmp_config_copy)
 
       mlflow.tensorflow.autolog() #start keras autologging
-      mlflow.log_param("config", config.yaml.whole_document()) # log stage configuration
-      
+      #mlflow.log_param("config", config.yaml.whole_document()) # log stage configuration
+
       predictor = cls.from_config_object(config, load_from_model_path)
       
       def save_on_sigint(sig, frame):
         predictor.model.save(config.model_path)
         logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
-        mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
+        #mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
         sys.exit(0)
         
       signal.signal(signal.SIGINT, save_on_sigint)
@@ -468,9 +473,8 @@ class Predictor(FittableTransform):
       data = predictor.reader_class(config.input_path).get_files()
 
       predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
-
       logger.info(f"Saving trained model to {config.model_path}")
       predictor.model.save(config.model_path)
-      mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
+      #mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
 
 

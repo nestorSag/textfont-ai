@@ -4,7 +4,7 @@
 
   readers: Batch file readers; each ML stage imposes restrictions on the kind of file that can be read as input, using classes in this module
 
-  scrappers: Scrapper classes to retrieve open source font files using the FontIngestion stage.
+  scrappers: Scrapper classes to retrieve open source font files using the Ingestion stage.
 
   storage: Implements ain abstraction that allows to read files from local and remote storage. At the moment, only GCS and public URLs are supported for remote storage.
 
