@@ -5,7 +5,7 @@ output_path: data/uppercase-embeddings
 model_path: models/generative-uppercase
 charset: uppercase
 training:
-  filters:
+  custom_filters:
   - name: filter_misclassified
   - name: filter_score
     kwargs:

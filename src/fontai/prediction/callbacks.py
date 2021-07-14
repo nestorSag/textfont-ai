@@ -1,133 +1,118 @@
 """
 This module contains custom Tensorflow callbacks
 """
-import sys
-import re
-import io
+import os
 import tensorflow as tf
-import json
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from fontai.io.storage import BytestreamPath
-from fontai.prediction.input_processing import RecordPreprocessor 
+import mlflow
 
-class SAAECallback(tf.keras.callbacks.Callback):
+class ImageSamplerCallback(tf.keras.callbacks.Callback):
 
-  """Pushes diagnostic plots to Tensorboard at the end of each training epoch for a SAAE model. It takes as input a path to a Tensorflow file with a test minibatch that is to be evaluated after each epoch.
+  """Generates character images from the model at the end of each epoch and pushes them to MLFLow. Shown characters are randomly chosen.
   
-  Attributes:
-      writer: Tensorflow file writer
-      hist_step (int): Description
-      output_path (str): Folder in which Tensorboard output folder resides.
-      tb_folder (TYPE): Full image output path (inside Tensorboard directory)
   """
   
   def __init__(
     self,
-    input_path: str, 
-    output_path: str, 
-    seed: int = 1, 
-    batch_size: int = 32, 
-    charset: str = "all"):
+    n_labels: int,
+    code_dim: int,
+    n_imgs=16):
     """
     Args:
-        input_path (str): Path to test batch; the test batch needs to be a Tensorflow records file where examples follow the same format as the training example for the SAAE model
-        output_path (str): Folder in which tensorboard results are being saved
-        seed (int, optional): Numpy random seed
-        batch_size (int, optional): Maximum match size
-        charset (str, optional): String with characters to be allowed in test minibatch
+        n_labels (int): Number of labels in model's charset
+        code_dim (int): Dimensionality of encoded representation
+        n_imgs (int, optional): Number of images to sample
+    
     
     """
 
-    def load_minibatch(input_path):
-        # load single minibatch from source
-        loader = RecordPreprocessor(
-            batch_size = batch_size,
-            charset = charset,
-            filters = [])
-
-        data = loader.fetch(list(input_path.list_sources()))
-        return next(iter(data))
-
-    self.output_path = BytestreamPath(output_path)
-    self.tb_folder = self.output_path / "tensorboard" / "images"
-
-    # load test minibatch
-    self.batch, self.labels = load_minibatch(BytestreamPath(input_path))
-
-    self.writer = tf.summary.create_writer(str(self.tb_folder))
-    self.hist_step: int = 0
-    self.reconstruction_step: int = 0
-    np.random.seed(seed)
+    self.n_labels = n_labels
+    self.code_dim = code_dim
+    self.n_imgs = n_imgs
+    self.output_file = f"tmp-{self.__class__.__name__}-output.png"
 
   def on_epoch_end(self,epoch,numpy_logs):
 
-    # produce histogram matrix of first code dimensions
-    encoded = self.model.encoder(self.batch,training=False)
-    hists = self.get_hists(encoded)
-    with self.writer.as_default():
-      tf.summary.image("Code histograms", self.plot_to_image(hists), step=self.hist_step)
-    self.hist_step += 1
+    imgs = self.generate_images()
+    plot_images(imgs, self.output_file)
+    mlflow.log_artifact(self.output_file)
+    os.remove(self.output_file)
 
-    a,b,c,d = self.batch.shape
-    # compare input and output 
-    to_decode = tf.concat([encoded,self.labels],axis=1)
-    decoded = self.model.decoder(to_decode,training=False)
+  def generate_images(self):
 
-    rand_idx = np.random.randint(size=3,low=0,high=self.batch.shape[0],dtype=np.int64)
+    # sample encoded representation
+    samples = self.model.prior_sampler(shape=(self.n_imgs,self.code_dim))
+    # sample one hot encoded labels
+    labels = []
+    for k in range(self.n_imgs):
+      label = np.random.randint(0,self.n_labels,1)
+      onehot = np.zeros((1,self.n_labels), dtype=np.float32)
+      onehot[0,label] = 1.0
+      labels.append(np.concatenate([samples[k],onehot],axis=-1))
+    
+    fully_encoded = np.array(labels, dtype=np.float32)
 
-    with self.writer.as_default():
-      for row in rand_idx:
-        img = tf.concat([self.batch[row],decoded[row]],axis=1)
-        img_shape = img.shape
-        tf.summary.image("Input output comparison", tf.reshape(img,shape=(1,) + img_shape), step=self.reconstruction_step)
-        self.reconstruction_step += 1
-    # save snapshot
-    self.model.save(self.output_path)
+    imgs = self.model.decoder.predict(fully_encoded)
+    return imgs
 
-  def get_hists(self,encoded: np.ndarray,n:int=4) -> matplotlib.figure.Figure:
-    """Produce histograms for each code component
+  
+  def plot_images(self, imgs: t.Union[tf.Tensor, np.ndarray], output_file: str, n_cols = 7) -> None:
+    """Utility function to plot a sequence of characters and save it in a given location as a single tiled figure.
     
     Args:
-        encoded (np.ndarray): minibatch' encoded representation 
-        n (int, optional): Maximum number of histograms to plot
-    
-    Returns:
-        matplotlib.figure.Figure: Histograms' figure
+        imgs (t.Union[tf.Tensor, np.ndarray]): 4-dimensional array of images
+        output_file (str): output file
+        n_cols (int, optional): number of columns in output figure
     """
+    # plot multiple images
+    n_imgs, height, width, c = imgs.shape
+    n_rows = np.ceil(n_imgs/n_cols)
 
-    figure = plt.figure(figsize=(10,10))
-    for i in range(min(n*n,encoded.shape[1])):
-      # Start next subplot.
-      plt.subplot(n, n, i + 1, title=f"")
-      #plt.imshow(train_images[i], cmap=plt.cm.binary)
-      plt.hist(encoded[:,i].numpy())
-
-    return figure
-
-  def plot_to_image(self,figure: matplotlib.figure.Figure) -> tf.Tensor:
-    """Converts the matplotlib plot specified by 'figure' to a PNG image and
-    returns it. The supplied figure is closed and inaccessible after this call.
+    fig, axs = plt.subplots(n_rows, n_cols)
+    for i in range(n_imgs):
+      x = imgs[i]
+      if isinstance(x, np.ndarray):
+        x_ = x
+      else:
+        x_ = x.numpy()
+      np_x = (255 * x_).astype(np.uint8).reshape((height,width))
     
+    plt.savefig(output_file)
+
+class FontSamplerCallback(ImageSamplerCallback):
+
+  """Generates a full font from the model at the end of each epoch and pushes it to MLFLow. All characters in a given model's charset are shown in the output.
+  
+  """
+  
+  def __init__(
+    self,
+    n_labels: int,
+    code_dim: int):
+    """
     Args:
-        figure (matplotlib.figure.Figure): Input figure
+        n_labels (int): Number of labels in model's charset
+        code_dim (int): Dimensionality of encoded representation
     
-    Returns:
-        tf.Tensor: Tensor representing the figure
     """
 
+    super().__init__(n_labels,code_dim,n_labels)
 
-    # Save the plot to a PNG in memory.
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    # Closing the figure prevents it from being displayed directly inside
-    # the notebook.
-    plt.close(figure)
-    buf.seek(0)
-    # Convert PNG buffer to TF image
-    image = tf.image.decode_png(buf.getvalue(), channels=4)
-    # Add the batch dimension
-    image = tf.expand_dims(image, 0)
-    return image
+  def generate_images(self):
+
+    # sample encoded representation
+    sample = self.model.prior_sampler(shape=(1,self.code_dim))
+    # sample one hot encoded labels
+    labels = []
+    for k in range(self.n_labels):
+      onehot = np.zeros((1,self.n_labels), dtype=np.float32)
+      onehot[0,k] = 1.0
+      labels.append(np.concatenate([sample,onehot],axis=-1))
+    
+    fully_encoded = np.array(labels, dtype=np.float32)
+
+    imgs = self.model.decoder.predict(fully_encoded)
+    return imgs

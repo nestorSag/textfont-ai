@@ -21,10 +21,11 @@ setuptools.setup(
 
      install_requires=[
         'numpy',
-        'tensorflow-gpu==2.3.0',
+        'tensorflow',
         'pillow',
         'beautifulsoup4',
         'imageio',
+        'matplotlib',
         'strictyaml',
         'pydantic',
         'apache-beam[gcp]'

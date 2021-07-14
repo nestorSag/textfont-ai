@@ -67,6 +67,8 @@ class CharStyleSAAE(tf.keras.Model):
     self.prior_discriminator = prior_discriminator
     self.rec_loss_weight = min(max(reconstruction_loss_weight,0),1)
     self.prior_batch_size = prior_batch_size
+
+    self.prior_sampler = tf.random.normal
   
   def compile(self,
     optimizer='rmsprop',
@@ -100,7 +102,6 @@ class CharStyleSAAE(tf.keras.Model):
     return self.image_encoder(x, training=training)
 
   def train_step(self, inputs):
-    prior_sampler = tf.random.normal
     x, labels = inputs
 
     #self.prior_batch_size = x.shape[0]
@@ -117,7 +118,7 @@ class CharStyleSAAE(tf.keras.Model):
 
       # apply prior_discriminator model
       print((self.prior_batch_size,code.shape[1]))
-      prior_samples = prior_sampler(shape=[self.prior_batch_size,code.shape[1]])
+      prior_samples = self.prior_sampler(shape=[self.prior_batch_size,code.shape[1]])
       real = self.prior_discriminator(prior_samples,training=True)
       fake = self.prior_discriminator(code,training=True)
 
@@ -269,6 +270,8 @@ class PureCharStyleSAAE(tf.keras.Model):
     self.prior_batch_size = prior_batch_size
     self.char_discriminator = char_discriminator
 
+    self.prior_sampler = tf.random.normal
+
   def prior_discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)
     fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
@@ -302,7 +305,7 @@ class PureCharStyleSAAE(tf.keras.Model):
     return self.image_encoder(x, training=training)
 
   def train_step(self, inputs):
-    prior_sampler = tf.random.normal
+    #prior_sampler = tf.random.normal
     x, labels = inputs
 
     #self.prior_batch_size = x.shape[0]
@@ -318,7 +321,7 @@ class PureCharStyleSAAE(tf.keras.Model):
       decoded = self.decoder(extended_code,training=True)  
 
       # apply prior_discriminator model
-      prior_samples = prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
+      prior_samples = self.prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
       real = self.prior_discriminator(prior_samples,training=True)
       fake = self.prior_discriminator(code,training=True)
 
@@ -465,6 +468,8 @@ class PureFontStyleSAAE(tf.keras.Model):
     self.prior_batch_size = prior_batch_size
     self.char_discriminator = char_discriminator
 
+    self.prior_sampler = tf.random.normal
+
   def prior_discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)
     fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
@@ -498,7 +503,7 @@ class PureFontStyleSAAE(tf.keras.Model):
     return self.image_encoder(x, training=training)
 
   def train_step(self, inputs):
-    prior_sampler = tf.random.normal
+    #prior_sampler = tf.random.normal
     x, labels = inputs
 
     #self.prior_batch_size = x.shape[0]
@@ -514,7 +519,7 @@ class PureFontStyleSAAE(tf.keras.Model):
       decoded = self.decoder(extended_code,training=True)  
 
       # apply prior_discriminator model
-      prior_samples = prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
+      prior_samples = self.prior_sampler(shape=(self.prior_batch_size,code.shape[1]))
       real = self.prior_discriminator(prior_samples,training=True)
       fake = self.prior_discriminator(code,training=True)
 
