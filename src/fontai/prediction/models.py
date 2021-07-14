@@ -227,7 +227,7 @@ class CharStyleSAAE(tf.keras.Model):
 
 class PureCharStyleSAAE(tf.keras.Model):
 
-  """This model is trained as a regular SAAE bur an additional prior_discriminator model is added to ensure the embedding does not retain information about the character class; i.e. it only retains style information
+  """This model is trained as a regular SAAE but an additional prior distribution_discriminator model is added to ensure the embedding does not retain information about the character class; i.e. it only retains style information
   """
   mean_metric = tf.keras.metrics.Mean(name="Mean code variance")
   char_accuracy_metric = tf.keras.metrics.Accuracy(name="style-char accuracy")
@@ -425,7 +425,7 @@ class PureCharStyleSAAE(tf.keras.Model):
 
 class PureFontStyleSAAE(tf.keras.Model):
 
-  """This model is trained on all characters from a single font file at a time; the aim is to encode the font's style as opossed to single characters' styles, which can happen when training with scrambled characters from different fonts and results in sometimes having different-looking fonts for a single point in latent space. This model penalizes the variance in latent representation from the same font, so ideally any character in a given font maps to a single point in latent space.
+  """This model is trained on all characters from a single font file at a time; the aim is to encode the font's style as opposed to single characters' styles, which can happen when training with scrambled characters from different fonts and results in sometimes having different-looking fonts for a single style in latent space. This model penalizes the variance in latent representation from the same font, so ideally any character in a given font maps to a single point in latent space.
   """
   mean_metric = tf.keras.metrics.Mean(name="Mean code variance")
   char_accuracy_metric = tf.keras.metrics.Accuracy(name="style-char accuracy")

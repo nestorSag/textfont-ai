@@ -17,9 +17,6 @@ training:
   metrics:
   - accuracy
   callbacks:
-  - class: TensorBoard
-    kwargs:
-      log_dir: logs/tensorboard/supervised-uppercase
   - class: ReduceLROnPlateau
     kwargs:
       min_lr: 0.0001

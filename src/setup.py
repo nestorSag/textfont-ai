@@ -21,8 +21,9 @@ setuptools.setup(
 
      install_requires=[
         'numpy',
-        'tensorflow>=2.4',
+        'tensorflow>=2.2',
         'pillow',
+        'mlflow',
         'beautifulsoup4',
         'imageio',
         'matplotlib',

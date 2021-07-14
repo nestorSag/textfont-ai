@@ -3,7 +3,7 @@ This module contains custom Tensorflow callbacks
 """
 import os
 import tensorflow as tf
-import matplotlib
+import typing as t
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -11,7 +11,7 @@ import mlflow
 
 class ImageSamplerCallback(tf.keras.callbacks.Callback):
 
-  """Generates character images from the model at the end of each epoch and pushes them to MLFLow. Shown characters are randomly chosen.
+  """Generates randomly chosen character images from the model at the end of each epoch and pushes them to MLFLow.
   
   """
   
@@ -38,7 +38,7 @@ class ImageSamplerCallback(tf.keras.callbacks.Callback):
 
     imgs = self.generate_images()
     plot_images(imgs, self.output_file)
-    mlflow.log_artifact(self.output_file)
+    mlflow.log_artifact(self.output_file, f"{self.__class__.__name__}-{epoch}.png")
     os.remove(self.output_file)
 
   def generate_images(self):
@@ -58,7 +58,7 @@ class ImageSamplerCallback(tf.keras.callbacks.Callback):
     imgs = self.model.decoder.predict(fully_encoded)
     return imgs
 
-  
+
   def plot_images(self, imgs: t.Union[tf.Tensor, np.ndarray], output_file: str, n_cols = 7) -> None:
     """Utility function to plot a sequence of characters and save it in a given location as a single tiled figure.
     
@@ -84,7 +84,7 @@ class ImageSamplerCallback(tf.keras.callbacks.Callback):
 
 class FontSamplerCallback(ImageSamplerCallback):
 
-  """Generates a full font from the model at the end of each epoch and pushes it to MLFLow. All characters in a given model's charset are shown in the output.
+  """Generates a random font style from the model, generates all of its characters and pushes them to MLFLow at the end of each epoch
   
   """
   

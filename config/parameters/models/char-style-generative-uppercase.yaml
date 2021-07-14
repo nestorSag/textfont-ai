@@ -9,7 +9,7 @@ training:
   - name: filter_misclassified
   - name: filter_score
     kwargs:
-      threshold: 0.95
+      threshold: 0.99
   batch_size: 64
   epochs: 30
   steps_per_epoch: 5000
@@ -22,13 +22,14 @@ training:
   metrics:
   - accuracy
   callbacks:
-  - class: TensorBoard
+  - class: ImageSamplerCallback
     kwargs:
-      log_dir: logs/tensorboard/supervised-uppercase
-  - class: ModelCheckpoint
+      n_labels: 26
+      embedding_dim: 10
+  - class: FontSamplerCallback
     kwargs:
-      filepath: models/generative-uppercase-checkpoint
-      monitor: MSE
+      n_labels: 26
+      embedding_dim: 10
 model:
   class: CharStyleSAAE
   kwargs:
