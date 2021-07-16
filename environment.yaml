@@ -183,5 +183,6 @@ dependencies:
     - uritemplate==3.0.1
 variables:
   GOOGLE_APPLICATION_CREDENTIALS: config/credentials/gcp-credentials.json
+  TF_CPP_MIN_LOG_LEVEL: '1'
   TF_FORCE_GPU_ALLOW_GROWTH: 'true'
 prefix: /home/nestor/miniconda3/envs/textfont-ai

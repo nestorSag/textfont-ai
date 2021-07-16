@@ -50,12 +50,7 @@ logger = logging.Logger(__name__)
 
 class Ingestion(ConfigurableTransform, IdentityTransform):
 
-  """Ingestoion stage class that retrieves zipped font files; it is initialised from a configuration object that defines its execution. It's transform method takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.
-
-  Configuration YAML schema:
-
-  scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use
-  output_path: target output folder
+  """Retrieves zipped font files. It takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.
   
   """
   input_file_format = InMemoryFile
@@ -95,19 +90,7 @@ class Ingestion(ConfigurableTransform, IdentityTransform):
 
 class Preprocessing(ConfigurableTransform):
   """
-  File preprocessing executable stage that maps zipped font files to Tensorflow records consisting of labeled images for ML consumption; takes a Config object that defines its execution.
-
-  Configuration YAML schema:
-
-  output_record_class: name of record class that will populate output files; it has to inherit from `fontai.io.records.TfrWritable`
-  input_path: Input files' folder
-  output_path: output files' folder
-  output_array_size: height and width of the squared output images
-  max_output_file_size: maximum single-file size for output files #in MB
-  font_extraction_size: Font size to use when extracting characters to images
-  canvas_size: initial image canvas size in which font chars are extracted
-  canvas_padding: padding for the initial image canvas to allow for unusally large fonts
-  beam_cmd_line_args: list of Apache Beam's command line aeguments
+  Processes zipped font files and outputs Tensorflow records consisting of labeled images for ML consumption.
 
   """
 
@@ -212,7 +195,7 @@ class Preprocessing(ConfigurableTransform):
 
 class Scoring(FittableTransform):
   """
-  This class trains a prediction model or scores new exaples with an existing prediction model.
+  Trains a prediction model or uses one to score input data.
   
 
   Attributes:
@@ -220,44 +203,6 @@ class Scoring(FittableTransform):
       CHARSET_OPTIONS (t.Dict): Dictionary from allowed charsets names to charsets
       training_config (TrainingConfig): training configuration wrapper
       charset_tensor (Tensor): Tensor with an entry per character in the current charset
-  
-
-  YAML configuration schema:
-
-
-  input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from `fontai.io.records.TfrWritable`
-  input_path: Input files' folder
-  output_path: output files' folder
-  model_path: Output model path
-  charset (optional, defaults to 'lowercase'): charset to use for training
-  training: subyaml. See below
-  model: subyaml. See below
-
-
-  Training subyaml schema:
-
-
-  batch_size (optional, defaults to None): can be null
-  epochs: number of epochs
-  steps_per_epoch (optional, defauls to 10k): 
-  seed (optional, defaults to 1): random seed for TF functions
-  metrics: List of TF metrics as strings
-  loss: subyaml with keys `class` and `kwargs` to instantiate a Keras loss function
-  optimizer (optional, defaults to Adam with default parameters): subyaml with keys `class` and `kwargs` to instantiate a Keras optimizer
-  callbacks (optional, defaults to []): subyaml with keys `class` and `kwargs` to instantiate a Keras callback or a custome one defined in `fontai.prediction.callbacks`
-  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised for training
-  custom_filters (optional, defaults to []): subyaml with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised for training
-
-  model subyaml schema:
-
-  Can be one of two:
-
-  1. A subyaml with entries `path` and optionally `custom_class` to load an existing model from a path; `custom_class` has to be the class name if the model is custom defined in `fontai.prediction.models`
-
-  2. A subyaml with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `fontai.prediction.models`. the kwargs of the specified class can subsequently be Sequential keras models if needed.
-
-
-
   
   """
   CHARSET_OPTIONS = {
@@ -440,19 +385,17 @@ class Scoring(FittableTransform):
   @classmethod
   def fit_from_config_object(cls, config: ScoringConfig, load_from_model_path = False, run_id: str = None):
     tmp_config_copy = "tmp-local-config-copy.yaml"
-    # start tracked mlflow run
+    
     with mlflow.start_run(run_id=run_id, nested=False) as run:
 
       logger.info(f"MLFlow run id: {run.info.run_id}")
 
-      # log stage configuration to MLFlow
       with open(tmp_config_copy,"w") as f:
         f.write(config.yaml.as_yaml())
       mlflow.log_artifact(tmp_config_copy)
       os.remove(tmp_config_copy)
 
       mlflow.tensorflow.autolog() #start keras autologging
-      #mlflow.log_param("config", config.yaml.whole_document()) # log stage configuration
 
       predictor = cls.from_config_object(config, load_from_model_path)
       
@@ -475,6 +418,5 @@ class Scoring(FittableTransform):
       predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
       logger.info(f"Saving trained model to {config.model_path}")
       predictor.model.save(config.model_path)
-      #mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
 
 

@@ -22,8 +22,15 @@ class ConfigHandler(BaseConfigHandler):
   Wrapper for ingestion's configuration processing logic.
   
   """
-  
+  @classmethod
   def get_config_schema(self):
+    """
+    YAML configuration schema:
+    
+    scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use
+    output_path: target output folder
+
+    """
     
     schema = yml.Map({
       "scrappers" : yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA),

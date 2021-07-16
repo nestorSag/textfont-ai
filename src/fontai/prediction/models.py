@@ -69,7 +69,10 @@ class CharStyleSAAE(tf.keras.Model):
     self.prior_batch_size = prior_batch_size
 
     self.prior_sampler = tf.random.normal
-  
+    
+    # list of embedded models as instance attributes 
+    self.model_list = ["full_encoder", "image_encoder", "decoder", "prior_discriminator"]
+
   def compile(self,
     optimizer='rmsprop',
     loss=None,
@@ -117,7 +120,7 @@ class CharStyleSAAE(tf.keras.Model):
       decoded = self.decoder(extended_code,training=True)  
 
       # apply prior_discriminator model
-      print((self.prior_batch_size,code.shape[1]))
+      #print((self.prior_batch_size,code.shape[1]))
       prior_samples = self.prior_sampler(shape=[self.prior_batch_size,code.shape[1]])
       real = self.prior_discriminator(prior_samples,training=True)
       fake = self.prior_discriminator(code,training=True)
@@ -260,7 +263,7 @@ class PureCharStyleSAAE(tf.keras.Model):
         n_classes (int): number of labeled classes
         prior_batch_size (int): Batch size from prior distribution at training time
     """
-    super(PureFontStyleSAAE, self).__init__()
+    super(PureCharStyleSAAE, self).__init__()
 
     self.full_encoder = full_encoder
     self.image_encoder = image_encoder
@@ -271,6 +274,8 @@ class PureCharStyleSAAE(tf.keras.Model):
     self.char_discriminator = char_discriminator
 
     self.prior_sampler = tf.random.normal
+    # list of embedded models as instance attributes 
+    self.model_list = ["full_encoder", "image_encoder", "decoder", "prior_discriminator", "char_discriminator"]
 
   def prior_discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)
@@ -469,6 +474,9 @@ class PureFontStyleSAAE(tf.keras.Model):
     self.char_discriminator = char_discriminator
 
     self.prior_sampler = tf.random.normal
+    # list of embedded models as instance attributes 
+    self.model_list = ["full_encoder", "image_encoder", "decoder", "prior_discriminator", "char_discriminator"]
+
 
   def prior_discriminator_loss(self,real,fake):
     real_loss = self.cross_entropy(tf.ones_like(real), real)

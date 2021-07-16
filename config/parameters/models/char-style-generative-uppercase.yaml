@@ -1,18 +1,18 @@
 # Train a generative model based on the adversarial autoencoder architecture by Goodfellow et al. 
-input_path: data/uppercase-scored
+input_path: data/scored/uppercase/chars
 input_record_class: ScoredLabeledChar
-output_path: data/uppercase-embeddings
-model_path: models/generative-uppercase
+output_path: data/scored/uppercase/char-style-gen
+model_path: models/char-style-generative
 charset: uppercase
 training:
   custom_filters:
-  - name: filter_misclassified
-  - name: filter_score
+  - name: filter_misclassified_chars
+  - name: filter_chars_by_score
     kwargs:
       threshold: 0.99
   batch_size: 64
-  epochs: 30
-  steps_per_epoch: 5000
+  epochs: 4
+  steps_per_epoch: 500
   optimizer:
     class: Adam
     kwargs:
@@ -22,20 +22,23 @@ training:
   metrics:
   - accuracy
   callbacks:
-  - class: ImageSamplerCallback
+  - class: SAAEImageSamplerCallback
     kwargs:
       n_labels: 26
       embedding_dim: 10
-  - class: FontSamplerCallback
+  - class: SAAEFontSamplerCallback
     kwargs:
       n_labels: 26
       embedding_dim: 10
+  - class: SAAELRHalver
+    kwargs:
+      halve_after: 10
 model:
   class: CharStyleSAAE
   kwargs:
     prior_batch_size: 64
     reconstruction_loss_weight: 0.5
-    discriminator:
+    prior_discriminator:
       class: Sequential
       kwargs:
         layers:
@@ -139,14 +142,14 @@ model:
             activation: elu
         - class: Dense
           kwargs: 
-            units: 1024
+            units: 2048
             activation: elu
         - class: Reshape
           kwargs: 
             target_shape: 
-            - 4
-            - 4
-            - 64
+            - 8
+            - 8
+            - 32
         - class: Conv2DTranspose
           kwargs:
             kernel_size: 2
@@ -169,19 +172,6 @@ model:
         - class: Conv2D
           kwargs: 
             filters: 32
-            kernel_size: 3
-            activation: elu
-            padding: same
-        - class: BatchNormalization
-        - class: Conv2DTranspose
-          kwargs:
-            kernel_size: 2
-            activation: elu
-            strides: 2
-            filters: 32
-        - class: Conv2D
-          kwargs: 
-            filters: 1
             kernel_size: 3
             activation: elu
             padding: same

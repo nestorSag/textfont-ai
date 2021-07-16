@@ -32,8 +32,13 @@ class ConfigHandler(BaseConfigHandler):
   }
 
 
+  @classmethod
   def get_config_schema(self):
-    
+    """
+    YAML configuration schema:
+
+    stages: List of subYAMLs with keys (type, config), where type is one of 'ingestion', 'preprocessing' or 'scoring', and config is a YAML matching the config schema for the corresponding type
+    """
     schema = yml.Map({
       "stages" : yml.Seq(yml.Map({
         "type": yml.Str(),

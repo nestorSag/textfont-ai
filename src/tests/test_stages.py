@@ -82,43 +82,43 @@ def test_predictor(config_str):
   assert True
 
 
-@pytest.mark.parametrize("ingestion_config_str, processing_config_str, predictor_config_str",
-  [
-    (
-      ingestion_config_str,
-      full_processing_config_str(output_record_class = "LabeledChar"),
-      full_prediction_config_str(
-      input_record_class = "LabeledChar",
-      model = "Sequential")
-      )
-  ])
-def test_pipeline(ingestion_config_str, processing_config_str, predictor_config_str):
+# @pytest.mark.parametrize("ingestion_config_str, processing_config_str, predictor_config_str",
+#   [
+#     (
+#       ingestion_config_str,
+#       full_processing_config_str(output_record_class = "LabeledChar"),
+#       full_prediction_config_str(
+#       input_record_class = "LabeledChar",
+#       model = "Sequential")
+#       )
+#   ])
+# def test_pipeline(ingestion_config_str, processing_config_str, predictor_config_str):
 
-  classes = [Ingestion, Preprocessing, Scoring]
-  config_strs = [ingestion_config_str, processing_config_str, predictor_config_str]
+#   classes = [Ingestion, Preprocessing, Scoring]
+#   config_strs = [ingestion_config_str, processing_config_str, predictor_config_str]
 
-  configs = [cls.parse_config_str(config_str) for cls, config_str in zip(classes, config_strs)]
+#   configs = [cls.parse_config_str(config_str) for cls, config_str in zip(classes, config_strs)]
 
 
 
-  fit_stage = [False, False, True]
-  dummy_yaml = yml.as_document({"a": 1})
-  config = PipelineConfig(stages=classes, configs=configs, fit_stage=fit_stage, yaml=dummy_yaml)
+#   fit_stage = [False, False, True]
+#   dummy_yaml = yml.as_document({"a": 1})
+#   config = PipelineConfig(stages=classes, configs=configs, fit_stage=fit_stage, yaml=dummy_yaml)
 
-  Pipeline.run_from_config_object(config)
-  pipeline = Pipeline(classes, configs, fit_stage)
+#   Pipeline.run_from_config_object(config)
+#   pipeline = Pipeline(classes, configs, fit_stage)
 
-  streaming_input_file = list(Path(configs[0].output_path).iterdir())[0]
+#   streaming_input_file = list(Path(configs[0].output_path).iterdir())[0]
 
-  data = InMemoryZipHolder(filename = "0", content = streaming_input_file.read_bytes())
+#   data = InMemoryZipHolder(filename = "0", content = streaming_input_file.read_bytes())
 
-  out = list(pipeline.transform(data))
+#   out = list(pipeline.transform(data))
 
-  assert len(out) == 124
-  for elem in out:
-    assert isinstance(elem, ScoredLabeledChar)
+#   assert len(out) == 124
+#   for elem in out:
+#     assert isinstance(elem, ScoredLabeledChar)
 
-  assert True
+#   assert True
 
 
 

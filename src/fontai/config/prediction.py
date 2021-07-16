@@ -77,18 +77,17 @@ class TrainingConfig(BaseModel):
     args["loss"] = schema_handler.get_instance(yaml=yaml.get("loss"), scope=keras.losses)
     
     if  yaml.get("custom_filters").data != []:
-      args["custom_filters"] = [getattr(custom_filters, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("custom_filters")]
+      args["custom_filters"] = [getattr(custom_filters, subYAML.get("name").text)(**subYAML.get("kwargs").data) for subYAML in yaml.get("custom_filters")]
     else:
       args["custom_filters"] = []
 
 
     if  yaml.get("custom_mappers").data != []:
-      args["custom_mappers"] = [getattr(custom_mappers, subyaml.get("name").text)(**subyaml.get("kwargs").data) for subyaml in yaml.get("custom_mappers")]
+      args["custom_mappers"] = [getattr(custom_mappers, subYAML.get("name").text)(**subYAML.get("kwargs").data) for subYAML in yaml.get("custom_mappers")]
     else:
       args["custom_mappers"] = []
 
 
-    
     if  yaml.get("callbacks") is not None:
       args["callbacks"] = [CallbackFactory.create(yaml) for yaml in yaml.get("callbacks")]
     else:
@@ -152,11 +151,10 @@ class Config(BasePipelineTransformConfig):
     Raises:
         TypeError: If record class not in allowed set
     """
-    supported = [records.LabeledChar, records.LabeledFont]
-    if input_record_class in supported:
+    if issubclass(input_record_class, records.TfrWritable):
       return input_record_class
     else:
-      raise TypeError(f"supported output_record_classes are {[x.__name__ for x in supported]}")
+      raise TypeError(f"input_record_class must inherit from TfrWritable")
 
 
 class ModelFactory(object):
@@ -296,7 +294,8 @@ class CallbackFactory(object):
         callback = yaml_to_obj.get_instance(yaml, scope=module)
         return callback
       except AttributeError as e:
-        logging.debug(f"error loading callback from YAML {yaml.dict} from module {module}: {e}\n Full trace: {traceback.format_exc()}")
+        message = f"error loading callback from YAML {yaml.data} from module {module}: {e}\n Full trace: {traceback.format_exc()}"
+        logging.debug(message)
     raise ValueError("Provided YAML did not match any known callback.")
 
 
@@ -309,7 +308,41 @@ class ConfigHandler(BaseConfigHandler):
   def other_setup(self):
     self.model_factory = ModelFactory()
 
+  @classmethod
   def get_config_schema(self):
+    """
+    YAML configuration schema:
+
+    input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from `fontai.io.records.TfrWritable`. At the moment only `LabeledChar` and `LabeledFont` are supported. If `LabeledChar`, loaded elements correspond to single images from unordered fonts. If `LabeledFont`, loaded elements correspond to tensors holding all characters corresponding to a single font.
+    input_path: Input files' folder with TF record files
+    output_path: output files' folder when scoring new data
+    model_path: Output model path when training a model
+    charset (optional, defaults to 'lowercase'): One of 'uppercase', 'lowercase', 'digits' or 'all', and determines the set to use for training or scoring.
+    training: subYAML. See below
+    model: subYAML. See below
+
+
+    'training' subYAML schema:
+
+    batch_size (optional, defaults to None): can be null
+    epochs: number of epochs
+    steps_per_epoch (optional, defauls to 10k): minibatches per epoch; this is needed because the total number of valid records is not known before runtime
+    seed (optional, defaults to 1): random seed for TF functions
+    metrics: List of TF metrics as strings
+    loss: subYAML with keys `class` and `kwargs` to instantiate a Keras loss function
+    optimizer (optional, defaults to Adam with default parameters): subYAML with keys `class` and `kwargs` to instantiate a Keras optimizer
+    callbacks (optional, defaults to []): subYAML with keys `class` and `kwargs` to instantiate a Keras callback or a custom one defined in `fontai.prediction.callbacks`
+    custom_filters (optional, defaults to []): subYAML with keys `name` and `kwargs` to instantiate a filtering function defined in `fontai.prediction.custom_filters` to apply just after records are deserialised for training
+    custom_mappers (optional, defaults to []): subYAML with keys `name` and `kwargs` to instantiate a mapping function defined in `fontai.prediction.custom_mappings` to apply just after records are deserialised for training
+
+    model subYAML schema:
+
+    Can be one of two:
+
+    1. A subYAML with entries `path` and optionally `custom_class` to load an existing model from a path; `custom_class` has to be the class name if the model is custom defined in `fontai.prediction.models`
+
+    2. A subYAML with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `fontai.prediction.models`. the kwargs of the specified class can subsequently be Sequential keras models if needed.
+    """
 
     #self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
 

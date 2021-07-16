@@ -53,11 +53,14 @@ class SimpleClassInstantiator(object):
     Returns:
         object: instantiated object
     """
-    try:
-      yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
-      return getattr(scope, yaml.get("class").text)(**yaml.get("kwargs").data)
-    except Exception as e:
-      logger.exception(f"Cannot instantiate class {yaml.get('class').text} from namespace {scope}: {e}")
+    yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
+    return getattr(scope, yaml.get("class").text)(**yaml.get("kwargs").data)
+    # try:
+    #   yaml.revalidate(self.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA)
+    #   return getattr(scope, yaml.get("class").text)(**yaml.get("kwargs").data)
+    # except Exception as e:
+    #   #print(f"Cannot instantiate class {yaml.get('class').text} from namespace {scope}: {e}")
+    #   logger.exception(f"Cannot instantiate class {yaml.get('class').text} from namespace {scope}: {e}")
 
 
 
@@ -70,11 +73,11 @@ class BaseConfigHandler(ABC):
       yaml_to_obj (SimpleClassInstantiator): Helper class to instantiate some Python objects from a YAML definition
   
   """
+  yaml_to_obj = SimpleClassInstantiator()
+
+  IO_CONFIG_SCHEMA = yml.Str() | yml.EmptyNone()
+
   def __init__(self):
-
-    self.yaml_to_obj = SimpleClassInstantiator()
-
-    self.IO_CONFIG_SCHEMA = yml.Str() | yml.EmptyNone()
 
     self.other_setup()
 
@@ -121,6 +124,7 @@ class BaseConfigHandler(ABC):
     """
     pass
 
+  @classmethod
   def get_config_schema(self):
 
     return None

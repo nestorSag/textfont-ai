@@ -21,8 +21,8 @@ def plot_imgs(imgs):
     else:
       x_ = x.numpy()
     np_x = (255 * x_).astype(np.uint8).reshape((64,64))
-    np_x[np_x <= np.quantile(np_x,0.25)] = 0.0
-    #axs[int(i/7), i%7].imshow(np_x)
+    #np_x[np_x <= np.quantile(np_x,0.25)] = 0.0
+    axs[int(i/7), i%7].imshow(np_x)
   plt.show()
 
 def plot_img(x):

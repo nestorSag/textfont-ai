@@ -75,8 +75,22 @@ class ConfigHandler(BaseConfigHandler):
 
   """
 
+  @classmethod
   def get_config_schema(self):
-    
+    """
+    YAML configuration schema:
+
+    output_record_class: name of record class that will populate output files; it has to inherit from `fontai.io.records.TfrWritable` and at the moment only `LabeledChar` and `LabeledFont` are supported. If `LabeledChar`, individual character images are preprocessed and stored in no particular order and saved as PNGs. If `LabeledFont`, characters from a single font are stored together and saved as tensors.
+    input_path: Input folder with zipped font files
+    output_path: output folder where output Tensorflow records files are stored
+    output_array_size: Size of square output images
+    max_output_file_size: maximum single-file size for output files in MB
+    font_extraction_size: Font size to use when extracting characters to images
+    canvas_size: initial image canvas size in which font chars are extracted
+    canvas_padding: padding for the initial image canvas to allow for unusally large or convoluted fonts
+    beam_cmd_line_args: list of Apache Beam's command line aeguments
+
+    """
     schema = yml.Map({
       "output_record_class": yml.Str(), 
       "output_array_size": yml.Int(),
@@ -85,7 +99,6 @@ class ConfigHandler(BaseConfigHandler):
       "canvas_padding": yml.Int(),
       yml.Optional("input_path", default = None): self.IO_CONFIG_SCHEMA, 
       yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
-      yml.Optional("charset", default = string.ascii_letters + string.digits): yml.Str(),
       yml.Optional("max_output_file_size", default = 64.0): yml.Float(),
       yml.Optional("beam_cmd_line_args", default = ["--runner", "DirectRunner"]): yml.Seq(yml.Str())
        })
@@ -107,7 +120,7 @@ class ConfigHandler(BaseConfigHandler):
     output_array_size = config.get("output_array_size").data
     max_output_file_size = config.get("max_output_file_size").data
     f2a_config = FontExtractionConfig(
-      charset = config.get("charset").data,
+      charset = string.ascii_letters + string.digits,
       font_extraction_size = config.get("font_extraction_size").data,
       canvas_size = config.get("canvas_size").data,
       canvas_padding = config.get("canvas_padding").data)

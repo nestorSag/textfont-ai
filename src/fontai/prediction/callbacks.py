@@ -2,14 +2,15 @@
 This module contains custom Tensorflow callbacks
 """
 import os
-import tensorflow as tf
 import typing as t
+
+import tensorflow as tf
+from tensorflow.python.keras import backend
 import matplotlib.pyplot as plt
 import numpy as np
-
 import mlflow
 
-class ImageSamplerCallback(tf.keras.callbacks.Callback):
+class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
 
   """Generates randomly chosen character images from the model at the end of each epoch and pushes them to MLFLow.
   
@@ -18,40 +19,39 @@ class ImageSamplerCallback(tf.keras.callbacks.Callback):
   def __init__(
     self,
     n_labels: int,
-    code_dim: int,
+    embedding_dim: int,
     n_imgs=16):
     """
     Args:
         n_labels (int): Number of labels in model's charset
-        code_dim (int): Dimensionality of encoded representation
+        embedding_dim (int): Dimensionality of encoded representation
         n_imgs (int, optional): Number of images to sample
     
     
     """
 
     self.n_labels = n_labels
-    self.code_dim = code_dim
+    self.embedding_dim = embedding_dim
     self.n_imgs = n_imgs
-    self.output_file = f"tmp-{self.__class__.__name__}-output.png"
 
   def on_epoch_end(self,epoch,numpy_logs):
-
+    output_file = f"{epoch}.png"
     imgs = self.generate_images()
-    plot_images(imgs, self.output_file)
-    mlflow.log_artifact(self.output_file, f"{self.__class__.__name__}-{epoch}.png")
-    os.remove(self.output_file)
+    self.plot_images(imgs, output_file)
+    mlflow.log_artifact(output_file, self.__class__.__name__)
+    os.remove(output_file)
 
   def generate_images(self):
 
     # sample encoded representation
-    samples = self.model.prior_sampler(shape=(self.n_imgs,self.code_dim))
+    samples = self.model.prior_sampler(shape=(self.n_imgs,self.embedding_dim)).numpy()
     # sample one hot encoded labels
     labels = []
     for k in range(self.n_imgs):
       label = np.random.randint(0,self.n_labels,1)
       onehot = np.zeros((1,self.n_labels), dtype=np.float32)
       onehot[0,label] = 1.0
-      labels.append(np.concatenate([samples[k],onehot],axis=-1))
+      labels.append(np.concatenate([samples[k].reshape((1,self.embedding_dim)),onehot],axis=-1))
     
     fully_encoded = np.array(labels, dtype=np.float32)
 
@@ -69,7 +69,7 @@ class ImageSamplerCallback(tf.keras.callbacks.Callback):
     """
     # plot multiple images
     n_imgs, height, width, c = imgs.shape
-    n_rows = np.ceil(n_imgs/n_cols)
+    n_rows = int(np.ceil(n_imgs/n_cols))
 
     fig, axs = plt.subplots(n_rows, n_cols)
     for i in range(n_imgs):
@@ -79,10 +79,11 @@ class ImageSamplerCallback(tf.keras.callbacks.Callback):
       else:
         x_ = x.numpy()
       np_x = (255 * x_).astype(np.uint8).reshape((height,width))
+      axs[int(i/n_cols), i%n_cols].imshow(np_x)
     
     plt.savefig(output_file)
 
-class FontSamplerCallback(ImageSamplerCallback):
+class SAAEFontSamplerCallback(SAAEImageSamplerCallback):
 
   """Generates a random font style from the model, generates all of its characters and pushes them to MLFLow at the end of each epoch
   
@@ -91,20 +92,20 @@ class FontSamplerCallback(ImageSamplerCallback):
   def __init__(
     self,
     n_labels: int,
-    code_dim: int):
+    embedding_dim: int):
     """
     Args:
         n_labels (int): Number of labels in model's charset
-        code_dim (int): Dimensionality of encoded representation
+        embedding_dim (int): Dimensionality of encoded representation
     
     """
 
-    super().__init__(n_labels,code_dim,n_labels)
+    super().__init__(n_labels,embedding_dim,n_labels)
 
   def generate_images(self):
 
     # sample encoded representation
-    sample = self.model.prior_sampler(shape=(1,self.code_dim))
+    sample = self.model.prior_sampler(shape=(1,self.embedding_dim)).numpy()
     # sample one hot encoded labels
     labels = []
     for k in range(self.n_labels):
@@ -116,3 +117,25 @@ class FontSamplerCallback(ImageSamplerCallback):
 
     imgs = self.model.decoder.predict(fully_encoded)
     return imgs
+
+class SAAELRHalver(tf.keras.callbacks.Callback):
+
+  """Halves the step size of every embedded model in a custom supervised adversarial autoencoder as defined in the `models` submodule, up to a minimum accepted step size
+  
+  Attributes:
+      halve_after (int): number of epochs after which step sizes are halved
+      min_lr (float): lower bound for step size
+  """
+
+  def __init__(self, halve_after: int = 10, min_lr: float = 0.0001):
+
+    self.halve_after = 10
+    self.min_lr = min_lr
+
+  def on_epoch_begin(self, epoch, logs=None):
+
+    for model in self.model.model_list:
+      model_lr = getattr(self.model, model).optimizer.lr
+      lr = float(backend.get_value(model_lr))
+      lr = max(lr/2**int(epoch/self.halve_after), self.min_lr)
+      backend.set_value(model_lr, backend.get_value(lr))
