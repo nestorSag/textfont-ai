@@ -11,8 +11,8 @@ training:
     kwargs:
       threshold: 0.99
   batch_size: 64
-  epochs: 4
-  steps_per_epoch: 500
+  epochs: 60
+  steps_per_epoch: 5000
   optimizer:
     class: Adam
     kwargs:
@@ -32,7 +32,7 @@ training:
       embedding_dim: 10
   - class: SAAELRHalver
     kwargs:
-      halve_after: 10
+      halve_after: 12
 model:
   class: CharStyleSAAE
   kwargs:

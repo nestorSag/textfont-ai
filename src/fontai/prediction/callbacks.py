@@ -34,8 +34,15 @@ class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
     self.embedding_dim = embedding_dim
     self.n_imgs = n_imgs
 
+    # determine whether this is a continuation of a previous run, and whether there are previously generated images
+    active_run = mlflow.active_run()
+    client = mlflow.tracking.MlflowClient()
+    self.past_epochs = len(client.list_artifacts(active_run.info.run_id, self.__class__.__name__))
+
   def on_epoch_end(self,epoch,numpy_logs):
-    output_file = f"{epoch}.png"
+
+    logical_epoch = epoch + self.past_epochs
+    output_file = f"{logical_epoch}.png"
     imgs = self.generate_images()
     self.plot_images(imgs, output_file)
     mlflow.log_artifact(output_file, self.__class__.__name__)
@@ -79,7 +86,7 @@ class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
       else:
         x_ = x.numpy()
       np_x = (255 * x_).astype(np.uint8).reshape((height,width))
-      axs[int(i/n_cols), i%n_cols].imshow(np_x)
+      axs[int(i/n_cols), i%n_cols].imshow(np_x, cmap="Greys")
     
     plt.savefig(output_file)
 

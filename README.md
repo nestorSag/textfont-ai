@@ -68,5 +68,3 @@ python ./scripts/run-pipeline.py --config-file config/parameters/pipelines/gener
 Finally, detailed documentation can be found [here](https://nestorsag.github.io/textfont-ai/).
 
 ## Notes
-
-Please be aware that some environment variables have been set to modify Tensorflow's default behaviour, including logging and GPU memory allocation.

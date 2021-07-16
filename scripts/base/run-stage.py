@@ -1,4 +1,5 @@
 # example run: python scripts/run_single_stage.py --config-file config/parameters/local-preprocessing.yaml --stage ingestion
+
 import sys
 import argparse
 import logging
@@ -56,7 +57,7 @@ def run(args):
       default = None,      
       help=
       """
-      Optional name for logged MLFlow run. Only used for model training.
+      Name of previously logged MLFlow run that is to be continued.
       """)
 
   args, _ = parser.parse_known_args(args)
