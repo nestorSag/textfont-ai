@@ -34,12 +34,15 @@ class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
     self.embedding_dim = embedding_dim
     self.n_imgs = n_imgs
 
-    # determine whether this is a continuation of a previous run, and whether there are previously generated images
-    active_run = mlflow.active_run()
-    client = mlflow.tracking.MlflowClient()
-    self.past_epochs = len(client.list_artifacts(active_run.info.run_id, self.__class__.__name__))
+    self.past_epochs = None
 
   def on_epoch_end(self,epoch,numpy_logs):
+
+    if self.past_epochs is None:
+      # determine whether there are previously generated images form previous runs
+      active_run = mlflow.active_run()
+      client = mlflow.tracking.MlflowClient()
+      self.past_epochs = len(client.list_artifacts(active_run.info.run_id, self.__class__.__name__))
 
     logical_epoch = epoch + self.past_epochs
     output_file = f"{logical_epoch}.png"

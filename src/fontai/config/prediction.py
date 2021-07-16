@@ -295,6 +295,7 @@ class CallbackFactory(object):
         return callback
       except AttributeError as e:
         message = f"error loading callback from YAML {yaml.data} from module {module}: {e}\n Full trace: {traceback.format_exc()}"
+        #print(message)
         logging.debug(message)
     raise ValueError("Provided YAML did not match any known callback.")
 
