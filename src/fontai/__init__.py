@@ -4,7 +4,7 @@
 
     `io`: Contains logic pertaining to data interfaces between ML stages and storage and to other ML stages; this comprises supported Tensorflow record formats, file formats, storage media and file reader and writer classes.
 
-    `pipeline`: High-level ML stage executors are here, as well as the basic interfaces that each one has to implement.
+    `runners`: High-level ML stage executors are here, as well as the basic interfaces that each one has to implement.
 
     `prediction`: Contains the logic for preprocessing Tensorflow examples and get them ready for model training or scoring; also defines custom model architectures and callback functions for training.
 

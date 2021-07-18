@@ -1,0 +1,900 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fontai.config package &#8212; textfont-ai 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="fontai-config-package">
+<h1>fontai.config package<a class="headerlink" href="#fontai-config-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-fontai.config.core">
+<span id="fontai-config-core-module"></span><h2>fontai.config.core module<a class="headerlink" href="#module-fontai.config.core" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">BaseConfigHandler</span></span><a class="headerlink" href="#fontai.config.core.BaseConfigHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Interface for creating execution configuration objects for ML pipeline stages</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.IO_CONFIG_SCHEMA">
+<span class="sig-name descname"><span class="pre">IO_CONFIG_SCHEMA</span></span><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.IO_CONFIG_SCHEMA" title="Permalink to this definition">¶</a></dt>
+<dd><p>schema for I/O parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>yml.validators.Validator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.yaml_to_obj">
+<span class="sig-name descname"><span class="pre">yaml_to_obj</span></span><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.yaml_to_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper class to instantiate some Python objects from a YAML definition</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.core.SimpleClassInstantiator" title="fontai.config.core.SimpleClassInstantiator">SimpleClassInstantiator</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">IO_CONFIG_SCHEMA</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Str()</span> <span class="pre">|</span> <span class="pre">EmptyNone()</span></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.from_file">
+<span class="sig-name descname"><span class="pre">from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML file and maps it to an Config instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path object pointing to configuration YAML file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Configuration object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig">BasePipelineTransformConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.from_string">
+<span class="sig-name descname"><span class="pre">from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.from_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML file and maps it to an Config instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>str</em>) – contents of YAML configuration file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Configuration object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig">BasePipelineTransformConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.get_config_schema">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.get_config_schema" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.instantiate_config">
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">instantiate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.instantiate_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML instance to produce an Config instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>yml.YAML</em>) – YAML object from the strictyaml library</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.core.BaseConfigHandler.other_setup">
+<span class="sig-name descname"><span class="pre">other_setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.core.BaseConfigHandler.other_setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">yaml_to_obj</span></span><em class="property"> <span class="pre">=</span> <span class="pre">&lt;fontai.config.core.SimpleClassInstantiator</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.core.BasePipelineTransformConfig">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">BasePipelineTransformConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.core.BasePipelineTransformConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pydantic.main.BaseModel</span></code></p>
+<p>Base class for ML pipelane stage configuration objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_path</strong> (<em>str</em><em>, </em><em>optional</em>) – object to list and retrieve input files to be processed</p></li>
+<li><p><strong>output_path</strong> (<em>str</em><em>, </em><em>optional</em>) – object to persist output bojects</p></li>
+<li><p><strong>yaml</strong> (<em>yml.YAML</em>) – parsed YAML from supplied configuration file</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.core.BasePipelineTransformConfig.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#fontai.config.core.BasePipelineTransformConfig.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.BasePipelineTransformConfig.Config.arbitrary_types_allowed">
+<span class="sig-name descname"><span class="pre">arbitrary_types_allowed</span></span><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fontai.config.core.BasePipelineTransformConfig.Config.arbitrary_types_allowed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.BasePipelineTransformConfig.input_path">
+<span class="sig-name descname"><span class="pre">input_path</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.core.BasePipelineTransformConfig.input_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.BasePipelineTransformConfig.output_path">
+<span class="sig-name descname"><span class="pre">output_path</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.core.BasePipelineTransformConfig.output_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.BasePipelineTransformConfig.yaml">
+<span class="sig-name descname"><span class="pre">yaml</span></span><em class="property"><span class="pre">:</span> <span class="pre">strictyaml.representation.YAML</span></em><a class="headerlink" href="#fontai.config.core.BasePipelineTransformConfig.yaml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.core.SimpleClassInstantiator">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SimpleClassInstantiator</span></span><a class="headerlink" href="#fontai.config.core.SimpleClassInstantiator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper for some useful schema definitions and simple class instantiations.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.SimpleClassInstantiator.ANY_PRIMITIVES">
+<span class="sig-name descname"><span class="pre">ANY_PRIMITIVES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Int()</span> <span class="pre">|</span> <span class="pre">Float()</span> <span class="pre">|</span> <span class="pre">Bool()</span> <span class="pre">|</span> <span class="pre">Str()</span> <span class="pre">|</span> <span class="pre">Seq(Int())</span></em><a class="headerlink" href="#fontai.config.core.SimpleClassInstantiator.ANY_PRIMITIVES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.core.SimpleClassInstantiator.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA">
+<span class="sig-name descname"><span class="pre">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Map({'class':</span> <span class="pre">Str(),</span> <span class="pre">Optional(&quot;kwargs&quot;):</span> <span class="pre">MapPattern(Str(),</span> <span class="pre">Int()</span> <span class="pre">|</span> <span class="pre">Float()</span> <span class="pre">|</span> <span class="pre">Bool()</span> <span class="pre">|</span> <span class="pre">Str()</span> <span class="pre">|</span> <span class="pre">Seq(Int()))</span> <span class="pre">|</span> <span class="pre">EmptyDict()})</span></em><a class="headerlink" href="#fontai.config.core.SimpleClassInstantiator.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.core.SimpleClassInstantiator.get_instance">
+<span class="sig-name descname"><span class="pre">get_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">object</span><a class="headerlink" href="#fontai.config.core.SimpleClassInstantiator.get_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method instantiates a class in the global namespace using a string as class name and a dictionary as keyword arguments. This method only works for classes that receive primitive value types as arguments for their constructors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>yaml</strong> (<em>yml.YAML</em>) – AML object that matches the schema given by the PY_CLASS_INSTANCE_FROM_YAML_SCHEMA attribute</p></li>
+<li><p><strong>scope</strong> (<em>module</em>) – module namespace from which the object is to be instantiated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>instantiated object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.config.ingestion">
+<span id="fontai-config-ingestion-module"></span><h2>fontai.config.ingestion module<a class="headerlink" href="#module-fontai.config.ingestion" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.ingestion.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scrappers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">fontai.io.scrappers.Scrapper</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.ingestion.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.ingestion.Config.scrappers">
+<span class="sig-name descname"><span class="pre">scrappers</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">fontai.io.scrappers.Scrapper</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.ingestion.Config.scrappers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.ingestion.ConfigHandler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ConfigHandler</span></span><a class="headerlink" href="#fontai.config.ingestion.ConfigHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BaseConfigHandler" title="fontai.config.core.BaseConfigHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BaseConfigHandler</span></code></a></p>
+<p>Wrapper for ingestion’s configuration processing logic.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.ingestion.ConfigHandler.get_config_schema">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.ingestion.ConfigHandler.get_config_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>YAML configuration schema:</p>
+<p>scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from <a href="#id2"><span class="problematic" id="id3">`</span></a>fontai.io.scrappers <a href="#id4"><span class="problematic" id="id5">`</span></a>to use
+output_path: target output folder</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.ingestion.ConfigHandler.instantiate_config">
+<span class="sig-name descname"><span class="pre">instantiate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.ingestion.Config" title="fontai.config.ingestion.Config"><span class="pre">fontai.config.ingestion.Config</span></a><a class="headerlink" href="#fontai.config.ingestion.ConfigHandler.instantiate_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML instance to produce an Config instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>yml.YAML</em>) – YAML object from the strictyaml library</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Configuration object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.ingestion.Config" title="fontai.config.ingestion.Config">Config</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.config.pipeline">
+<span id="fontai-config-pipeline-module"></span><h2>fontai.config.pipeline module<a class="headerlink" href="#module-fontai.config.pipeline" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.pipeline.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stages</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">type</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_stage</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.pipeline.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></code></a></p>
+<p>Configuration object for Pipeline stage instances</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.pipeline.Config.stages">
+<span class="sig-name descname"><span class="pre">stages</span></span><a class="headerlink" href="#fontai.config.pipeline.Config.stages" title="Permalink to this definition">¶</a></dt>
+<dd><p>List with types of pipeline stages</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>t.List[type]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.pipeline.Config.configs">
+<span class="sig-name descname"><span class="pre">configs</span></span><a class="headerlink" href="#fontai.config.pipeline.Config.configs" title="Permalink to this definition">¶</a></dt>
+<dd><p>(t.List[BasePipelineTransformConfig]): List with parsed configuration objects for each stage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig">fontai.config.core.BasePipelineTransformConfig</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">configs</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id6" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.pipeline.Config.fit_stage">
+<span class="sig-name descname"><span class="pre">fit_stage</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.pipeline.Config.fit_stage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">stages</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">type</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id7" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.pipeline.ConfigHandler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ConfigHandler</span></span><a class="headerlink" href="#fontai.config.pipeline.ConfigHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BaseConfigHandler" title="fontai.config.core.BaseConfigHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BaseConfigHandler</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.pipeline.ConfigHandler.STAGE_TYPES">
+<span class="sig-name descname"><span class="pre">STAGE_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{'ingestion':</span> <span class="pre">&lt;class</span> <span class="pre">'fontai.runners.stages.Ingestion'&gt;,</span> <span class="pre">'preprocessing':</span> <span class="pre">&lt;class</span> <span class="pre">'fontai.runners.stages.Preprocessing'&gt;,</span> <span class="pre">'scoring':</span> <span class="pre">&lt;class</span> <span class="pre">'fontai.runners.stages.Scoring'&gt;}</span></em><a class="headerlink" href="#fontai.config.pipeline.ConfigHandler.STAGE_TYPES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.pipeline.ConfigHandler.get_config_schema">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.pipeline.ConfigHandler.get_config_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>YAML configuration schema:</p>
+<p>stages: List of subYAMLs with keys (type, config), where type is one of ‘ingestion’, ‘preprocessing’ or ‘scoring’, and config is a YAML matching the config schema for the corresponding type</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.pipeline.ConfigHandler.instantiate_config">
+<span class="sig-name descname"><span class="pre">instantiate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.pipeline.Config" title="fontai.config.pipeline.Config"><span class="pre">fontai.config.pipeline.Config</span></a><a class="headerlink" href="#fontai.config.pipeline.ConfigHandler.instantiate_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML instance to produce an Config instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>yml.YAML</em>) – YAML object from the strictyaml library</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instantiated configuration</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.pipeline.Config" title="fontai.config.pipeline.Config">Config</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.config.prediction">
+<span id="fontai-config-prediction-module"></span><h2>fontai.config.prediction module<a class="headerlink" href="#module-fontai.config.prediction" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.CallbackFactory">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">CallbackFactory</span></span><a class="headerlink" href="#fontai.config.prediction.CallbackFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Factory class for instantiating Tensorflow callback objects</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.CallbackFactory.create">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">tensorflow.python.keras.callbacks.Callback</span><a class="headerlink" href="#fontai.config.prediction.CallbackFactory.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create callback from YAML object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>yaml</strong> (<em>yml.YAML</em>) – Input YAML object</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – When YAML does not match any known callback class</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#fontai.config.prediction.TrainingConfig" title="fontai.config.prediction.TrainingConfig"><span class="pre">fontai.config.prediction.TrainingConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_record_class</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tensorflow.python.keras.engine.training.Model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></code></a></p>
+<p>Wrapper class for the configuration of the ModelTrainingStage class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_record_class</strong> (<a class="reference internal" href="fontai.io.html#fontai.io.records.TfrWritable" title="fontai.io.records.TfrWritable"><em>records.TfrWritable</em></a>) – Input schema class from the <cite>textai.io.records</cite> submodule</p></li>
+<li><p><strong>training_config</strong> (<a class="reference internal" href="#fontai.config.prediction.TrainingConfig" title="fontai.config.prediction.TrainingConfig"><em>TrainingConfig</em></a>) – Runtime configuration for training routine</p></li>
+<li><p><strong>model</strong> (<em>keras.Model</em>) – Model instance that’s going to be trained</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#fontai.config.prediction.Config.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.Config.arbitrary_types_allowed">
+<span class="sig-name descname"><span class="pre">arbitrary_types_allowed</span></span><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fontai.config.prediction.Config.Config.arbitrary_types_allowed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.allowed_charsets">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">allowed_charsets</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.Config.allowed_charsets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validator for charset attribute</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>charset</strong> (<em>str</em>) – charset attribute</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>validated charset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If charset is invalid</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.charset">
+<span class="sig-name descname"><span class="pre">charset</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#fontai.config.prediction.Config.charset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.input_record_class">
+<span class="sig-name descname"><span class="pre">input_record_class</span></span><em class="property"><span class="pre">:</span> <span class="pre">type</span></em><a class="headerlink" href="#fontai.config.prediction.Config.input_record_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="pre">:</span> <span class="pre">tensorflow.python.keras.engine.training.Model</span></em><a class="headerlink" href="#fontai.config.prediction.Config.model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.model_path">
+<span class="sig-name descname"><span class="pre">model_path</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#fontai.config.prediction.Config.model_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.training_config">
+<span class="sig-name descname"><span class="pre">training_config</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#fontai.config.prediction.TrainingConfig" title="fontai.config.prediction.TrainingConfig"><span class="pre">fontai.config.prediction.TrainingConfig</span></a></em><a class="headerlink" href="#fontai.config.prediction.Config.training_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.Config.validate_input_record_class">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">validate_input_record_class</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.Config.validate_input_record_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate input record class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_record_class</strong> (<em>type</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Validated record class</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If record class not in allowed set</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.ConfigHandler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ConfigHandler</span></span><a class="headerlink" href="#fontai.config.prediction.ConfigHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BaseConfigHandler" title="fontai.config.core.BaseConfigHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BaseConfigHandler</span></code></a></p>
+<p>Wrapper for training configuration processing logic.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ConfigHandler.get_config_schema">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.ConfigHandler.get_config_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>YAML configuration schema:</p>
+<p>input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from <cite>fontai.io.records.TfrWritable</cite>. At the moment only <cite>LabeledChar</cite> and <cite>LabeledFont</cite> are supported. If <cite>LabeledChar</cite>, loaded elements correspond to single images from unordered fonts. If <cite>LabeledFont</cite>, loaded elements correspond to tensors holding all characters corresponding to a single font.
+input_path: Input files’ folder with TF record files
+output_path: output files’ folder when scoring new data
+model_path: Output model path when training a model
+charset (optional, defaults to ‘lowercase’): One of ‘uppercase’, ‘lowercase’, ‘digits’ or ‘all’, and determines the set to use for training or scoring.
+training: subYAML. See below
+model: subYAML. See below</p>
+<p>‘training’ subYAML schema:</p>
+<p>batch_size (optional, defaults to None): can be null
+epochs: number of epochs
+steps_per_epoch (optional, defauls to 10k): minibatches per epoch; this is needed because the total number of valid records is not known before runtime
+seed (optional, defaults to 1): random seed for TF functions
+metrics: List of TF metrics as strings
+loss: subYAML with keys <cite>class</cite> and <cite>kwargs</cite> to instantiate a Keras loss function
+optimizer (optional, defaults to Adam with default parameters): subYAML with keys <cite>class</cite> and <cite>kwargs</cite> to instantiate a Keras optimizer
+callbacks (optional, defaults to []): subYAML with keys <cite>class</cite> and <cite>kwargs</cite> to instantiate a Keras callback or a custom one defined in <cite>fontai.prediction.callbacks</cite>
+custom_filters (optional, defaults to []): subYAML with keys <cite>name</cite> and <cite>kwargs</cite> to instantiate a filtering function defined in <cite>fontai.prediction.custom_filters</cite> to apply just after records are deserialised for training
+custom_mappers (optional, defaults to []): subYAML with keys <cite>name</cite> and <cite>kwargs</cite> to instantiate a mapping function defined in <cite>fontai.prediction.custom_mappings</cite> to apply just after records are deserialised for training</p>
+<p>model subYAML schema:</p>
+<p>Can be one of two:</p>
+<ol class="arabic simple">
+<li><p>A subYAML with entries <cite>path</cite> and optionally <cite>custom_class</cite> to load an existing model from a path; <cite>custom_class</cite> has to be the class name if the model is custom defined in <cite>fontai.prediction.models</cite></p></li>
+<li><p>A subYAML with entries <cite>class</cite> and <cite>kwargs</cite> to instantiate a Keras model architecture; currently only <cite>Sequential</cite> types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in <cite>fontai.prediction.models</cite>. the kwargs of the specified class can subsequently be Sequential keras models if needed.</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ConfigHandler.instantiate_config">
+<span class="sig-name descname"><span class="pre">instantiate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.prediction.Config" title="fontai.config.prediction.Config"><span class="pre">fontai.config.prediction.Config</span></a><a class="headerlink" href="#fontai.config.prediction.ConfigHandler.instantiate_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML instance to produce an Config instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>yml.YAML</em>) – YAML object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instantiated configuration for a Scoring ML stage</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.prediction.Config" title="fontai.config.prediction.Config">Config</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ConfigHandler.other_setup">
+<span class="sig-name descname"><span class="pre">other_setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.ConfigHandler.other_setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.ModelFactory">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ModelFactory</span></span><a class="headerlink" href="#fontai.config.prediction.ModelFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Factory class for ML models that takes YAML configuration objects</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ModelFactory.from_keras_sequential">
+<span class="sig-name descname"><span class="pre">from_keras_sequential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.ModelFactory.from_keras_sequential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a ML model of Keras’ Sequential class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model_yaml</strong> (<em>yml.YAML</em>) – YAML object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an instance of class Model</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>keras.Model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ModelFactory.from_multi_sequential">
+<span class="sig-name descname"><span class="pre">from_multi_sequential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.ModelFactory.from_multi_sequential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a ML model that uses multiple Keras Sequential models internally</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model_yaml</strong> (<em>yml.YAML</em>) – YAML object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an instance of class Model</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>keras.Model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ModelFactory.from_path">
+<span class="sig-name descname"><span class="pre">from_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.ModelFactory.from_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a saved model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model_yaml</strong> (<em>yml.YAML</em>) – YAML object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>instantiated model</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>keras.Model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.ModelFactory.from_yaml">
+<span class="sig-name descname"><span class="pre">from_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.ModelFactory.from_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a ML model from a YAML object that contains the model’s specification</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>yaml</strong> (<em>yml.YAML</em>) – YAML object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>instantiated model</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>keras.Model</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>Exception</strong> – If no matching schema is found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">TrainingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_filters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_mappers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps_per_epoch</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tensorflow.python.keras.optimizer_v2.optimizer_v2.OptimizerV2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tensorflow.python.keras.losses.Loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callbacks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tensorflow.python.keras.callbacks.Callback</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.TrainingConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pydantic.main.BaseModel</span></code></p>
+<p>Training configuration wrapper for a Scoring ML stage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> (<em>int</em>) – batch size</p></li>
+<li><p><strong>epochs</strong> (<em>int</em>) – epochs</p></li>
+<li><p><strong>steps_per_epoch</strong> (<em>int</em>) – batches per epoch</p></li>
+<li><p><strong>optimizer</strong> (<em>keras.optimizers.Optimizer</em>) – optimizer</p></li>
+<li><p><strong>loss</strong> (<em>keras.losses.Loss</em>) – loss function</p></li>
+<li><p><strong>t.List</strong><strong>[</strong><strong>t.Callable</strong><strong>]</strong> (<em>filters</em>) – list of model input filter functions from <cite>input_processing</cite> module</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – </p></li>
+<li><p><strong>metrics</strong> (<em>t.List</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – list of metrics to display</p></li>
+<li><p><strong>callbacks</strong> (<em>t.List</em><em>[</em><em>tf_callbacks.Callback</em><em>]</em><em>, </em><em>optional</em>) – list of callbakcs to use at training time.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.Config.arbitrary_types_allowed">
+<span class="sig-name descname"><span class="pre">arbitrary_types_allowed</span></span><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.Config.arbitrary_types_allowed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.batch_size">
+<span class="sig-name descname"><span class="pre">batch_size</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pydantic.types.PositiveInt</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.batch_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.callbacks">
+<span class="sig-name descname"><span class="pre">callbacks</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tensorflow.python.keras.callbacks.Callback</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.callbacks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.custom_filters">
+<span class="sig-name descname"><span class="pre">custom_filters</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.custom_filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.custom_mappers">
+<span class="sig-name descname"><span class="pre">custom_mappers</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.custom_mappers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.epochs">
+<span class="sig-name descname"><span class="pre">epochs</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.epochs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.from_yaml">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yaml</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.from_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate from a yml.YAML object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>yaml</strong> (<em>yml.YAML</em>) – Input YAML object following the schema given by ConfigHandler.training_config_schema</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Initialised object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.config.prediction.TrainingConfig" title="fontai.config.prediction.TrainingConfig">TrainingConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.loss">
+<span class="sig-name descname"><span class="pre">loss</span></span><em class="property"><span class="pre">:</span> <span class="pre">tensorflow.python.keras.losses.Loss</span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.metrics">
+<span class="sig-name descname"><span class="pre">metrics</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.metrics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.optimizer">
+<span class="sig-name descname"><span class="pre">optimizer</span></span><em class="property"><span class="pre">:</span> <span class="pre">tensorflow.python.keras.optimizer_v2.optimizer_v2.OptimizerV2</span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.optimizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.seed">
+<span class="sig-name descname"><span class="pre">seed</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.seed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.prediction.TrainingConfig.steps_per_epoch">
+<span class="sig-name descname"><span class="pre">steps_per_epoch</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.prediction.TrainingConfig.steps_per_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.config.preprocessing">
+<span id="fontai-config-preprocessing-module"></span><h2>fontai.config.preprocessing module<a class="headerlink" href="#module-fontai.config.preprocessing" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_record_class</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_array_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_output_file_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">font_to_array_config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#fontai.config.preprocessing.FontExtractionConfig" title="fontai.config.preprocessing.FontExtractionConfig"><span class="pre">fontai.config.preprocessing.FontExtractionConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">beam_cmd_line_args</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.preprocessing.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></code></a></p>
+<p>Configuration class for the image extraction pipeline stage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_record_class</strong> (<a class="reference internal" href="fontai.io.html#fontai.io.records.TfrWritable" title="fontai.io.records.TfrWritable"><em>records.TfrWritable</em></a>) – tfr-compatible output classes from the module <cite>fontai.io.records</cite>; currently supported are <cite>LabeledChar</cite> and <cite>LabeledFont</cite></p></li>
+<li><p><strong>output_array_size</strong> (<em>int</em>) – size of the final grayscale image corresponding to each font’s characters</p></li>
+<li><p><strong>font_to_array_config</strong> (<em>int</em>) – Data object with runtime parameters for exctracting image arrays from files</p></li>
+<li><p><strong>beam_cmd_line_args</strong> (<em>t.List</em><em>[</em><em>str</em><em>]</em>) – List of command line arguments passed to the Beam pipeline</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config.beam_cmd_line_args">
+<span class="sig-name descname"><span class="pre">beam_cmd_line_args</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fontai.config.preprocessing.Config.beam_cmd_line_args" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config.font_to_array_config">
+<span class="sig-name descname"><span class="pre">font_to_array_config</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#fontai.config.preprocessing.FontExtractionConfig" title="fontai.config.preprocessing.FontExtractionConfig"><span class="pre">fontai.config.preprocessing.FontExtractionConfig</span></a></em><a class="headerlink" href="#fontai.config.preprocessing.Config.font_to_array_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config.max_output_file_size">
+<span class="sig-name descname"><span class="pre">max_output_file_size</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveFloat</span></em><a class="headerlink" href="#fontai.config.preprocessing.Config.max_output_file_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config.output_array_size">
+<span class="sig-name descname"><span class="pre">output_array_size</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.preprocessing.Config.output_array_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config.output_record_class">
+<span class="sig-name descname"><span class="pre">output_record_class</span></span><em class="property"><span class="pre">:</span> <span class="pre">type</span></em><a class="headerlink" href="#fontai.config.preprocessing.Config.output_record_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.Config.validate_output_schema">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">validate_output_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.preprocessing.Config.validate_output_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate input record class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_class</strong> (<em>type</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Validated record class</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If record class not in allowed set</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.ConfigHandler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ConfigHandler</span></span><a class="headerlink" href="#fontai.config.preprocessing.ConfigHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.config.core.BaseConfigHandler" title="fontai.config.core.BaseConfigHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.config.core.BaseConfigHandler</span></code></a></p>
+<p>Wrapper for image processing stage’s configuration handling logic</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.ConfigHandler.get_config_schema">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.preprocessing.ConfigHandler.get_config_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>YAML configuration schema:</p>
+<p>output_record_class: name of record class that will populate output files; it has to inherit from <cite>fontai.io.records.TfrWritable</cite> and at the moment only <cite>LabeledChar</cite> and <cite>LabeledFont</cite> are supported. If <cite>LabeledChar</cite>, individual character images are preprocessed and stored in no particular order and saved as PNGs. If <cite>LabeledFont</cite>, characters from a single font are stored together and saved as tensors.
+input_path: Input folder with zipped font files
+output_path: output folder where output Tensorflow records files are stored
+output_array_size: Size of square output images
+max_output_file_size: maximum single-file size for output files in MB
+font_extraction_size: Font size to use when extracting characters to images
+canvas_size: initial image canvas size in which font chars are extracted
+canvas_padding: padding for the initial image canvas to allow for unusally large or convoluted fonts
+beam_cmd_line_args: list of Apache Beam’s command line aeguments</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.ConfigHandler.instantiate_config">
+<span class="sig-name descname"><span class="pre">instantiate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">strictyaml.representation.YAML</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.config.preprocessing.Config" title="fontai.config.preprocessing.Config"><span class="pre">fontai.config.preprocessing.Config</span></a><a class="headerlink" href="#fontai.config.preprocessing.ConfigHandler.instantiate_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a YAML instance to produce an Config instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – YAML object from the strictyaml library</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.FontExtractionConfig">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">FontExtractionConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">font_extraction_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canvas_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canvas_padding</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pydantic.types.PositiveInt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.config.preprocessing.FontExtractionConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pydantic.main.BaseModel</span></code></p>
+<p>Data class that holds the runtime parameters to extract image arrays from files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>charset</strong> (<em>str</em>) – string containing characters to be extracted from font files</p></li>
+<li><p><strong>font_extraction_size</strong> (<em>int</em>) – Font size to use when conveting fonts to images</p></li>
+<li><p><strong>canvas_size</strong> (<em>int</em>) – Height and width of buffer array in which fonts will be extracted before being processed further</p></li>
+<li><p><strong>canvas_padding</strong> (<em>int</em>) – Padding used in the canvas array when extracting the fonts</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.FontExtractionConfig.canvas_padding">
+<span class="sig-name descname"><span class="pre">canvas_padding</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.preprocessing.FontExtractionConfig.canvas_padding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.FontExtractionConfig.canvas_size">
+<span class="sig-name descname"><span class="pre">canvas_size</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.preprocessing.FontExtractionConfig.canvas_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.FontExtractionConfig.charset">
+<span class="sig-name descname"><span class="pre">charset</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#fontai.config.preprocessing.FontExtractionConfig.charset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.config.preprocessing.FontExtractionConfig.font_extraction_size">
+<span class="sig-name descname"><span class="pre">font_extraction_size</span></span><em class="property"><span class="pre">:</span> <span class="pre">pydantic.types.PositiveInt</span></em><a class="headerlink" href="#fontai.config.preprocessing.FontExtractionConfig.font_extraction_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.config">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fontai.config" title="Permalink to this headline">¶</a></h2>
+<p>The configuration module is the middle man between the provided YAML configuration files and instantiated ML stages ready to be executed. Submodules correspond to different ML stages (or the overarching <cite>Pipeline</cite> class) and provide the schema for configuration files. Each of these submodules consist of a <cite>Config</cite> class that when instantiated contain all the necessary parameters and Python object dependencies to completely configure an ML pipeline stage. They also contain a <cite>ConfigHandler</cite> class that map YAML files to instantiated <cite>Config</cite> objects. These are in turn passed to ML stages.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">textfont-ai</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Nestor Sanchez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/fontai.config.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

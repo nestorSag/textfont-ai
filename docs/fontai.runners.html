@@ -1,0 +1,795 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fontai.runners package &#8212; textfont-ai 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="fontai-runners-package">
+<h1>fontai.runners package<a class="headerlink" href="#fontai-runners-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-fontai.runners.base">
+<span id="fontai-runners-base-module"></span><h2>fontai.runners.base module<a class="headerlink" href="#module-fontai.runners.base" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the base interfaces implemented by ML pipeline stages and pipeline objects.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ConfigurableTransform</span></span><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.Transform" title="fontai.runners.base.Transform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.Transform</span></code></a></p>
+<p>Interface for configurable tranformations; they can be instantiated and run from YAML configuration files.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.from_config_file">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><span class="pre">fontai.runners.base.ConfigurableTransform</span></a><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.from_config_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a ConfigurableTransform instance from a YAML configuration file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the YAML configuration file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance created from configuration file.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform">ConfigurableTransform</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.from_config_object">
+<em class="property"><span class="pre">abstract</span> <span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><span class="pre">fontai.runners.base.ConfigurableTransform</span></a><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate class from a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Config object parsed from a YAML file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.from_config_str">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yaml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><span class="pre">fontai.runners.base.ConfigurableTransform</span></a><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.from_config_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a ConfigurableTransform instance from the content of a YAML configuration file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>yaml</strong> (<em>str</em>) – YAML file content</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance created from configuration file.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform">ConfigurableTransform</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.get_config_parser">
+<em class="property"><span class="pre">abstract</span> <span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="fontai.config.html#fontai.config.core.BaseConfigHandler" title="fontai.config.core.BaseConfigHandler"><span class="pre">fontai.config.core.BaseConfigHandler</span></a><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.get_config_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an instance of the transform’s configuration parser class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.parse_config_file">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse_config_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.parse_config_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse a YAML configuration file and create an instance inheriting from BasePipelineTransformConfig</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – path to YAML configuration file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instantiated Config instance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig">BasePipelineTransformConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.parse_config_str">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse_config_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_str</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.parse_config_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the contents of a YAML configuration file and create an instance inheriting from BasePipelineTransformConfig</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config_str</strong> (<em>str</em>) – YAML content in string format</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instantiated Config instance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig">BasePipelineTransformConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.run_from_config_file">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">run_from_config_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.run_from_config_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate and run transform oject from a YAML file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – Path to the YAML file</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments pased to run_from_config_object</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.ConfigurableTransform.run_from_config_object">
+<em class="property"><span class="pre">abstract</span> <span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">run_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#fontai.runners.base.ConfigurableTransform.run_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate and run transform from configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.base.FittableTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">FittableTransform</span></span><a class="headerlink" href="#fontai.runners.base.FittableTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.ConfigurableTransform</span></code></a></p>
+<p>Interface for pipeline transforms that can be fitted. Scoring is done using the ‘transform’ method.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.FittableTransform.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.base.FittableTransform" title="fontai.runners.base.FittableTransform"><span class="pre">fontai.runners.base.FittableTransform</span></a><a class="headerlink" href="#fontai.runners.base.FittableTransform.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the stage to the passed data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.FittableTransform.fit_from_config_file">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">fit_from_config_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.base.FittableTransform" title="fontai.runners.base.FittableTransform"><span class="pre">fontai.runners.base.FittableTransform</span></a><a class="headerlink" href="#fontai.runners.base.FittableTransform.fit_from_config_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the transform’s model according to a YAML configuration file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – Path to YAML file</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to fit_from_config_object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Description</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.runners.base.FittableTransform" title="fontai.runners.base.FittableTransform">FittableTransform</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.FittableTransform.fit_from_config_object">
+<em class="property"><span class="pre">abstract</span> <span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">fit_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.base.FittableTransform" title="fontai.runners.base.FittableTransform"><span class="pre">fontai.runners.base.FittableTransform</span></a><a class="headerlink" href="#fontai.runners.base.FittableTransform.fit_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the transform’s model according to a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.base.IdentityTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">IdentityTransform</span></span><a class="headerlink" href="#fontai.runners.base.IdentityTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.Transform" title="fontai.runners.base.Transform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.Transform</span></code></a></p>
+<p>This class applies an identity transformation to its inputs; it is useful for ML stages that are only active in thetraining stage and not on the deployment stage.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.IdentityTransform.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.base.IdentityTransform.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a single data instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>t.Any</em>) – Input data</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.base.Transform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Transform</span></span><a class="headerlink" href="#fontai.runners.base.Transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.base.Transform.input_file_format">
+<span class="sig-name descname"><span class="pre">input_file_format</span></span><a class="headerlink" href="#fontai.runners.base.Transform.input_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>File format expected to be received as input at batch processing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryFile" title="fontai.io.formats.InMemoryFile">InMemoryFile</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.base.Transform.output_file_format">
+<span class="sig-name descname"><span class="pre">output_file_format</span></span><a class="headerlink" href="#fontai.runners.base.Transform.output_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>FIle format in which output is written at batch processing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryFile" title="fontai.io.formats.InMemoryFile">InMemoryFile</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">input_file_format</span></span><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryFile" title="fontai.io.formats.InMemoryFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.io.formats.InMemoryFile</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">output_file_format</span></span><a class="headerlink" href="#id1" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryFile" title="fontai.io.formats.InMemoryFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.io.formats.InMemoryFile</span></code></a></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fontai.runners.base.Transform.reader_class">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">reader_class</span></span><a class="headerlink" href="#fontai.runners.base.Transform.reader_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.base.Transform.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Any</span><a class="headerlink" href="#fontai.runners.base.Transform.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a single data instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>t.Any</em>) – Input data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fontai.runners.base.Transform.writer_class">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">writer_class</span></span><a class="headerlink" href="#fontai.runners.base.Transform.writer_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.runners.pipeline">
+<span id="fontai-runners-pipeline-module"></span><h2>fontai.runners.pipeline module<a class="headerlink" href="#module-fontai.runners.pipeline" title="Permalink to this headline">¶</a></h2>
+<p>This module contains a basic orchestrator for the execution of sequential data transformation stages.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.ManyToManyTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ManyToManyTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core_transform</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.pipeline.ManyToManyTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Helper class to execute one-to-many many-to-many transformations in the pipeline</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.ManyToManyTransform.core_transform">
+<span class="sig-name descname"><span class="pre">core_transform</span></span><a class="headerlink" href="#fontai.runners.pipeline.ManyToManyTransform.core_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Core transformer class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform">ConfigurableTransform</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.ManyToManyTransform.to_generator">
+<span class="sig-name descname"><span class="pre">to_generator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.pipeline.ManyToManyTransform.to_generator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.ManyToManyTransform.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.pipeline.ManyToManyTransform.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outputs a generator of transformed elements</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>t.Any</em>) – Input data</p>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p><em>t.Any</em> – individual outputs</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">type</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><span class="pre">fontai.config.core.BasePipelineTransformConfig</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_stage</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.ConfigurableTransform</span></code></a></p>
+<p>Pipeline class to execute a sequence of ConfigurableTransforms; this allows to perform the whole set of transformations from raw data to (possible multiple) trained models</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.streaming_pipeline">
+<span class="sig-name descname"><span class="pre">streaming_pipeline</span></span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.streaming_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of instantiated transforms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>t.List[<a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform">ConfigurableTransform</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.transforms">
+<span class="sig-name descname"><span class="pre">transforms</span></span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.transforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>classes of pipeline stages inheriting from ConfigurableTransform. Possible choices are defined in the fontai.runners.stages module</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.configs">
+<span class="sig-name descname"><span class="pre">configs</span></span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.configs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sequence of configuration files to instantiate and execute each stage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>t.List[<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig">BasePipelineTransformConfig</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.fit_stage">
+<span class="sig-name descname"><span class="pre">fit_stage</span></span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.fit_stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>If True, fit the corresponding pipeline stage instead of using it for scoring. It is ignored if the stage is not fittable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>t.List[bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.pipeline.Config" title="fontai.config.pipeline.Config"><span class="pre">fontai.config.pipeline.Config</span></a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#fontai.runners.pipeline.Pipeline" title="fontai.runners.pipeline.Pipeline"><span class="pre">fontai.runners.pipeline.Pipeline</span></a><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate class from a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Config object parsed from a YAML file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.get_config_parser">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="fontai.config.html#fontai.config.pipeline.ConfigHandler" title="fontai.config.pipeline.ConfigHandler"><span class="pre">fontai.config.pipeline.ConfigHandler</span></a><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.get_config_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an instance of the transform’s configuration parser class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.run_from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">run_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.pipeline.Config" title="fontai.config.pipeline.Config"><span class="pre">fontai.config.pipeline.Config</span></a></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.run_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate and run transform from configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.pipeline.Pipeline.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Any</span><a class="headerlink" href="#fontai.runners.pipeline.Pipeline.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a single data instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>t.Any</em>) – Input data</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.runners.stages">
+<span id="fontai-runners-stages-module"></span><h2>fontai.runners.stages module<a class="headerlink" href="#module-fontai.runners.stages" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the definitions of high-level ML lifecycle stage classes; at the moment this includes ingestion, preprocessing and training/scoring.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Ingestion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="fontai.config.html#fontai.config.ingestion.Config" title="fontai.config.ingestion.Config"><span class="pre">fontai.config.ingestion.Config</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Ingestion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.ConfigurableTransform</span></code></a>, <a class="reference internal" href="#fontai.runners.base.IdentityTransform" title="fontai.runners.base.IdentityTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.IdentityTransform</span></code></a></p>
+<p>Retrieves zipped font files. It takes a list of scrappers defined in <cite>fontai.io.scrappers</cite> from which it downloads files to storage.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.ingestion.Config" title="fontai.config.ingestion.Config"><span class="pre">fontai.config.ingestion.Config</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Ingestion.from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate class from a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Config object parsed from a YAML file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.get_config_parser">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Ingestion.get_config_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an instance of the transform’s configuration parser class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.get_stage_name">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_stage_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Ingestion.get_stage_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.input_file_format">
+<span class="sig-name descname"><span class="pre">input_file_format</span></span><a class="headerlink" href="#fontai.runners.stages.Ingestion.input_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryFile" title="fontai.io.formats.InMemoryFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.io.formats.InMemoryFile</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.output_file_format">
+<span class="sig-name descname"><span class="pre">output_file_format</span></span><a class="headerlink" href="#fontai.runners.stages.Ingestion.output_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryFile" title="fontai.io.formats.InMemoryFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.io.formats.InMemoryFile</span></code></a></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.reader_class">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">reader_class</span></span><a class="headerlink" href="#fontai.runners.stages.Ingestion.reader_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.run_from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">run_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.ingestion.Config" title="fontai.config.ingestion.Config"><span class="pre">fontai.config.ingestion.Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Ingestion.run_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate and run transform from configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Ingestion.transform_batch">
+<span class="sig-name descname"><span class="pre">transform_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Ingestion.transform_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Preprocessing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_record_class</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">font_extraction_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canvas_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canvas_padding</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_array_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beam_cmd_line_args</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Preprocessing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.ConfigurableTransform" title="fontai.runners.base.ConfigurableTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.ConfigurableTransform</span></code></a></p>
+<p>Processes zipped font files and outputs Tensorflow records consisting of labeled images for ML consumption.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.preprocessing.Config" title="fontai.config.preprocessing.Config"><span class="pre">fontai.config.preprocessing.Config</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate class from a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Config object parsed from a YAML file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.get_config_parser">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.get_config_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an instance of the transform’s configuration parser class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.get_stage_name">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_stage_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.get_stage_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.input_file_format">
+<span class="sig-name descname"><span class="pre">input_file_format</span></span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.input_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="fontai.io.html#fontai.io.formats.InMemoryZipHolder" title="fontai.io.formats.InMemoryZipHolder"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.io.formats.InMemoryZipHolder</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.output_file_format">
+<span class="sig-name descname"><span class="pre">output_file_format</span></span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.output_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">tensorflow.python.data.ops.readers.TFRecordDatasetV2</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.run_from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">run_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.preprocessing.Config" title="fontai.config.preprocessing.Config"><span class="pre">fontai.config.preprocessing.Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.run_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate and run transform from configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Preprocessing.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Preprocessing.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a single data instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>t.Any</em>) – Input data</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Scoring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tensorflow.python.keras.engine.training.Model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="fontai.config.html#fontai.config.prediction.TrainingConfig" title="fontai.config.prediction.TrainingConfig"><span class="pre">fontai.config.prediction.TrainingConfig</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'lowercase'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fontai.runners.base.FittableTransform" title="fontai.runners.base.FittableTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">fontai.runners.base.FittableTransform</span></code></a></p>
+<p>Trains a prediction model or uses one to score input data.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.model">
+<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scoring model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>keras.Model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.CHARSET_OPTIONS">
+<span class="sig-name descname"><span class="pre">CHARSET_OPTIONS</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.CHARSET_OPTIONS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dictionary from allowed charsets names to charsets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>t.Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.training_config">
+<span class="sig-name descname"><span class="pre">training_config</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.training_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>training configuration wrapper</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fontai.config.html#fontai.config.prediction.TrainingConfig" title="fontai.config.prediction.TrainingConfig">TrainingConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.charset_tensor">
+<span class="sig-name descname"><span class="pre">charset_tensor</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.charset_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tensor with an entry per character in the current charset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">CHARSET_OPTIONS</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{'all':</span> <span class="pre">'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',</span> <span class="pre">'digits':</span> <span class="pre">'0123456789',</span> <span class="pre">'lowercase':</span> <span class="pre">'abcdefghijklmnopqrstuvwxyz',</span> <span class="pre">'uppercase':</span> <span class="pre">'ABCDEFGHIJKLMNOPQRSTUVWXYZ'}</span></em><a class="headerlink" href="#id2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tensorflow.python.data.ops.readers.TFRecordDatasetV2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the scoring model with the passed data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>TFRecordDataset</em>) – training data</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Scoring with trained model</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.runners.stages.Scoring" title="fontai.runners.stages.Scoring">Scoring</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If training_config is None (not provided).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.fit_from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">fit_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.prediction.Config" title="fontai.config.prediction.Config"><span class="pre">fontai.config.prediction.Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_from_model_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring.fit_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the transform’s model according to a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.prediction.Config" title="fontai.config.prediction.Config"><span class="pre">fontai.config.prediction.Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_from_model_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring.from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialises a Scoring instance from a configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>ScoringConfig</em>) – COnfiguration object</p></li>
+<li><p><strong>load_from_model_path</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, the model is loaded from the model_path argument in the configuration object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instantiated Scoring object.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#fontai.runners.stages.Scoring" title="fontai.runners.stages.Scoring">Scoring</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.get_config_parser">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_config_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring.get_config_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an instance of the transform’s configuration parser class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.get_stage_name">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_stage_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring.get_stage_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.input_file_format">
+<span class="sig-name descname"><span class="pre">input_file_format</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.input_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">tensorflow.python.data.ops.readers.TFRecordDatasetV2</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.output_file_format">
+<span class="sig-name descname"><span class="pre">output_file_format</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.output_file_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">tensorflow.python.data.ops.readers.TFRecordDatasetV2</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.run_from_config_object">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">run_from_config_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fontai.config.html#fontai.config.prediction.Config" title="fontai.config.prediction.Config"><span class="pre">fontai.config.prediction.Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_from_model_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fontai.runners.stages.Scoring.run_from_config_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate and run transform from configuration object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="fontai.config.html#fontai.config.core.BasePipelineTransformConfig" title="fontai.config.core.BasePipelineTransformConfig"><em>BasePipelineTransformConfig</em></a>) – Configuration object.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the implementation of this function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fontai.runners.stages.Scoring.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span> </span><span class="pre">tensorflow.python.framework.ops.Tensor</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="fontai.io.html#fontai.io.records.TfrWritable" title="fontai.io.records.TfrWritable"><span class="pre">fontai.io.records.TfrWritable</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">tensorflow.python.framework.ops.Tensor</span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="fontai.io.html#fontai.io.records.TfrWritable" title="fontai.io.records.TfrWritable"><span class="pre">fontai.io.records.TfrWritable</span></a><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#fontai.runners.stages.Scoring.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process a single instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_data</strong> (<em>t.Union</em><em>[</em><em>ndarray</em><em>, </em><em>Tensor</em><em>, </em><a class="reference internal" href="fontai.io.html#fontai.io.records.TfrWritable" title="fontai.io.records.TfrWritable"><em>TfrWritable</em></a><em>]</em>) – Input instance</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Scored example in the corresponding format, depending on the input type.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>t.Union[Tensor, ndarray, <a class="reference internal" href="fontai.io.html#fontai.io.records.TfrWritable" title="fontai.io.records.TfrWritable">TfrWritable</a>]</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If input type is not allowed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-fontai.runners">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fontai.runners" title="Permalink to this headline">¶</a></h2>
+<p>This module contains high level classes representing ML stages, and a <cite>Pipeline</cite> class that can run multiple stages sequentially. These stages are mean to be instantiated from configuration files through the <cite>from_config_file</cite> method, which can be useful for real-time processing. For batch processing however, it is easier to use the <cite>run_from_config_file</cite> or <cite>fit_from_config_file</cite> methods, the latter fitting any fittable ML stage when ran from the Pipeline class.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">textfont-ai</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Nestor Sanchez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/fontai.runners.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
