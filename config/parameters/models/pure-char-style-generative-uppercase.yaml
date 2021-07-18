@@ -1,8 +1,8 @@
 # Train a generative model based on the adversarial autoencoder architecture by Goodfellow et al. 
 input_path: data/scored/uppercase/chars
 input_record_class: ScoredLabeledChar
-output_path: data/scored/uppercase/char-style-gen
-model_path: models/char-style-generative
+output_path: data/scored/uppercase/pure-char-style-gen
+model_path: models/pure-char-style-generative
 charset: uppercase
 training:
   custom_filters:
@@ -11,8 +11,8 @@ training:
     kwargs:
       threshold: 0.99
   batch_size: 64
-  epochs: 150
-  steps_per_epoch: 5000
+  epochs: 5
+  steps_per_epoch: 250
   optimizer:
     class: Adam
     kwargs:
@@ -34,7 +34,7 @@ training:
     kwargs:
       halve_after: 12
 model:
-  class: CharStyleSAAE
+  class: PureCharStyleSAAE
   kwargs:
     prior_batch_size: 64
     reconstruction_loss_weight: 0.5
@@ -58,6 +58,26 @@ model:
           kwargs:
             units: 1
             activation: sigmoid
+    char_discriminator:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 10
+        - class: Dense
+          kwargs:
+            units: 100
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 100
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 26
+            activation: softmax
     image_encoder:
       class: Sequential
       kwargs:

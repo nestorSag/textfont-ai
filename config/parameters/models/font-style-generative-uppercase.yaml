@@ -5,14 +5,14 @@ output_path: data/scored/uppercase/font-style-gen
 model_path: models/font-style-generative
 charset: uppercase
 training:
-  batch_size: 3
+  batch_size: 3 #3 fonts ~ 78 images
   custom_mappers:
   - name: drop_misclassified_in_font
   custom_filters:
   - name: filter_fonts_by_size
     kwargs:
       n_chars: 26
-  epochs: 60
+  epochs: 150
   steps_per_epoch: 5000
   optimizer:
     class: Adam

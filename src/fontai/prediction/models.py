@@ -430,7 +430,7 @@ class PureCharStyleSAAE(tf.keras.Model):
 
 class PureFontStyleSAAE(tf.keras.Model):
 
-  """This model is trained on all characters from a single font file at a time; the aim is to encode the font's style as opposed to single characters' styles, which can happen when training with scrambled characters from different fonts and results in sometimes having different-looking fonts for a given style in latent space. This model splits batches in two, passing half of it through the encoders to compute the font's style, and comparing the decoder outputs from the resulting styles (and the appropriate character labels) to the other half.
+  """This model is trained on all characters from one or more font files at a time; the aim is to encode the font's style as opposed to single characters' styles, which can happen when training with scrambled characters from different fonts and results in sometimes having different-looking fonts for a given style in latent space. This model splits batches in two, passing half of it through the encoders to compute the font's style, and trying to reconstruct the other half using the resulting style vector and label data.
   """
   prior_accuracy_metric = tf.keras.metrics.Accuracy(name="prior adversarial accuracy")
   mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
@@ -505,7 +505,16 @@ class PureFontStyleSAAE(tf.keras.Model):
   def __call__(self, x, training=True, mask=None):
     return self.image_encoder(x, training=training)
 
-  def scramble_font_batches(self, x, labels):
+  def scramble_font_batches(self, x: tf.Tensor, labels: tf.Tensor):
+    """Creates a scrambled copy of a minibatch in which individual fonts are randomly shuffled. Returns the original minibatch in addition to the shuffled version.
+    
+    Args:
+        x (tf.Tensor): Feature tensor
+        labels (tf.Tensor): Label tensor
+    
+    Returns:
+        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]: return scrambled and original feature-label pairs, in that order.
+    """
     #
     x_shape = tf.shape(x)
     n_fonts = x_shape[0]

@@ -26,8 +26,8 @@ The project uses `conda` for environment management. Set it up with:
 ```
 git clone https://github.com/nestorSag/textfont-ai.git
 cd textfont-ai
-conda env create -f environment.yaml
-pip install -e src/
+conda env create -f env/conda-env.yaml
+pip install -e src/fontai/
 
 ```
 ## Usage
