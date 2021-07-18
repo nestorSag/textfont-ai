@@ -1,0 +1,188 @@
+# Train a generative model based on the adversarial autoencoder architecture by Goodfellow et al. 
+input_path: data/scored/uppercase/fonts
+input_record_class: ScoredLabeledFont
+output_path: data/scored/uppercase/font-style-gen
+model_path: models/font-style-generative
+charset: uppercase
+training:
+  batch_size: 3
+  custom_mappers:
+  - name: drop_misclassified_in_font
+  custom_filters:
+  - name: filter_fonts_by_size
+    kwargs:
+      n_chars: 26
+  epochs: 60
+  steps_per_epoch: 5000
+  optimizer:
+    class: Adam
+    kwargs:
+      learning_rate: 0.001
+  loss:
+    class: CategoricalCrossentropy
+  metrics:
+  - accuracy
+  callbacks:
+  - class: SAAEFontSamplerCallback
+    kwargs:
+      n_labels: 26
+      embedding_dim: 10
+  - class: SAAELRHalver
+    kwargs:
+      halve_after: 12
+model:
+  class: PureFontStyleSAAE
+  kwargs:
+    prior_batch_size: 26
+    reconstruction_loss_weight: 0.5
+    code_regularisation_weight: 0
+    prior_discriminator:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 10
+        - class: Dense
+          kwargs:
+            units: 100
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 100
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 1
+            activation: sigmoid
+    image_encoder:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 64
+            - 64
+            - 1
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs:
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Conv2D
+          kwargs: 
+            filters: 64
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: MaxPooling2D
+          kwargs: 
+            pool_size: 2
+        - class: BatchNormalization
+        - class: Flatten
+    full_encoder:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape: 
+            - 1050
+        - class: Dense
+          kwargs:
+            units: 1024
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 1024
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 10
+    decoder:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 36
+        - class: Dense
+          kwargs: 
+            units: 1024
+            activation: elu
+        - class: Dense
+          kwargs: 
+            units: 2048
+            activation: elu
+        - class: Reshape
+          kwargs: 
+            target_shape: 
+            - 8
+            - 8
+            - 32
+        - class: Conv2DTranspose
+          kwargs:
+            kernel_size: 2
+            activation: elu
+            strides: 2
+            filters: 64
+        - class: Conv2D
+          kwargs: 
+            filters: 96
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: BatchNormalization
+        - class: Conv2DTranspose
+          kwargs:
+            kernel_size: 2
+            activation: elu
+            strides: 2
+            filters: 64
+        - class: Conv2D
+          kwargs: 
+            filters: 32
+            kernel_size: 3
+            activation: elu
+            padding: same
+        - class: BatchNormalization
+        - class: Conv2DTranspose
+          kwargs:
+            kernel_size: 2
+            activation: elu
+            strides: 2
+            filters: 32
+        - class: Conv2D
+          kwargs: 
+            filters: 1
+            kernel_size: 3
+            activation: sigmoid
+            padding: same

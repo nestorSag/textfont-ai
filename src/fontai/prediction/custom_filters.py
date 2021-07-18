@@ -52,15 +52,15 @@ def filter_chars_by_score(threshold: float):
 
   return f
 
-def filter_fonts_by_size(n: int):
+def filter_fonts_by_size(n_chars: int):
   """Returns a Filtering function for Tensorflow datasets that filter out fonts with too few remaining characters.
 
   Returns:
       t.Callable: Filtering function for Tensorflow datasets
   """
 
-  if n < 0:
-    raise ValueError("n must me non-negative")
+  if n_chars < 0:
+    raise ValueError("n_chars must be non-negative")
 
   def f(kwargs):
     """
@@ -71,7 +71,7 @@ def filter_fonts_by_size(n: int):
     Returns:
         boolean
     """
-    return tf.size(kwargs["label"]) >= n
+    return tf.size(kwargs["label"]) >= n_chars
     #return tf.logical_and(tf.size(kwargs["features"]) > 0, kwargs["features"].shape[0] >= n)
 
   return f

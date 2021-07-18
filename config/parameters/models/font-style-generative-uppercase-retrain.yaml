@@ -1,17 +1,17 @@
 # Train a generative model based on the adversarial autoencoder architecture by Goodfellow et al. 
-input_path: data/scored/uppercase/chars
-input_record_class: ScoredLabeledChar
-output_path: data/scored/uppercase/char-style-gen
-model_path: models/char-style-generative
+input_path: data/scored/uppercase/fonts
+input_record_class: ScoredLabeledFont
+output_path: data/scored/uppercase/font-style-gen
+model_path: models/font-style-generative
 charset: uppercase
 training:
+  custom_mappers:
+  - name: drop_misclassified_in_font
   custom_filters:
-  - name: filter_misclassified_chars
-  - name: filter_chars_by_score
+  - name: filter_fonts_by_size
     kwargs:
-      threshold: 0.99
-  batch_size: 64
-  epochs: 50
+      n_chars: 24
+  epochs: 30
   steps_per_epoch: 5000
   optimizer:
     class: Adam
@@ -22,10 +22,6 @@ training:
   metrics:
   - accuracy
   callbacks:
-  - class: SAAEImageSamplerCallback
-    kwargs:
-      n_labels: 26
-      embedding_dim: 10
   - class: SAAEFontSamplerCallback
     kwargs:
       n_labels: 26
@@ -34,5 +30,5 @@ training:
     kwargs:
       halve_after: 12
 model:
-  custom_class: CharStyleSAAE
-  path: models/char-style-generative
+  custom_class: PureFontStyleSAAE
+  path: models/font-style-generative

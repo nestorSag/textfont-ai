@@ -166,8 +166,8 @@ class RecordPreprocessor(object):
     ftr_shape = features.shape[1::]
     lbl_shape = labels.shape[1::]
 
-    if len(ftr_shape) != 3 or len(lbl_shape) != 1:
-      raise ValueError(f"Input shapes don't match expected: got shapes {features.shape} and {labels.shape}")
+    # if len(ftr_shape) != 3 or len(lbl_shape) != 1:
+    #   raise ValueError(f"Input shapes don't match expected: got shapes {features.shape} and {labels.shape}")
 
     training_data = tf.data.Dataset.from_generator(
       callable_data, 

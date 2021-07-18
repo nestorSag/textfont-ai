@@ -24,8 +24,8 @@ def drop_misclassified_in_font():
         t.Dict: dictionary with filtered features and scores
     """
     #if label is empty, do nothings
-    if tf.equal(tf.size(kwargs["label"]), 0):
-      return kwargs
+    # if tf.equal(tf.size(kwargs["label"]), 0):
+    #   return kwargs
 
     predicted_label_idx = tf.argmax(kwargs["score"], axis=-1)
     predicted_labels = tf.gather(kwargs["charset_tensor"], predicted_label_idx, axis=-1)

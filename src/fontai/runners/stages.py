@@ -261,7 +261,8 @@ class Scoring(FittableTransform):
     self.model.compile(
       loss = self.training_config.loss, 
       optimizer = self.training_config.optimizer,
-      metrics = self.training_config.metrics)
+      metrics = self.training_config.metrics,
+      run_eagerly=False)
 
     self.model.fit(
       data,
@@ -384,16 +385,22 @@ class Scoring(FittableTransform):
 
   @classmethod
   def fit_from_config_object(cls, config: ScoringConfig, load_from_model_path = False, run_id: str = None):
-    tmp_config_copy = "tmp-local-config-copy.yaml"
     
     with mlflow.start_run(run_id=run_id, nested=False) as run:
 
       logger.info(f"MLFlow run id: {run.info.run_id}")
 
-      with open(tmp_config_copy,"w") as f:
+      # log run configuration into MLFlow
+      cfg_log_path = "run-configs"
+      # check whether there are previous run configs
+      client = mlflow.tracking.MlflowClient()
+      n_previous_runs = len(client.list_artifacts(run.info.run_id, cfg_log_path))
+      current_run = f"{n_previous_runs + 1}.yaml"
+
+      with open(current_run,"w") as f:
         f.write(config.yaml.as_yaml())
-      mlflow.log_artifact(tmp_config_copy)
-      os.remove(tmp_config_copy)
+      mlflow.log_artifact(current_run,cfg_log_path)
+      os.remove(current_run)
 
       mlflow.tensorflow.autolog() #start keras autologging
 
@@ -402,7 +409,6 @@ class Scoring(FittableTransform):
       def save_on_sigint(sig, frame):
         predictor.model.save(config.model_path)
         logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
-        #mlflow.log_artifacts(config.model_path, "model") #commit produced artifact
         sys.exit(0)
         
       signal.signal(signal.SIGINT, save_on_sigint)
