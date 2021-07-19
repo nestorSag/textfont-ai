@@ -1,4 +1,0 @@
-# This example ingestion downloads ~ 1k fonts from google
-scrappers:
-- class: GoogleFontsScrapper
-output_path: data/raw
