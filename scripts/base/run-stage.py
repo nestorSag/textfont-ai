@@ -3,6 +3,7 @@
 import sys
 import argparse
 import logging
+import datetime
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,10 @@ def run(args):
 
   args, _ = parser.parse_known_args(args)
 
-  logging.basicConfig(filename=Path("logs") / f"{args.stage}.log", level=logging.DEBUG, filemode = "w")
+  logfile = f"{args.stage}-{datetime.datetime.now()}.log"
+  logging.basicConfig(filename=Path("logs") / logfile, level=logging.DEBUG, filemode = "w")
 
-  print(f"Redirecting logs to logs/{args.stage}.log")
+  print(f"Redirecting logs to logs/{logfile}")
 
   try:
     stage_class = stage_classes[args.stage]

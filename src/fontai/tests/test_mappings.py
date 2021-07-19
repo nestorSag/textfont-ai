@@ -15,7 +15,7 @@ from fontai.preprocessing.mappings import InputToFontFiles, FontFileToLabeledCha
 
 import numpy as np
 
-sys.path.append("src/tests/")
+sys.path.append("src/fontai/tests/")
 
 from config_builders import full_processing_config_str
 

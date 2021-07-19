@@ -13,7 +13,7 @@ from fontai.runners.pipeline import Pipeline
 
 import logging
 
-sys.path.append("src/tests/")
+sys.path.append("src/fontai/tests/")
 
 from config_builders import full_processing_config_str, full_prediction_config_str, ingestion_config_str
 
