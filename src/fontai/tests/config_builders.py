@@ -5,14 +5,14 @@ ingestion_config_str = """
 scrappers:
 - class: LocalScrapper
   kwargs: 
-    folder: src/tests/data/ingestion/input
-output_path: src/tests/data/ingestion/output
+    folder: src/fontai/tests/data/ingestion/input
+output_path: src/fontai/tests/data/ingestion/output
 """
 
 processing_config_str = """
-input_path: src/tests/data/ingestion/output
+input_path: src/fontai/tests/data/ingestion/output
 output_record_class: {output_record_class}
-output_path: src/tests/data/preprocessing/output/{output_folder}
+output_path: src/fontai/tests/data/preprocessing/output/{output_folder}
 output_array_size: 64
 max_output_file_size: 64
 font_extraction_size: 100
@@ -22,9 +22,9 @@ canvas_padding: 100
 
 predictor_config_str = """
 input_record_class: {in_type_class}
-input_path: src/tests/data/preprocessing/output/{input_folder}
-output_path: src/tests/data/prediction/output/scored-{output_folder}
-model_path: src/tests/data/prediction/models/{model_folder}
+input_path: src/fontai/tests/data/preprocessing/output/{input_folder}
+output_path: src/fontai/tests/data/prediction/output/scored-{output_folder}
+model_path: src/fontai/tests/data/prediction/models/{model_folder}
 charset: lowercase
 training:
   {batch_size}
@@ -182,18 +182,6 @@ font_saae = """
           kwargs: 
             units: 1
             activation: sigmoid
-    char_discriminator:
-      class: Sequential
-      kwargs:
-        layers:
-        - class: Input
-          kwargs:
-            shape:
-            - 10
-        - class: Dense
-          kwargs: 
-            units: 26
-            activation: softmax
     reconstruction_loss_weight: 0.5
     prior_batch_size: 32
 """
@@ -223,7 +211,7 @@ def full_prediction_config_str(input_record_class, model):
 
   cases  = {
     "LabeledChar": ("LabeledChar", "chars", "chars", model, model_strs[model], "batch_size: 32"),
-    "LabeledFont": ("LabeledFont", "fonts", "fonts", model, model_strs[model], "")
+    "LabeledFont": ("LabeledFont", "fonts", "fonts", model, model_strs[model], "batch_size: 2")
   }
 
   return predictor_config_str.format(**{key: value for key,value in zip(keys,cases[input_record_class])})

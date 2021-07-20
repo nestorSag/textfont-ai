@@ -66,9 +66,6 @@ def test_preprocessing(config_str):
       model = "CharStyleSAAE"),
     full_prediction_config_str(
       input_record_class = "LabeledFont",
-      model = "Sequential"),
-    full_prediction_config_str(
-      input_record_class = "LabeledFont",
       model = "FontStyleSAAE")
   ])
 def test_predictor(config_str):

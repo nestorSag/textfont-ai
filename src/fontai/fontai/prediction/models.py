@@ -183,8 +183,10 @@ class CharStyleSAAE(tf.keras.Model):
       "prior_batch_size": self.prior_batch_size
     }
 
-    with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
-      json.dump(d,f)
+    (BytestreamPath(output_dir) / "aae-params.json").write_bytes(json.dumps(d).encode())
+
+    # with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
+    #   json.dump(d,f)
 
   @classmethod
   def load(cls, input_dir: str):
@@ -201,8 +203,11 @@ class CharStyleSAAE(tf.keras.Model):
     decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))
     prior_discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "prior_discriminator"))
 
-    with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
-      d = json.loads(f.read())
+    d_string = (BytestreamPath(input_dir) / "aae-params.json").read_bytes().decode("utf-8")
+    d = json.loads(d_string)
+
+    # with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
+    #   d = json.loads(f.read())
 
     return cls(
       image_encoder = image_encoder, 
@@ -392,8 +397,9 @@ class PureCharStyleSAAE(tf.keras.Model):
       "prior_batch_size": self.prior_batch_size
     }
 
-    with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
-      json.dump(d,f)
+    # with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
+    #   json.dump(d,f)
+    (BytestreamPath(output_dir) / "aae-params.json").write_bytes(json.dumps(d).encode())
 
   @classmethod
   def load(cls, input_dir: str):
@@ -411,8 +417,11 @@ class PureCharStyleSAAE(tf.keras.Model):
     decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))
     prior_discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "prior_discriminator"))
 
-    with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
-      d = json.loads(f.read())
+    # with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
+    #   d = json.loads(f.read())
+
+    d_string = (BytestreamPath(input_dir) / "aae-params.json").read_bytes().decode("utf-8")
+    d = json.loads(d_string)
 
     return cls(
       image_encoder = image_encoder, 
@@ -551,21 +560,6 @@ class PureFontStyleSAAE(tf.keras.Model):
     n_examples = tf.shape(style_x)[0]
     with tf.GradientTape(persistent=True) as tape:
 
-
-      #half the font will be used as a style reference to try and reconstruct the other half from label information only
-
-      # scramble font
-      # x_shape = tf.shape(x)
-      # shuffling_idx = tf.range(start=0, limit=x_shape[0], dtype=tf.int32)
-      # scrambled = tf.random.shuffle(shuffling_idx)
-
-      # #split font
-      # style_x = tf.gather(x, scrambled, axis=0)#x[scrambled[0:half]]
-      # style_y = tf.gather(labels, scrambled, axis=0)#labels[scrambled[0:half]]
-
-      # outcome_x = x
-      # outcome_y = labels
-
       # apply autoencoder
       image_precode = self.image_encoder(style_x, training=True)
       full_precode = tf.concat([image_precode, style_y], axis=-1)
@@ -632,8 +626,10 @@ class PureFontStyleSAAE(tf.keras.Model):
       "code_regularisation_weight": self.code_regularisation_weight
     }
 
-    with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
-      json.dump(d,f)
+    # with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
+    #   json.dump(d,f)
+
+    (BytestreamPath(output_dir) / "aae-params.json").write_bytes(json.dumps(d).encode())
 
   @classmethod
   def load(cls, input_dir: str):
@@ -650,8 +646,10 @@ class PureFontStyleSAAE(tf.keras.Model):
     decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))
     prior_discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "prior_discriminator"))
 
-    with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
-      d = json.loads(f.read())
+    # with open(str(BytestreamPath(input_dir) / "aae-params.json"),"r") as f:
+    #   d = json.loads(f.read())
+    d_string = (BytestreamPath(input_dir) / "aae-params.json").read_bytes().decode("utf-8")
+    d = json.loads(d_string)
 
     return cls(
       image_encoder = image_encoder, 
