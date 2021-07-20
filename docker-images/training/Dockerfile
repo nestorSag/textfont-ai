@@ -19,9 +19,9 @@
 
 FROM tensorflow/tensorflow:latest-gpu
 WORKDIR /textfont-ai
-ADD scripts ./scripts
 ADD src/fontai ./fontai 
+RUN python -m pip install --upgrade pip
 RUN pip install ./fontai
 ENV TF_FORCE_GPU_ALLOW_GROWTH=true
 ENV CONTAINER_ENV=true
-ENTRYPOINT ["python", "./scripts/base/run-stage.py"]
+ENTRYPOINT ["fontairun"]
