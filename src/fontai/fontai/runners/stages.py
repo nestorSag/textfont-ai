@@ -366,8 +366,9 @@ class Scoring(FittableTransform):
     files = predictor.reader_class(config.input_path).get_files()
     data = data_fetcher.fetch(files, training_format=False, batch_size = predictor.training_config.batch_size)
 
-    
+    counter = 0
     for features, labels, fontnames in data:
+      counter += 1
       try:
         scores = predictor.transform(features)
         
@@ -382,6 +383,7 @@ class Scoring(FittableTransform):
           writer.write(record)
       except Exception as e:
         logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
+      logger.info(f"Processed {counter} examples.")
 
   @classmethod
   def fit_from_config_object(cls, config: ScoringConfig, load_from_model_path = False, run_id: str = None):

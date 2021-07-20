@@ -6,6 +6,7 @@ from collections.abc import Iterable
 import os
 import logging
 import string
+import traceback
 import zipfile
 import io
 import typing as t
@@ -231,7 +232,7 @@ class FontFileToLabeledChars(ObjectMapper):
         array = np.mean(array, axis = -1).astype(np.uint8)
         yield LabeledChar(features=array,label=char,fontname=file.filename)
       except Exception as e:
-        logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'")
+        logger.exception(f"Error while reading char '{char}' from font file '{file.filename}'. Full trace: {traceback.format_exc()}")
 
 
 class FeatureCropper(ObjectMapper):

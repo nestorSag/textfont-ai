@@ -45,6 +45,10 @@ setuptools.setup(
 
          "Operating System :: OS Independent",
 
-     ]
+     ],
+
+     scripts = ["fontai/scripts/fontairun"]
+
+
      
  )
