@@ -1,6 +1,7 @@
 # example run: python scripts/run_single_stage.py --config-file config/parameters/local-preprocessing.yaml --stage ingestion
 
 import sys
+import os
 import argparse
 import logging
 import datetime
@@ -63,19 +64,27 @@ def run(args):
 
   args, _ = parser.parse_known_args(args)
 
-  logfile = f"{args.stage}-{datetime.datetime.now()}.log"
-  logging.basicConfig(filename=Path("logs") / logfile, level=logging.DEBUG, filemode = "w")
+  # set up logging
+  if os.environ.get("CONTAINER_ENV", "false") == "true":
+    # if executing in a container, log to stdout
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+  else:
+    logfile = f"{args.stage}-{datetime.datetime.now()}.log"
+    logging.basicConfig(filename=Path("logs") / logfile, level=logging.DEBUG, filemode = "w")
+    print(f"Redirecting logs to logs/{logfile}")
 
-  print(f"Redirecting logs to logs/{logfile}")
-
+  # sanitize parameters
   try:
     stage_class = stage_classes[args.stage]
   except KeyError as e:
-    print("stage must be one of 'ingestion', 'preprocessing' or 'prediction'")
+    print(f"stage must be one of {', '.join(list(stage_classes.keys()))}")
 
   if args.fit and not issubclass(stage_class, FittableTransform):
     raise TypeError(f"stage {args.stage} is not fittable.")
 
+  # run
   if args.fit:
     stage_class.fit_from_config_file(args.config_file, run_id=args.run_name)
   else:
