@@ -109,7 +109,11 @@ class PipelineExecutor(ObjectMapper):
     for stage in self.stages:
       data = stage.map(data)
 
-    return data
+    for elem in data:
+      try:
+        yield elem
+      except Exception as e:
+        logger.exception(f"An unexpected exception has occurred while preprocessing an input element. Full trace: {traceback.format_exc()}")
 
 
 class BeamCompatibleWrapper(beam.DoFn):

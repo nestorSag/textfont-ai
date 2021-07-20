@@ -24,7 +24,7 @@ class StageRunner(object):
     "scoring": Scoring
   }
   
-  schema_docstring = "\n\n\n". join([f"{key}: \n\t{stage_classes[key].get_config_parser().get_config_schema.__doc__}" for key in stage_classes])
+  schema_docstring = "\n\n\n". join([f"{key}: \n\t{val.get_config_parser().get_config_schema.__doc__}" for key, val in stage_classes.items()])
   
   parser = argparse.ArgumentParser(
     description = "Runs a single ML processing stage with its execution specified by a YAML configuration file. See below for details of configuration schema.",
