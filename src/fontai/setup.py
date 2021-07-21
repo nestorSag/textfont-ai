@@ -29,7 +29,8 @@ setuptools.setup(
         'matplotlib',
         'strictyaml',
         'pydantic',
-        'apache-beam[gcp]'
+        'apache-beam[gcp]',
+        'dash>=1.20.0'
 
     ],
 

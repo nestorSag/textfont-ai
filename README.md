@@ -32,7 +32,7 @@ cd textfont-ai
 pip install -e src/fontai/
 ```
 
-Otherwise, do `conda env create -f env/conda-env.yaml` right before installing the package to set up the environment.
+Otherwise, you can use Miniconda to run `conda env create -f conda-env.yaml` right before installing the package to set up the environment.
 
 
 ## Usage
