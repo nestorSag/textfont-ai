@@ -55,7 +55,7 @@ All details of any model-fitting experiment are automatically logged to the conf
 The preprocessing stages takes a YAML list of command line arguments for Apache Beam, which allows local parallel execution, remote execution using GCP's Dataflow, or any other supported backend. A docker image for remote training can be built by running 
 
 ```
-docker build -t <username>/fontai-runner:1.0.0 -f docker-images/training/Dockerfile .
+docker build -t <username>/fontai-runner:1.0.0 .
 ```
 
 from the root folder. This image can be deployed to a cloud instance for training, passing the same parameters as for `fontairun`, which is its entry point. In this case, the configuration file must be stored in a reachable location and its full path provided as the `config-file` argument; at the moment, only Google Storage is supported, i.e. a `gs://...` path (Google Storage paths are also supported for input, output and model paths in the configuration file). Other cloud providers can be implemented by extending the `fontai.io.storage` module.
