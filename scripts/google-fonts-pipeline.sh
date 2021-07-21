@@ -8,6 +8,7 @@ fontairun --stage ingestion \
 fontairun --stage preprocessing \
   --config-file config/parameters/google-fonts-examples/preprocessing.yaml
 
+# if --fit is not passed below, the model simply scores the input data and outputs scored examples to the provided location.
 fontairun --stage scoring \
   --fit \
   --config-file config/parameters/google-fonts-examples/training.yaml

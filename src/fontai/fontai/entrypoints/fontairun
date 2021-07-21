@@ -53,7 +53,7 @@ class StageRunner(object):
       action = 'store_true',      
       help=
       """
-      If present (and if stage is scoring), fits stage, otherwise perform scoring on input data.
+      If present (and if --stage is 'scoring'), fits the provided model, otherwise scores input data and saves the scored examples to the output_path parameter in the config file.
       """)
   parser.add_argument(
       '--run-name',
