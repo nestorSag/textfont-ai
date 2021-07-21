@@ -27,7 +27,7 @@ class Scrapper(ABC):
 
   @abstractmethod
   def get_source_urls(self) -> t.Generator[str, None, None]:
-    """Returns a generator of BytestreamPath objects pointing to each scrappable URL
+    """Returns a generator of string objects pointing to each scrappable URL
 
     """
     pass

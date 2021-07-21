@@ -375,7 +375,6 @@ class Scoring(FittableTransform):
 
     counter = 0
     for features, labels, fontnames in data:
-      counter += 1
       try:
         scores = predictor.transform(features)
         
@@ -388,6 +387,7 @@ class Scoring(FittableTransform):
 
         for record in scored_records:
           writer.write(record)
+        counter += 1
       except Exception as e:
         logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
       logger.info(f"Processed {counter} examples.")
