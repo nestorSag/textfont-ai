@@ -106,7 +106,10 @@ class ScrapperReader(BatchReader):
     for scrapper in self.scrappers:
       for url in scrapper.get_source_urls():
         stream = BytestreamPath(url)
-        yield InMemoryFile(filename = str(stream), content = stream.read_bytes())
+        content = stream.read_bytes()
+        # if any actual data can be downloaded, push as in-memory file
+        if sys.getsizeof(content) > 0:
+          yield InMemoryFile(filename = str(stream), content = content)
 
 
 

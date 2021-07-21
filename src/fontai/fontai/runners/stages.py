@@ -29,7 +29,7 @@ from apache_beam.options.pipeline_options import SetupOptions
 from fontai.config.preprocessing import Config as ProcessingConfig, ConfigHandler as ProcessingConfigHandler
 from fontai.config.ingestion import Config as IngestionConfig, ConfigHandler as IngestionConfigHandler
 from fontai.config.prediction import ModelFactory, TrainingConfig, Config as ScoringConfig, ConfigHandler as ScoringConfigHandler
-
+from fontai.config.deployment import Config as DeploymentConfig, ConfigHandler as DeploymentConfigHandler, Grid
 
 from fontai.prediction.input_processing import RecordPreprocessor
 from fontai.preprocessing.mappings import PipelineFactory, BeamCompatibleWrapper, Writer
@@ -41,7 +41,14 @@ from fontai.io.records import TfrWritable
 from fontai.io.formats import InMemoryFile, InMemoryZipHolder
 from fontai.runners.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
-from numpy import array as np_array
+from fontai.deployment.visualise import *
+
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+
+from numpy import array as np_array, clip as np_clip
 
 import mlflow 
 
@@ -388,6 +395,15 @@ class Scoring(FittableTransform):
   @classmethod
   def fit_from_config_object(cls, config: ScoringConfig, load_from_model_path = False, run_id: str = None):
     
+    # implement graceful interruptions
+    def save_on_sigint(sig, frame):
+      predictor.model.save(config.model_path)
+      logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
+      sys.exit(0)
+      
+    signal.signal(signal.SIGINT, save_on_sigint)
+
+    # start MLFlow run
     with mlflow.start_run(run_id=run_id, nested=False) as run:
 
       logger.info(f"MLFlow run id: {run.info.run_id}")
@@ -406,14 +422,8 @@ class Scoring(FittableTransform):
 
       mlflow.tensorflow.autolog() #start keras autologging
 
+      # fetch data and fit model
       predictor = cls.from_config_object(config, load_from_model_path)
-      
-      def save_on_sigint(sig, frame):
-        predictor.model.save(config.model_path)
-        logger.info(f"Training stopped by SIGINT: saving current model to {config.model_path}")
-        sys.exit(0)
-        
-      signal.signal(signal.SIGINT, save_on_sigint)
 
       data_fetcher = RecordPreprocessor(
         input_record_class = config.input_record_class,
@@ -426,5 +436,95 @@ class Scoring(FittableTransform):
       predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
       logger.info(f"Saving trained model to {config.model_path}")
       predictor.model.save(config.model_path)
+
+
+class Deployment(ConfigurableTransform):
+
+  """Deploys a small Dash app in which a fitted typeface generative model's style space can be explored
+
+  """
+  
+  def __init__(
+    self,
+    model: tf.keras.Model, 
+    sampler: t.Callable, 
+    grid: Grid, 
+    charset_size: int):
+    """
+    
+    Args:
+        model (tf.keras.Model): Generative model
+        sampler (t.Callable): Style vectors' sampling function
+        grid (Grid): Grid describing the style space's grid to explore
+        charset_size (int): Number of characters in font
+    """
+    self.model = model
+    self.sampler = sampler
+    self.grid = grid
+    self.charset_size = charset_size
+
+    self.external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+  def launch(self,**kwargs):
+    """Launches a Dash app
+    
+    Args:
+        **kwargs: Additional arguments passed to Dash app
+    """
+    app = dash.Dash("fontai-deployment", external_stylesheets=self.external_stylesheets)
+
+    step = (self.grid.largest - self.grid.lowest)/self.grid.size
+    middle = (self.grid.largest + self.grid.lowest)/2
+
+    app.layout = html.Div(children=[
+      html.Div(children=[html.Button('Random', id='button')] +
+        [dcc.Slider(min=self.grid.lowest,max=self.grid.largest,step=step, value=middle, id=f"slider-{k}") for k in range(self.grid.dim)],
+        style = {'display': 'inline-block', 'width': '25%'}),
+      html.Img(id="font_figure")
+      ])
+
+    @app.callback(
+      [Output(f"slider-{k}","value") for k in range(self.grid.dim)],
+      Input("button","n_clicks"))
+    def update_random(n_clicks):
+      return list(np_clip(self.sampler(size=self.grid.dim), a_min=self.grid.lowest, a_max=self.grid.largest))
+
+    @app.callback(
+      Output('font_figure', 'src'),
+      [Input(f"slider-{k}", 'value') for k in range(self.grid.dim)])
+    def update(*args):
+      style_vector = np_array(args).reshape((1,-1))
+      font = generate_font(self.model, style_vector, self.charset_size)
+      img = plot_font(font)
+      return fig_to_str(img)
+
+    app.run_server(**kwargs)
+
+  def process(self, x):
+    raise NotImplementedError("This method is not implemented for deployment.")
+
+  @classmethod
+  def get_config_parser(cls):
+    return DeploymentConfigHandler()
+
+  @classmethod
+  def from_config_object(cls, config: DeploymentConfig, **kwargs):
+    return cls(
+      model = config.model,
+      sampler = config.sampler,
+      grid = config.grid,
+      charset_size = config.charset_size)
+
+  @classmethod
+  def run_from_config_object(cls, config: DeploymentConfig):
+    
+    cls.from_config_object(config).launch(debug=True)
+
+  @classmethod
+  def get_stage_name(cls):
+    return "deployment"
+
+  def transform_batch(self, input_path: str, output_path: str):
+    raise NotImplementedError("This method is not implemented for deployment.")
 
 

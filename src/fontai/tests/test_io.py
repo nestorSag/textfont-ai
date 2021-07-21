@@ -18,14 +18,14 @@ from tensorflow.data import TFRecordDataset
 from numpy import empty as np_empty , ones as np_ones, zeros as np_zeros, uint8 as np_uint8, array as np_array, float32 as np_float, all as np_all
 
 TEST_DATA_PATHS = [
-("src/tests/data/io/input", "src/tests/data/io/output"),
-("gs://textfont-ai-data/test/input","gs://textfont-ai-data/test/output")]
+("src/fontai/tests/data/io/input", "src/fontai/tests/data/io/output"),
+("gs://textfont-ai-data/test/local/input","gs://textfont-ai-data/test/local/output")]
 
-TEST_ZIP_FOLDER = "src/tests/data/io/formats/zip"
-TEST_TTF_FOLDER = "src/tests/data/io/formats/ttf"
+TEST_ZIP_FOLDER = "src/fontai/tests/data/io/formats/zip"
+TEST_TTF_FOLDER = "src/fontai/tests/data/io/formats/ttf"
 
-TEST_ZIPFILE = "src/tests/data/io/formats/zip/achilles"
-TEST_TTF_FILE = "src/tests/data/io/formats/ttf/0AFE_Jen.ttf"
+TEST_ZIPFILE = "src/fontai/tests/data/io/formats/zip/achilles"
+TEST_TTF_FILE = "src/fontai/tests/data/io/formats/ttf/0AFE_Jen.ttf"
 
 charset = "ab"
 

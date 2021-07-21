@@ -21,7 +21,7 @@ from config_builders import full_processing_config_str
 
 @pytest.mark.parametrize("input_file, processing_config, output_schemas", [
     (
-      "src/tests/data/raw/afe_jen",
+      "src/fontai/tests/data/raw/afe_jen",
       Preprocessing.parse_config_str(full_processing_config_str("LabeledChar")),
       (LabeledChar, LabeledFont))
   ])

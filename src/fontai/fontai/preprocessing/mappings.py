@@ -23,7 +23,7 @@ import apache_beam as beam
 from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
 from fontai.io.writers import BatchWriter, TfrWriter
 from fontai.io.storage import BytestreamPath
-from fontai.io.records import LabeledChar, LabeledFont
+from fontai.io.records import LabeledChar, LabeledFont, TfrWritable
 
 
 logger = logging.getLogger(__name__)
@@ -390,7 +390,7 @@ class Writer(beam.DoFn):
   """
   def __init__(self, writer: BatchWriter):
     self.writer = writer
-  def process(self,example: LabeledChar) -> None:
+  def process(self,example: TfrWritable) -> None:
     try:
       self.writer.write(example)
     except Exception as e:

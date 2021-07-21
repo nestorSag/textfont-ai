@@ -47,7 +47,7 @@ setuptools.setup(
 
      ],
 
-     scripts = ["fontai/scripts/fontairun"]
+     scripts = ["fontai/entrypoints/fontairun"]
 
 
      
