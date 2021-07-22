@@ -141,11 +141,14 @@ class SAAELRHalver(tf.keras.callbacks.Callback):
 
     self.halve_after = 10
     self.min_lr = min_lr
+    self.initial_lr = None
 
   def on_epoch_begin(self, epoch, logs=None):
 
+    # assumes the LR for all models is the same
     for model in self.model.model_list:
       model_lr = getattr(self.model, model).optimizer.lr
-      lr = float(backend.get_value(model_lr))
-      lr = max(lr/2**int(epoch/self.halve_after), self.min_lr)
+      if self.initial_lr is None:
+        self.initial_lr = float(backend.get_value(model_lr))
+      lr = max(self.initial_lr/2**int(epoch/self.halve_after), self.min_lr)
       backend.set_value(model_lr, backend.get_value(lr))

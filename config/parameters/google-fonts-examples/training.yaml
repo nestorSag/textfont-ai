@@ -6,7 +6,7 @@ model_path: models/google/char-style-generative
 charset: uppercase
 training:
   batch_size: 64
-  epochs: 20
+  epochs: 50
   steps_per_epoch: 5000
   optimizer:
     class: Adam
@@ -23,7 +23,7 @@ training:
       embedding_dim: 5
   - class: SAAELRHalver
     kwargs:
-      halve_after: 12
+      halve_after: 10
 model:
   class: CharStyleSAAE
   kwargs:
