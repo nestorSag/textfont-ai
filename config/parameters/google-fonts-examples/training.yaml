@@ -6,8 +6,8 @@ model_path: models/google/char-style-generative
 charset: uppercase
 training:
   batch_size: 64
-  epochs: 50
-  steps_per_epoch: 5000
+  epochs: 1000
+  steps_per_epoch: 100
   optimizer:
     class: Adam
     kwargs:
@@ -20,12 +20,12 @@ training:
   - class: SAAEFontSamplerCallback
     kwargs:
       n_labels: 26
-      embedding_dim: 10
+      embedding_dim: 5
   - class: SAAELRHalver
     kwargs:
       halve_after: 12
 model:
-  class: CharStyleSAAE
+  class: PureCharStyleSAAE
   kwargs:
     prior_batch_size: 64
     reconstruction_loss_weight: 0.5
@@ -36,7 +36,7 @@ model:
         - class: Input
           kwargs:
             shape:
-            - 10
+            - 5
         - class: Dense
           kwargs:
             units: 100
@@ -49,6 +49,26 @@ model:
           kwargs:
             units: 1
             activation: sigmoid
+    char_discriminator:
+      class: Sequential
+      kwargs:
+        layers:
+        - class: Input
+          kwargs:
+            shape:
+            - 5
+        - class: Dense
+          kwargs:
+            units: 100
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 100
+            activation: elu
+        - class: Dense
+          kwargs:
+            units: 26
+            activation: softmax
     image_encoder:
       class: Sequential
       kwargs:
@@ -118,7 +138,7 @@ model:
             activation: elu
         - class: Dense
           kwargs:
-            units: 10
+            units: 5
     decoder:
       class: Sequential
       kwargs:
@@ -126,7 +146,7 @@ model:
         - class: Input
           kwargs:
             shape:
-            - 36
+            - 31
         - class: Dense
           kwargs: 
             units: 1024

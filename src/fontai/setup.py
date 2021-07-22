@@ -48,7 +48,10 @@ setuptools.setup(
 
      ],
 
-     scripts = ["fontai/entrypoints/fontairun"]
+     #scripts = ["fontai/entrypoints/fontairun.py"]
+     entry_points = {
+        "console_scripts": ['fontairun=fontai.entrypoints.fontairun:StageRunner.run']
+     }
 
 
      

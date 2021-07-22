@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 
 class CharStyleSAAE(tf.keras.Model):
 
-  """This class fits a supervised adversarial autoencoder as laid out in "Adversarial Autoencoders" by Ian Goodfellow et al.
+  """This class fits a supervised adversarial autoencoder and its inspired in the architecture from "Adversarial Autoencoders" by Ian Goodfellow et al. The only difference is that label (i.e. character) information is injected between the encoder and the style code, in the hope that labels not only help the decoding but also the encoding process, e.g. curvyness shouldn't be as important in the input if its a C than if its an H.
   
   Attributes:
       accuracy_metric (tf.keras.metrics.Accuracy): Accuracy metric
       cross_entropy (tf.keras.losses.BinaryCrossentropy): Cross entropy loss
-      decoder (tf.keras.Model): Decoder model
-      prior_discriminator (tf.keras.Model): prior_discriminator model
-      full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels
+      decoder (tf.keras.Model): Decoder model that maps style and characters to images
+      prior_discriminator (tf.keras.Model): Discriminator between the embeddings' distribution and the target distribution, e.g. multivariate standard normal.
+      full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels to produce embedded representations
       image_encoder (tf.keras.Model): Encoder for image features
       input_dim (t.Tuple[int]): Input dimension
       mse_loss (TYPE): Description
@@ -47,9 +47,9 @@ class CharStyleSAAE(tf.keras.Model):
     """Summary
     
     Args:
-        decoder (tf.keras.Model): Decoder model
-        prior_discriminator (tf.keras.Model): prior_discriminator model
-        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels
+        decoder (tf.keras.Model): Decoder model that maps style and characters to images
+        prior_discriminator (tf.keras.Model): Discriminator between the embeddings' distribution and the target distribution, e.g. multivariate standard normal.
+        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels to produce embedded representations
         image_encoder (tf.keras.Model): Encoder for image features
         reconstruction_loss_weight (float, optional): Weight of reconstruction loss at training time. Should be between 0 and 1.
         n_classes (int): number of labeled classes
@@ -235,7 +235,7 @@ class CharStyleSAAE(tf.keras.Model):
 
 class PureCharStyleSAAE(tf.keras.Model):
 
-  """This model is trained as a regular SAAE but an additional prior distribution_discriminator model is added to ensure the embedding does not retain information about the character class; i.e. it only retains style information
+  """This model is trained as a regular SAAE but an additional discriminator model is added to ensure the embedding does not retain information about the character class; i.e. it only retains style information
   """
   mean_metric = tf.keras.metrics.Mean(name="Mean code variance")
   char_accuracy_metric = tf.keras.metrics.Accuracy(name="style-char accuracy")
@@ -260,9 +260,10 @@ class PureCharStyleSAAE(tf.keras.Model):
     """Summary
     
     Args:
-        decoder (tf.keras.Model): Decoder model
-        prior_discriminator (tf.keras.Model): prior_discriminator model
-        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels
+        decoder (tf.keras.Model): Decoder model that maps style and characters to images
+        prior_discriminator (tf.keras.Model): Discriminator between the embeddings' distribution and the target distribution, e.g. multivariate standard normal.
+        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels to produce embedded representations
+        char_discriminator (tf.keras.Model): Discriminator to remove any character information from embeddings
         image_encoder (tf.keras.Model): Encoder for image features
         reconstruction_loss_weight (float, optional): Weight of reconstruction loss at training time. Should be between 0 and 1.
         n_classes (int): number of labeled classes
@@ -439,7 +440,7 @@ class PureCharStyleSAAE(tf.keras.Model):
 
 class PureFontStyleSAAE(tf.keras.Model):
 
-  """This model is trained on all characters from one or more font files at a time; the aim is to encode the font's style as opposed to single characters' styles, which can happen when training with scrambled characters from different fonts and results in sometimes having different-looking fonts for a given style in latent space. This model splits batches in two, passing half of it through the encoders to compute the font's style, and trying to reconstruct the other half using the resulting style vector and label data.
+  """This model is trained on all characters from one or more font files at a time; the aim is to encode the font's style as opposed to single characters' styles, which can happen when training with scrambled characters from different fonts and results in sometimes having different-looking image styles for a given style in latent space. This model works with characters from a single typeface at a time, and use the style from a given character to decode a different randomly chosen character in the same font, using the encoded style and target label information. 
   """
   prior_accuracy_metric = tf.keras.metrics.Accuracy(name="prior adversarial accuracy")
   mse_metric = tf.keras.metrics.MeanSquaredError(name="Reconstruction error")
@@ -460,9 +461,9 @@ class PureFontStyleSAAE(tf.keras.Model):
     """Summary
     
     Args:
-        decoder (tf.keras.Model): Decoder model
-        prior_discriminator (tf.keras.Model): prior_discriminator model
-        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels
+        decoder (tf.keras.Model): Decoder model that maps style and characters to images
+        prior_discriminator (tf.keras.Model): Discriminator between the embeddings' distribution and the target distribution, e.g. multivariate standard normal.
+        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels to produce embedded representations
         image_encoder (tf.keras.Model): Encoder for image features
         reconstruction_loss_weight (float, optional): Weight of reconstruction loss at training time. Should be between 0 and 1.
         n_classes (int): number of labeled classes

@@ -1,5 +1,5 @@
 """
-This module contains input preprocessing logic that happends right before data is ingested by the model to be trained.
+This module contains input preprocessing logic that happens right before data is ingested by the model to be trained.
 """
 from __future__ import absolute_import
 from collections.abc import Iterable
@@ -46,9 +46,6 @@ class RecordPreprocessor(object):
         charset_tensor (tf.Tensor): Tensor with one entry per character in the charset under consideration
         custom_filters (t.List[t.Callable], optional): Filtering functions for sets of image tensors and one-hot-encoded labels
         custom_mappers (t.List[t.Callable], optional): Mapping  functions for sets of image tensors and one-hot-encoded labels
-    
-    Deleted Parameters:
-        charset (str): One of 'lowercase', 'uppercase', 'digits' or 'all'; otherwise, chracters in the provided string are used as acustom charset.
     
     """
 
@@ -134,7 +131,7 @@ class RecordPreprocessor(object):
 
   def label_is_nonempty(self, features, label, *args):
     """
-    Filters out training examples without rows or correctly formatted labels
+    Filters out training examples without rows or incorrectly formatted labels
     
     Args:
         features (tf.Tensor)

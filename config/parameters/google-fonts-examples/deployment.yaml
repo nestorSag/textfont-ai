@@ -1,6 +1,6 @@
 decoder_path: models/google/char-style-generative/decoder
 charset_size: 26
-style_vector_size: 10
+style_vector_size: 5
 style_sampler: normal
 min_style_value: -3
 max_style_value: 3
