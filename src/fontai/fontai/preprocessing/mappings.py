@@ -20,7 +20,7 @@ import imageio
 import apache_beam as beam
 
 
-from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
+from fontai.io.formats import InMemoryZipfile, InMemoryFontfile, InMemoryFile
 from fontai.io.writers import BatchWriter, TfrWriter
 from fontai.io.storage import BytestreamPath
 from fontai.io.records import LabeledChar, LabeledFont, TfrWritable
@@ -142,19 +142,19 @@ class BeamCompatibleWrapper(beam.DoFn):
   
 #   """
 
-#   def raw_map(self, path: BytestreamPath) -> t.Generator[InMemoryZipHolder, None, None]:
-#     yield InMemoryZipHolder(filename = path.filename, content = path.read_bytes())
+#   def raw_map(self, path: BytestreamPath) -> t.Generator[InMemoryZipfile, None, None]:
+#     yield InMemoryZipfile(filename = path.filename, content = path.read_bytes())
 
 
 
-class InputToFontFiles(ObjectMapper):
+class ZipToFontFiles(ObjectMapper):
 
   """
     Opens an in-memory zip holder and outputs individual font files
 
   """
 
-  def raw_map(self, file: InMemoryZipHolder) -> t.Generator[InMemoryFontfileHolder,None,None]:
+  def raw_map(self, file: InMemoryZipfile) -> t.Generator[InMemoryFontfile,None,None]:
 
     def choose_ext(lst):
       ttfs = len([x for x in lst if ".ttf" in x.lower()])
@@ -179,7 +179,7 @@ class InputToFontFiles(ObjectMapper):
       filename = Path(file).name
       try: 
         content = zipped.read(file)
-        yield InMemoryFontfileHolder(filename=filename, content = content)
+        yield InMemoryFontfile(filename=filename, content = content)
       except Exception as e:
         logger.exception(f"Error while extracting file {filename} from zip")
 
@@ -217,7 +217,7 @@ class FontFileToLabeledChars(ObjectMapper):
     self.canvas_size = canvas_size
     self.charset = charset
 
-  def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledChar, None, None]:
+  def raw_map(self,file: InMemoryFontfile)-> t.Generator[LabeledChar, None, None]:
     logger.info(f"exctracting arrays from file '{file.filename}'")
     try:
       font = file.deserialise(font_size = self.font_extraction_size)
@@ -311,7 +311,7 @@ class FontFileToLabeledFont(FontFileToLabeledChars):
     Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename
 
   """
-  def raw_map(self,file: InMemoryFontfileHolder)-> t.Generator[LabeledFont, None, None]:
+  def raw_map(self,file: InMemoryFontfile)-> t.Generator[LabeledFont, None, None]:
     imgs = []
     labels = []
     for mapped in super().raw_map(file):
@@ -430,7 +430,7 @@ class PipelineFactory(object):
     if output_record_class == LabeledChar:
       return PipelineExecutor(
         stages = [
-        InputToFontFiles(),
+        ZipToFontFiles(),
         ManyToManyMapper(
           mapper = FontFileToLabeledChars(
             charset = charset,
@@ -450,7 +450,7 @@ class PipelineFactory(object):
 
       return PipelineExecutor(
         stages = [
-        InputToFontFiles(),
+        ZipToFontFiles(),
         ManyToManyMapper(
           mapper = FontFileToLabeledFont(
             charset = charset,

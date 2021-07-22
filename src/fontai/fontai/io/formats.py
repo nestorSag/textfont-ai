@@ -96,7 +96,7 @@ class InMemoryFile(BaseModel):
 
 
 
-class InMemoryZipHolder(InMemoryFile):
+class InMemoryZipfile(InMemoryFile):
 
   """In-memory buffer class for ingested zip bytestream
   """
@@ -111,17 +111,17 @@ class InMemoryZipHolder(InMemoryFile):
 
   @classmethod
   def serialise(self, obj: zipfile.ZipFile):
-    raise NotImplementError("Serialisation to InMemoryZipHolder is not implemented.")
+    raise NotImplementError("Serialisation to InMemoryZipfile is not implemented.")
     # bf = io.BytesIO()
     # zipped = zipfile.ZipFile(bf,"w")
     # for file in obj.filelist():
     #   zipped.writestr(file, obj.read(file))
 
-    # return InMemoryZipHolder(filename="holder", content = bf.getvalue())
+    # return InMemoryZipfile(filename="holder", content = bf.getvalue())
 
 
 
-class InMemoryFontfileHolder(InMemoryFile):
+class InMemoryFontfile(InMemoryFile):
 
   """In-memory buffer class for ingested ttf or otf font files
   """
@@ -137,56 +137,4 @@ class InMemoryFontfileHolder(InMemoryFile):
     return ImageFont.truetype(io.BytesIO(self.content),font_size)
 
   def serialise(self, font: ImageFont.FreeTypeFont):
-    raise NotImplementError("Serialisation to InMemoryFontfileHolder is not implemented.")
-
-
-class InMemoryZipBundler(object):
-
-  """Class to fill a zipfile in memory before persisting it to storage.
-  
-  Attributes:
-      buffer (BytesIO): zip file's buffer
-      n_files (int): number of files currently in the zip file
-      size (int): zip file's size
-      zip_file (ZipFile): ZipFile instance wrapping the buffer
-  """
-  
-  def __init__(self):
-    self.size = 0
-    self.n_files = 0
-
-    self.buffer = io.BytesIO()
-    self.zip_file = zipfile.ZipFile(self.buffer,"w")
-
-  def write(self,file: InMemoryFile):
-    """Add a file to the open zip file
-    
-    Args:
-        file (InMemoryFile): file to be added
-    """
-    file_size = sys.getsizeof(file.content)
-    self.zip_file.writestr(file.filename, file.content)
-    self.n_files += 1
-    self.size += file_size
-
-  def compress(self):
-    """Compress and close zip file
-    
-    Returns:
-        InMemoryZipBundler: self
-    """
-    self.zip_file.close()
-    return self
-
-  def close(self):
-    """Closes the zip file's inner buffer
-    """
-    self.buffer.close()
-
-  def get_bytes(self):
-    """Get zip file contents
-    
-    Returns:
-        bytes: contents
-    """
-    return self.buffer.getvalue()
+    raise NotImplementError("Serialisation to InMemoryFontfile is not implemented.")

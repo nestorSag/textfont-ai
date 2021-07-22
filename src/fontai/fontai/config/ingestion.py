@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class Config(BasePipelineTransformConfig):
 
   scrappers: t.List[scrapper_module.Scrapper]
+  max_output_file_size: float
 
 class ConfigHandler(BaseConfigHandler):
   """
@@ -29,12 +30,14 @@ class ConfigHandler(BaseConfigHandler):
     
     scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use
     output_path: target output folder
+    max_output_file_size: Maximum individual output file size in MB
 
     """
     
     schema = yml.Map({
       "scrappers" : yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA),
-      yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA
+      yml.Optional("output_path", default = None): self.IO_CONFIG_SCHEMA,
+      yml.Optional("max_output_file_size", default = 64.0): yml.Float()
     })
 
     return schema
@@ -54,7 +57,10 @@ class ConfigHandler(BaseConfigHandler):
 
     scrappers = [self.yaml_to_obj.get_instance(yaml=scrapper, scope=scrapper_module) for scrapper in config.get("scrappers")]
 
+    max_output_file_size = config.get("max_output_file_size").data
+
     return Config(
+      max_output_file_size = max_output_file_size,
       output_path = output_path, 
       scrappers = scrappers,
       yaml = config)

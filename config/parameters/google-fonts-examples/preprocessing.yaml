@@ -11,6 +11,6 @@ beam_cmd_line_args:
 -  --runner
 -  DirectRunner
 - --direct_num_workers
-- 1 #its a single, huge zip, so there's no point in running it in parallel
+- 4
 - --direct_running_mode
 - multi_processing

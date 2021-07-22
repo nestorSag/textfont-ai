@@ -79,13 +79,13 @@
 
             </li>
             <li>
-                    <a class="class" href="#InputToFontFiles">InputToFontFiles</a>
+                    <a class="class" href="#ZipToFontFiles">ZipToFontFiles</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#InputToFontFiles.__init__">InputToFontFiles</a>
+                                <a class="function" href="#ZipToFontFiles.__init__">ZipToFontFiles</a>
                         </li>
                         <li>
-                                <a class="function" href="#InputToFontFiles.raw_map">raw_map</a>
+                                <a class="function" href="#ZipToFontFiles.raw_map">raw_map</a>
                         </li>
                 </ul>
 
@@ -228,7 +228,7 @@
 <span class="kn">import</span> <span class="nn">apache_beam</span> <span class="k">as</span> <span class="nn">beam</span>
 
 
-<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">InMemoryFontfileHolder</span><span class="p">,</span> <span class="n">InMemoryFile</span>
+<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryZipfile</span><span class="p">,</span> <span class="n">InMemoryFontfile</span><span class="p">,</span> <span class="n">InMemoryFile</span>
 <span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">BatchWriter</span><span class="p">,</span> <span class="n">TfrWriter</span>
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
 <span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">LabeledChar</span><span class="p">,</span> <span class="n">LabeledFont</span><span class="p">,</span> <span class="n">TfrWritable</span>
@@ -350,19 +350,19 @@
   
 <span class="c1">#   &quot;&quot;&quot;</span>
 
-<span class="c1">#   def raw_map(self, path: BytestreamPath) -&gt; t.Generator[InMemoryZipHolder, None, None]:</span>
-<span class="c1">#     yield InMemoryZipHolder(filename = path.filename, content = path.read_bytes())</span>
+<span class="c1">#   def raw_map(self, path: BytestreamPath) -&gt; t.Generator[InMemoryZipfile, None, None]:</span>
+<span class="c1">#     yield InMemoryZipfile(filename = path.filename, content = path.read_bytes())</span>
 
 
 
-<span class="k">class</span> <span class="nc">InputToFontFiles</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">ZipToFontFiles</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Opens an in-memory zip holder and outputs individual font files</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryZipHolder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">InMemoryFontfileHolder</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryZipfile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">InMemoryFontfile</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
 
     <span class="k">def</span> <span class="nf">choose_ext</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
       <span class="n">ttfs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lst</span> <span class="k">if</span> <span class="s2">&quot;.ttf&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()])</span>
@@ -387,7 +387,7 @@
       <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
       <span class="k">try</span><span class="p">:</span> 
         <span class="n">content</span> <span class="o">=</span> <span class="n">zipped</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">InMemoryFontfileHolder</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">InMemoryFontfile</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while extracting file </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> from zip&quot;</span><span class="p">)</span>
 
@@ -425,7 +425,7 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exctracting arrays from file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="n">font</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">deserialise</span><span class="p">(</span><span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_extraction_size</span><span class="p">)</span>
@@ -519,7 +519,7 @@
 <span class="sd">    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
@@ -638,7 +638,7 @@
     <span class="k">if</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledChar</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ZipToFontFiles</span><span class="p">(),</span>
         <span class="n">ManyToManyMapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledChars</span><span class="p">(</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
@@ -658,7 +658,7 @@
 
       <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ZipToFontFiles</span><span class="p">(),</span>
         <span class="n">ManyToManyMapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledFont</span><span class="p">(</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
@@ -1229,25 +1229,25 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
                                 </dl>
                             </div>
                 </section>
-                <section id="InputToFontFiles">
+                <section id="ZipToFontFiles">
                                 <div class="attr class">
-        <a class="headerlink" href="#InputToFontFiles">#&nbsp;&nbsp</a>
+        <a class="headerlink" href="#ZipToFontFiles">#&nbsp;&nbsp</a>
 
         
         <span class="def">class</span>
-        <span class="name">InputToFontFiles</span><wbr>(<span class="base"><a href="#ObjectMapper">ObjectMapper</a></span>):
+        <span class="name">ZipToFontFiles</span><wbr>(<span class="base"><a href="#ObjectMapper">ObjectMapper</a></span>):
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InputToFontFiles</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">ZipToFontFiles</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Opens an in-memory zip holder and outputs individual font files</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryZipHolder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">InMemoryFontfileHolder</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryZipfile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">InMemoryFontfile</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
 
     <span class="k">def</span> <span class="nf">choose_ext</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
       <span class="n">ttfs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lst</span> <span class="k">if</span> <span class="s2">&quot;.ttf&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()])</span>
@@ -1272,7 +1272,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
       <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
       <span class="k">try</span><span class="p">:</span> 
         <span class="n">content</span> <span class="o">=</span> <span class="n">zipped</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">InMemoryFontfileHolder</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">InMemoryFontfile</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while extracting file </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> from zip&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1283,31 +1283,31 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 </div>
 
 
-                            <div id="InputToFontFiles.__init__" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InputToFontFiles.__init__">#&nbsp;&nbsp</a>
+                            <div id="ZipToFontFiles.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#ZipToFontFiles.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">InputToFontFiles</span><span class="signature">()</span>
+            <span class="name">ZipToFontFiles</span><span class="signature">()</span>
     </div>
 
         
     
 
                             </div>
-                            <div id="InputToFontFiles.raw_map" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InputToFontFiles.raw_map">#&nbsp;&nbsp</a>
+                            <div id="ZipToFontFiles.raw_map" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#ZipToFontFiles.raw_map">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
             <span class="name">raw_map</span><span class="signature">(
     self,
-    file: <a href="../io/formats.html#InMemoryZipHolder">fontai.io.formats.InMemoryZipHolder</a>
-) -&gt; Generator[<a href="../io/formats.html#InMemoryFontfileHolder">fontai.io.formats.InMemoryFontfileHolder</a>, NoneType, NoneType]</span>:
+    file: <a href="../io/formats.html#InMemoryZipfile">fontai.io.formats.InMemoryZipfile</a>
+) -&gt; Generator[<a href="../io/formats.html#InMemoryFontfile">fontai.io.formats.InMemoryFontfile</a>, NoneType, NoneType]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryZipHolder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">InMemoryFontfileHolder</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">InMemoryZipfile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">InMemoryFontfile</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
 
     <span class="k">def</span> <span class="nf">choose_ext</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
       <span class="n">ttfs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lst</span> <span class="k">if</span> <span class="s2">&quot;.ttf&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()])</span>
@@ -1332,7 +1332,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
       <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
       <span class="k">try</span><span class="p">:</span> 
         <span class="n">content</span> <span class="o">=</span> <span class="n">zipped</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">InMemoryFontfileHolder</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">InMemoryFontfile</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error while extracting file </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> from zip&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1354,7 +1354,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#ObjectMapper">ObjectMapper</a></dt>
-                                <dd id="InputToFontFiles.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
+                                <dd id="ZipToFontFiles.map" class="function"><a href="#ObjectMapper.map">map</a></dd>
 
             </div>
                                 </dl>
@@ -1402,7 +1402,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
     <span class="bp">self</span><span class="o">.</span><span class="n">canvas_size</span> <span class="o">=</span> <span class="n">canvas_size</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
 
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exctracting arrays from file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="n">font</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">deserialise</span><span class="p">(</span><span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_extraction_size</span><span class="p">)</span>
@@ -1498,13 +1498,13 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
             <span class="def">def</span>
             <span class="name">raw_map</span><span class="signature">(
     self,
-    file: <a href="../io/formats.html#InMemoryFontfileHolder">fontai.io.formats.InMemoryFontfileHolder</a>
+    file: <a href="../io/formats.html#InMemoryFontfile">fontai.io.formats.InMemoryFontfile</a>
 ) -&gt; Generator[<a href="../io/records.html#LabeledChar">fontai.io.records.LabeledChar</a>, NoneType, NoneType]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledChar</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exctracting arrays from file &#39;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
       <span class="n">font</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">deserialise</span><span class="p">(</span><span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_extraction_size</span><span class="p">)</span>
@@ -1813,7 +1813,7 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
 <span class="sd">    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
@@ -1839,13 +1839,13 @@ output watermark of Splittable <code>DoFn</code> implementations.</li>
             <span class="def">def</span>
             <span class="name">raw_map</span><span class="signature">(
     self,
-    file: <a href="../io/formats.html#InMemoryFontfileHolder">fontai.io.formats.InMemoryFontfileHolder</a>
+    file: <a href="../io/formats.html#InMemoryFontfile">fontai.io.formats.InMemoryFontfile</a>
 ) -&gt; Generator[<a href="../io/records.html#LabeledFont">fontai.io.records.LabeledFont</a>, NoneType, NoneType]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfileHolder</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">raw_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFontfile</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">LabeledFont</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">mapped</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">raw_map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
@@ -2379,7 +2379,7 @@ side effects, must be performed in <code>DoFn.process</code> or
     <span class="k">if</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledChar</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ZipToFontFiles</span><span class="p">(),</span>
         <span class="n">ManyToManyMapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledChars</span><span class="p">(</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
@@ -2399,7 +2399,7 @@ side effects, must be performed in <code>DoFn.process</code> or
 
       <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ZipToFontFiles</span><span class="p">(),</span>
         <span class="n">ManyToManyMapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledFont</span><span class="p">(</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
@@ -2478,7 +2478,7 @@ side effects, must be performed in <code>DoFn.process</code> or
     <span class="k">if</span> <span class="n">output_record_class</span> <span class="o">==</span> <span class="n">LabeledChar</span><span class="p">:</span>
       <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ZipToFontFiles</span><span class="p">(),</span>
         <span class="n">ManyToManyMapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledChars</span><span class="p">(</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>
@@ -2498,7 +2498,7 @@ side effects, must be performed in <code>DoFn.process</code> or
 
       <span class="k">return</span> <span class="n">PipelineExecutor</span><span class="p">(</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">InputToFontFiles</span><span class="p">(),</span>
+        <span class="n">ZipToFontFiles</span><span class="p">(),</span>
         <span class="n">ManyToManyMapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">FontFileToLabeledFont</span><span class="p">(</span>
             <span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span><span class="p">,</span>

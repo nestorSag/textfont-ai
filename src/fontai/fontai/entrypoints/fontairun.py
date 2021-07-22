@@ -6,13 +6,15 @@ import os
 import argparse
 import logging
 import datetime
+import traceback
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 from fontai.runners.base import FittableTransform
-from fontai.runners.stages import Preprocessing, Ingestion, Scoring, Deployment
+import fontai.runners.stages as stages
 
+from tensorflow.python.framework.errors_impl import UnknownError as unknown_tf_error
 
 Path("logs").mkdir(parents=True, exist_ok=True)
 
@@ -23,17 +25,17 @@ class StageRunner(object):
   Attributes:
       parser (argparse.ArgumentParser): Argument parser
       schema_docstring (str): A compilation of docstrings from available runner classes and their parsers. It is meant to be displayed in the command line using the `--help` parameter.
-      stage_classes (dict): Maps strings to runner clases for the `--stage` argument
+      stage_runners (dict): Maps strings to runner clases for the `--stage` argument
   """
+  stage_runners = {getattr(stages, name).get_stage_name() : getattr(stages, name) for name in stages.__all__}
+  # stage_runners = {
+  #   "ingestion": Ingestion,
+  #   "preprocessing": Preprocessing,
+  #   "scoring": Scoring,
+  #   "deployment": Deployment
+  # }
   
-  stage_classes = {
-    "ingestion": Ingestion,
-    "preprocessing": Preprocessing,
-    "scoring": Scoring,
-    "deployment": Deployment
-  }
-  
-  schema_docstring = "\n\n\n". join([f"{key}: \n\t{val.get_config_parser().get_config_schema.__doc__}" for key, val in stage_classes.items()])
+  schema_docstring = "\n\n\n". join([f"{key}: \n\t{val.get_config_parser().get_config_schema.__doc__}" for key, val in stage_runners.items()])
   
   parser = argparse.ArgumentParser(
     description = "Runs a single ML processing stage with its execution specified by a YAML configuration file. See below for details of configuration schema.",
@@ -44,7 +46,7 @@ class StageRunner(object):
       required = True,      
       help=
       f"""
-      One of: {", ".join(list(stage_classes.keys()))}
+      One of: {", ".join(list(stage_runners.keys()))}
       """)
   parser.add_argument(
       '--config-file',
@@ -100,16 +102,19 @@ class StageRunner(object):
 
     # sanitize parameters
     try:
-      stage_class = cls.stage_classes[args.stage]
+      stage_class = cls.stage_runners[args.stage]
     except KeyError as e:
-      raise ValueError(f"stage must be one of {', '.join(list(cls.stage_classes.keys()))}")
+      raise ValueError(f"stage must be one of {', '.join(list(cls.stage_runners.keys()))}")
 
     if args.fit and not issubclass(stage_class, FittableTransform):
       raise TypeError(f"stage {args.stage} is not fittable.")
 
     # run
     if args.fit:
-      stage_class.fit_from_config_file(args.config_file, run_id=args.run_name)
+      try:
+        stage_class.fit_from_config_file(args.config_file, run_id=args.run_name)
+      except unknown_tf_error as e:
+        raise Exception(f"{traceback.format_exc()}.\n\n *** If you get a cuDNN error, try doing: export TF_FORCE_GPU_ALLOW_GROWTH=true *** \n\n")
     else:
       stage_class.run_from_config_file(args.config_file)
   

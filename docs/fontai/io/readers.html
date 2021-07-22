@@ -48,18 +48,6 @@
                 </ul>
 
             </li>
-            <li>
-                    <a class="class" href="#ReaderClassFactory">ReaderClassFactory</a>
-                            <ul class="memberlist">
-                        <li>
-                                <a class="function" href="#ReaderClassFactory.__init__">ReaderClassFactory</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#ReaderClassFactory.get">get</a>
-                        </li>
-                </ul>
-
-            </li>
     </ul>
 
 
@@ -95,7 +83,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
-<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">InMemoryFontfileHolder</span>
+<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipfile</span><span class="p">,</span> <span class="n">InMemoryFontfile</span>
 <span class="kn">from</span> <span class="nn">fontai.io.scrappers</span> <span class="kn">import</span> <span class="n">Scrapper</span>
 
 <span class="kn">from</span> <span class="nn">tensorflow.data</span> <span class="kn">import</span> <span class="n">TFRecordDataset</span>
@@ -104,8 +92,7 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
   <span class="s2">&quot;TfrReader&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;ZipReader&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;ReaderClassFactory&quot;</span><span class="p">]</span>
+  <span class="s2">&quot;ZipReader&quot;</span><span class="p">]</span>
   
 <span class="k">class</span> <span class="nc">BatchReader</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 
@@ -158,7 +145,7 @@
   <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
     <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_path</span><span class="o">.</span><span class="n">list_sources</span><span class="p">():</span>
-      <span class="k">yield</span> <span class="n">InMemoryZipHolder</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+      <span class="k">yield</span> <span class="n">InMemoryZipfile</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
 
 <span class="k">class</span> <span class="nc">FontfileReader</span><span class="p">(</span><span class="n">BatchReader</span><span class="p">):</span>
 
@@ -168,7 +155,7 @@
   <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
     <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_path</span><span class="o">.</span><span class="n">list_sources</span><span class="p">():</span>
-      <span class="k">yield</span> <span class="n">InMemoryFontfileHolder</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+      <span class="k">yield</span> <span class="n">InMemoryFontfile</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
 
 
 <span class="k">class</span> <span class="nc">ScrapperReader</span><span class="p">(</span><span class="n">BatchReader</span><span class="p">):</span>
@@ -189,33 +176,34 @@
       <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">scrapper</span><span class="o">.</span><span class="n">get_source_urls</span><span class="p">():</span>
         <span class="n">stream</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="n">content</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
-        <span class="c1"># if any actual data can be downloaded, push as in-memory file</span>
+        <span class="c1"># if any actual data can be downloaded, push as in-memory zip file</span>
+        <span class="c1"># assume downloaded file is zip</span>
         <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-          <span class="k">yield</span> <span class="n">InMemoryFile</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
+          <span class="k">yield</span> <span class="n">InMemoryZipfile</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">)</span>
 
 
 
-<span class="k">class</span> <span class="nc">ReaderClassFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="c1"># class ReaderClassFactory(object):</span>
 
-  <span class="sd">&quot;&quot;&quot;Factory class that returns the appropriate reader depending on the expected input file format.</span>
-<span class="sd">  &quot;&quot;&quot;</span>
+<span class="c1">#   &quot;&quot;&quot;Factory class that returns the appropriate reader depending on the expected input file format.</span>
+<span class="c1">#   &quot;&quot;&quot;</span>
   
-  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">file_format</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a reader type for instantiation at runtime.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Expected input file format.</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">TfrReader</span>
-    <span class="k">elif</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">InMemoryZipHolder</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">ZipReader</span>
-    <span class="k">elif</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">InMemoryFontfileHolder</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">FontfileReader</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reader class defaulted to FileReader; reading uninterpreted bytestreams.&quot;</span><span class="p">)</span>
-      <span class="k">return</span> <span class="n">FileReader</span>
+<span class="c1">#   def get(file_format: type) -&gt; type:</span>
+<span class="c1">#     &quot;&quot;&quot;Returns a reader type for instantiation at runtime.</span>
+    
+<span class="c1">#     Args:</span>
+<span class="c1">#         file_format (InMemoryFile): Expected input file format.</span>
+    
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     if file_format == TFRecordDataset:</span>
+<span class="c1">#       return TfrReader</span>
+<span class="c1">#     elif file_format == InMemoryZipfile:</span>
+<span class="c1">#       return ZipReader</span>
+<span class="c1">#     elif file_format == InMemoryFontfile:</span>
+<span class="c1">#       return FontfileReader</span>
+<span class="c1">#     else:</span>
+<span class="c1">#       logger.info(&quot;Reader class defaulted to FileReader; reading uninterpreted bytestreams.&quot;)</span>
+<span class="c1">#       return FileReader</span>
 </pre></div>
 
         </details>
@@ -304,7 +292,7 @@
   <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
     <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_path</span><span class="o">.</span><span class="n">list_sources</span><span class="p">():</span>
-      <span class="k">yield</span> <span class="n">InMemoryZipHolder</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+      <span class="k">yield</span> <span class="n">InMemoryZipfile</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
 </pre></div>
 
         </details>
@@ -326,7 +314,7 @@
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
     <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_path</span><span class="o">.</span><span class="n">list_sources</span><span class="p">():</span>
-      <span class="k">yield</span> <span class="n">InMemoryZipHolder</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
+      <span class="k">yield</span> <span class="n">InMemoryZipfile</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
 </pre></div>
 
         </details>
@@ -345,99 +333,6 @@
 
             </div>
                                 </dl>
-                            </div>
-                </section>
-                <section id="ReaderClassFactory">
-                                <div class="attr class">
-        <a class="headerlink" href="#ReaderClassFactory">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">ReaderClassFactory</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">ReaderClassFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Factory class that returns the appropriate reader depending on the expected input file format.</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-  
-  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">file_format</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a reader type for instantiation at runtime.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Expected input file format.</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">TfrReader</span>
-    <span class="k">elif</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">InMemoryZipHolder</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">ZipReader</span>
-    <span class="k">elif</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">InMemoryFontfileHolder</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">FontfileReader</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reader class defaulted to FileReader; reading uninterpreted bytestreams.&quot;</span><span class="p">)</span>
-      <span class="k">return</span> <span class="n">FileReader</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Factory class that returns the appropriate reader depending on the expected input file format.</p>
-</div>
-
-
-                            <div id="ReaderClassFactory.__init__" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#ReaderClassFactory.__init__">#&nbsp;&nbsp</a>
-
-        
-            <span class="name">ReaderClassFactory</span><span class="signature">()</span>
-    </div>
-
-        
-    
-
-                            </div>
-                            <div id="ReaderClassFactory.get" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#ReaderClassFactory.get">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">get</span><span class="signature">(file_format: type) -&gt; type</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">file_format</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a reader type for instantiation at runtime.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Expected input file format.</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">TfrReader</span>
-    <span class="k">elif</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">InMemoryZipHolder</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">ZipReader</span>
-    <span class="k">elif</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">InMemoryFontfileHolder</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">FontfileReader</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reader class defaulted to FileReader; reading uninterpreted bytestreams.&quot;</span><span class="p">)</span>
-      <span class="k">return</span> <span class="n">FileReader</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Returns a reader type for instantiation at runtime.</p>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>file_format (InMemoryFile):</strong>  Expected input file format.</li>
-</ul>
-</div>
-
-
                             </div>
                 </section>
     </main>

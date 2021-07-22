@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 import logging
 
 from fontai.io.storage import BytestreamPath
-from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder, InMemoryFile
+from fontai.io.formats import InMemoryZipfile, InMemoryFontfile, InMemoryFile
 from fontai.io.records import TfrWritable
 
 from tensorflow.io import TFRecordWriter
@@ -66,6 +66,57 @@ class BatchWriter(ABC):
     pass
 
 
+class InMemoryZipBundler(object):
+
+  """Class to fill a zipfile in memory before persisting it to storage.
+  
+  Attributes:
+      buffer (BytesIO): zip file's buffer
+      n_files (int): number of files currently in the zip file
+      size (int): zip file's size
+      zip_file (ZipFile): ZipFile instance wrapping the buffer
+  """
+  
+  def __init__(self):
+    self.size = 0
+    self.n_files = 0
+
+    self.buffer = io.BytesIO()
+    self.zip_file = zipfile.ZipFile(self.buffer,"w")
+
+  def write(self,file: InMemoryFile):
+    """Add a file to the open zip file
+    
+    Args:
+        file (InMemoryFile): file to be added
+    """
+    file_size = sys.getsizeof(file.content)
+    self.zip_file.writestr(f"{file.filename}-{self.n_files}", file.content)
+    self.n_files += 1
+    self.size += file_size
+
+  def compress(self):
+    """Compress and close zip file
+    
+    Returns:
+        InMemoryZipBundler: self
+    """
+    self.zip_file.close()
+    return self
+
+  def close(self):
+    """Closes the zip file's inner buffer
+    """
+    self.buffer.close()
+
+  def get_bytes(self):
+    """Get zip file contents
+    
+    Returns:
+        bytes: contents
+    """
+    return self.buffer.getvalue()
+
 class ZipWriter(BatchWriter):
   """
   persists a list of files as a sequence of zip files, each with a maximum allowed pre-compression size
@@ -79,7 +130,7 @@ class ZipWriter(BatchWriter):
   
   """
 
-  def __init__(self, output_path: str, max_output_file_size: float = 128.0):
+  def __init__(self, output_path: str, max_output_file_size: float = 64.0):
     """
       
     Args:
@@ -110,16 +161,13 @@ class ZipWriter(BatchWriter):
     Args:
         file (InMemoryFile): File object
     """
-    if not isinstance(file, InMemoryFile):
-      logger.info(f"Casting file to InMemoryFile instance before zipping.")
-      file = file.to_in_memory_file()
 
     file_size = sys.getsizeof(file.content)
     if self.bundle.size + file_size > 1e6 * self.max_output_file_size:
       self.close()
       self.open()
 
-    self.bundle.add_file(file)
+    self.bundle.write(file)
 
   def close(self):
     """COmpress and close zip file
@@ -280,22 +328,24 @@ class FileWriter(BatchWriter):
     raise NotImplementedError("This writer does not implement a close() method (it does not batch files together)")
 
 
-class WriterClassFactory(object):
-  """Factory class that returns the appropriate writer depending on the expected output file format.
-  """
-  @classmethod
-  def get(cls, file_format: type) -> type:
-    """Returns a writer type for instantiation at runtime.
+# class WriterClassFactory(object):
+#   """Factory class that returns the appropriate writer depending on the expected output file format.
+#   """
+#   @classmethod
+#   def get(cls, file_format: type) -> type:
+#     """Returns a writer type for instantiation at runtime.
     
-    Args:
-        file_format (type): Expected input file format.
+#     Args:
+#         file_format (type): Expected input file format.
     
-    Returns:
-        type: corresponding writer type
+#     Returns:
+#         type: corresponding writer type
     
-    """
-    if file_format == TFRecordDataset:
-      return TfrWriter
-    else:
-      logger.info(f"Writer class defaulted to FileWriter; writing individual files.")
-      return FileWriter
+#     """
+#     if file_format == TFRecordDataset:
+#       return TfrWriter
+#     elif file_format == InMemoryZipfile:
+#       return ZipWriter
+#     else:
+#       logger.info(f"Writer class defaulted to FileWriter; writing individual files.")
+#       return FileWriter

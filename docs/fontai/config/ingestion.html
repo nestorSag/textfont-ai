@@ -36,6 +36,9 @@
                         <li>
                                 <a class="variable" href="#Config.scrappers">scrappers</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Config.max_output_file_size">max_output_file_size</a>
+                        </li>
                 </ul>
 
             </li>
@@ -87,6 +90,7 @@
 <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
 
   <span class="n">scrappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">scrapper_module</span><span class="o">.</span><span class="n">Scrapper</span><span class="p">]</span>
+  <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span>
 
 <span class="k">class</span> <span class="nc">ConfigHandler</span><span class="p">(</span><span class="n">BaseConfigHandler</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
@@ -100,12 +104,14 @@
 <span class="sd">    </span>
 <span class="sd">    scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use</span>
 <span class="sd">    output_path: target output folder</span>
+<span class="sd">    max_output_file_size: Maximum individual output file size in MB</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
       <span class="s2">&quot;scrappers&quot;</span> <span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span>
     <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -125,7 +131,10 @@
 
     <span class="n">scrappers</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">scrapper</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">scrapper_module</span><span class="p">)</span> <span class="k">for</span> <span class="n">scrapper</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scrappers&quot;</span><span class="p">)]</span>
 
+    <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">max_output_file_size</span><span class="p">,</span>
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span> 
       <span class="n">scrappers</span> <span class="o">=</span> <span class="n">scrappers</span><span class="p">,</span>
       <span class="n">yaml</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
@@ -148,6 +157,7 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePipelineTransformConfig</span><span class="p">):</span>
 
   <span class="n">scrappers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">scrapper_module</span><span class="o">.</span><span class="n">Scrapper</span><span class="p">]</span>
+  <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span>
 </pre></div>
 
         </details>
@@ -168,6 +178,15 @@
                                             <div class="attr variable"><a class="headerlink" href="#Config.scrappers">#&nbsp;&nbsp</a>
 
         <span class="name">scrappers</span><span class="annotation">: List[<a href="../io/scrappers.html#Scrapper">fontai.io.scrappers.Scrapper</a>]</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Config.max_output_file_size" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.max_output_file_size">#&nbsp;&nbsp</a>
+
+        <span class="name">max_output_file_size</span><span class="annotation">: float</span>
     </div>
 
     
@@ -225,12 +244,14 @@
 <span class="sd">    </span>
 <span class="sd">    scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use</span>
 <span class="sd">    output_path: target output folder</span>
+<span class="sd">    max_output_file_size: Maximum individual output file size in MB</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
       <span class="s2">&quot;scrappers&quot;</span> <span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span>
     <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -250,7 +271,10 @@
 
     <span class="n">scrappers</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">scrapper</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">scrapper_module</span><span class="p">)</span> <span class="k">for</span> <span class="n">scrapper</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scrappers&quot;</span><span class="p">)]</span>
 
+    <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">max_output_file_size</span><span class="p">,</span>
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span> 
       <span class="n">scrappers</span> <span class="o">=</span> <span class="n">scrappers</span><span class="p">,</span>
       <span class="n">yaml</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
@@ -280,12 +304,14 @@
 <span class="sd">    </span>
 <span class="sd">    scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `fontai.io.scrappers `to use</span>
 <span class="sd">    output_path: target output folder</span>
+<span class="sd">    max_output_file_size: Maximum individual output file size in MB</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">schema</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">Map</span><span class="p">({</span>
       <span class="s2">&quot;scrappers&quot;</span> <span class="p">:</span> <span class="n">yml</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">PY_CLASS_INSTANCE_FROM_YAML_SCHEMA</span><span class="p">),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">IO_CONFIG_SCHEMA</span><span class="p">,</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">()</span>
     <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -296,7 +322,8 @@
             <div class="docstring"><p>YAML configuration schema:</p>
 
 <p>scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from <code><a href="../io/scrappers.html">fontai.io.scrappers</a></code>to use
-output_path: target output folder</p>
+output_path: target output folder
+max_output_file_size: Maximum individual output file size in MB</p>
 </div>
 
 
@@ -329,7 +356,10 @@ output_path: target output folder</p>
 
     <span class="n">scrappers</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">yaml</span><span class="o">=</span><span class="n">scrapper</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">scrapper_module</span><span class="p">)</span> <span class="k">for</span> <span class="n">scrapper</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scrappers&quot;</span><span class="p">)]</span>
 
+    <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_output_file_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
+      <span class="n">max_output_file_size</span> <span class="o">=</span> <span class="n">max_output_file_size</span><span class="p">,</span>
       <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span><span class="p">,</span> 
       <span class="n">scrappers</span> <span class="o">=</span> <span class="n">scrappers</span><span class="p">,</span>
       <span class="n">yaml</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>

@@ -152,7 +152,7 @@ class CharStyleSAAE(tf.keras.Model):
 
     #self.cross_entropy_metric.update_state(discr_true, discr_predicted)
 
-    return {"MSE": self.mse_metric.result(), "Prior accuracy": self.prior_accuracy_metric.result()}
+    return {"reconstruction MSE": self.mse_metric.result(), "discriminator accuracy": self.prior_accuracy_metric.result()}
 
   @property
   def metrics(self):
@@ -340,18 +340,18 @@ class PureCharStyleSAAE(tf.keras.Model):
       char_guess = self.char_discriminator(code,training=True)
 
       # compute losses for the models
-      char_info_leak = self.style_loss(labels, char_guess)/self.prior_batch_size
+      char_loss = self.style_loss(labels, char_guess)/self.prior_batch_size
       reconstruction_loss = tf.keras.losses.MSE(x,decoded)
       classification_loss = self.prior_discriminator_loss(real,fake)
 
-      mixed_loss = -(1-self.rec_loss_weight)*(classification_loss + char_info_leak) + self.rec_loss_weight*(reconstruction_loss)
+      mixed_loss = -(1-self.rec_loss_weight)*(classification_loss + char_loss) + self.rec_loss_weight*(reconstruction_loss)
 
     # Compute gradients
     discr_gradients = tape.gradient(classification_loss,self.prior_discriminator.trainable_variables)
     decoder_gradients = tape.gradient(reconstruction_loss, self.decoder.trainable_variables)
     image_encoder_gradients = tape.gradient(mixed_loss, self.image_encoder.trainable_variables)
     full_encoder_gradients = tape.gradient(mixed_loss, self.full_encoder.trainable_variables)
-    style_discr_gradients = tape.gradient(char_info_leak, self.char_discriminator.trainable_variables)
+    style_discr_gradients = tape.gradient(char_loss, self.char_discriminator.trainable_variables)
 
     #apply gradients
     self.prior_discriminator.optimizer.apply_gradients(zip(discr_gradients,self.prior_discriminator.trainable_variables))
@@ -374,9 +374,9 @@ class PureCharStyleSAAE(tf.keras.Model):
     self.char_accuracy_metric.update_state(tf.argmax(labels, axis=-1), tf.argmax(char_guess, axis=-1))
 
     return {
-    "MSE": self.mse_metric.result(), 
-    "Prior accuracy": self.prior_accuracy_metric.result(), 
-    "style_accuracy": self.char_accuracy_metric.result()}
+    "reconstruction MSE": self.mse_metric.result(), 
+    "discriminator accuracy": self.prior_accuracy_metric.result(), 
+    "sstyle discriminator accuracy": self.char_accuracy_metric.result()}
 
 
 
@@ -604,8 +604,8 @@ class PureFontStyleSAAE(tf.keras.Model):
     self.prior_accuracy_metric.update_state(discr_true,tf.round(discr_predicted))
 
     return {
-    "MSE": self.mse_metric.result(), 
-    "Prior accuracy": self.prior_accuracy_metric.result()}
+    "reconstruction MSE": self.mse_metric.result(), 
+    "discriminator accuracy": self.prior_accuracy_metric.result()}
 
 
 

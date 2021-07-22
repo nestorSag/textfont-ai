@@ -32,13 +32,14 @@ from fontai.config.prediction import ModelFactory, TrainingConfig, Config as Sco
 from fontai.config.deployment import Config as DeploymentConfig, ConfigHandler as DeploymentConfigHandler, Grid
 
 from fontai.prediction.input_processing import RecordPreprocessor
-from fontai.preprocessing.mappings import PipelineFactory, BeamCompatibleWrapper, Writer
+from fontai.preprocessing.mappings import PipelineFactory, BeamCompatibleWrapper, Writer, ZipToFontFiles
 
 #from fontai.runners.base import MLPipelineTransform
 from fontai.io.storage import BytestreamPath
-from fontai.io.readers import ScrapperReader
+from fontai.io.readers import ScrapperReader, ZipReader, TfrReader
+from fontai.io.writers import TfrWriter, ZipWriter
 from fontai.io.records import TfrWritable
-from fontai.io.formats import InMemoryFile, InMemoryZipHolder
+from fontai.io.formats import InMemoryFile, InMemoryZipfile
 from fontai.runners.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
 from fontai.deployment.visualise import *
@@ -54,22 +55,22 @@ import mlflow
 
 logger = logging.Logger(__name__)
   
-
+__all__ = [
+  "Ingestion",
+  "Preprocessing",
+  "Scoring",
+  "Deployment"
+  ]
+  
 class Ingestion(ConfigurableTransform, IdentityTransform):
 
   """Retrieves zipped font files. It takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.
   
   """
-  input_file_format = InMemoryFile
-  output_file_format = InMemoryFile
-
-  @property
-  def reader_class(self):
-    return ScrapperReader
 
   def __init__(self, config: IngestionConfig = None):
     
-    self.config=config
+    self.config = config
 
   @classmethod
   def get_config_parser(cls):
@@ -83,9 +84,11 @@ class Ingestion(ConfigurableTransform, IdentityTransform):
   def run_from_config_object(cls, config: IngestionConfig):
     
     ingestor = cls.from_config_object(config)
-    writer = ingestor.writer_class(ingestor.config.output_path)
-    for file in ingestor.reader_class(config.scrappers).get_files():
-      writer.write(file)
+    font_extractor = ZipToFontFiles()
+    writer = ZipWriter(ingestor.config.output_path, config.max_output_file_size)
+    for file in ScrapperReader(config.scrappers).get_files():
+      for font_file in font_extractor.map(file):
+        writer.write(font_file)
 
   @classmethod
   def get_stage_name(cls):
@@ -100,9 +103,6 @@ class Preprocessing(ConfigurableTransform):
   Processes zipped font files and outputs Tensorflow records consisting of labeled images for ML consumption.
 
   """
-
-  input_file_format = InMemoryZipHolder
-  output_file_format = TFRecordDataset
 
   def __init__(
     self, 
@@ -167,7 +167,6 @@ class Preprocessing(ConfigurableTransform):
     output_path, input_path = config.output_path, config.input_path
 
     processor = cls.from_config_object(config)
-    reader = processor.reader_class(input_path)
 
     # if output is locally persisted, create parent folders
     if not BytestreamPath(output_path).is_url():
@@ -180,8 +179,8 @@ class Preprocessing(ConfigurableTransform):
 
       # execute pipeline
       (p
-      | 'create source list' >> beam.Create(reader.list_sources()) #create list of sources as strings
-      | 'read files' >> beam.Map(lambda filepath: processor.input_file_format.from_bytestream_path(filepath)) #line needed to load files lazily and not overwhelm memory
+      | 'create source list' >> beam.Create(BytestreamPath(input_path).list_sources()) #create list of sources as strings
+      | 'read zipped files' >> beam.Map(lambda filepath: InMemoryZipfile.from_bytestream_path(filepath)) #line needed to load files lazily and not overwhelm memory
       | 'get labeled exampes from zip files' >> beam.ParDo(
         BeamCompatibleWrapper(
           mapper = PipelineFactory.create(
@@ -190,7 +189,7 @@ class Preprocessing(ConfigurableTransform):
             **config.font_to_array_config.dict())
         )
       )
-      | "write to storage" >> beam.ParDo(Writer(processor.writer_class(output_path, config.max_output_file_size))))
+      | "write to storage" >> beam.ParDo(Writer(TfrWriter(output_path, config.max_output_file_size))))
 
     # unset provisional value for env variable
     if visible_devices is None:
@@ -218,9 +217,6 @@ class Scoring(FittableTransform):
     "digits": string.digits,
     "all": string.ascii_letters + string.digits
     }
-
-  input_file_format = TFRecordDataset
-  output_file_format = TFRecordDataset
 
   def __init__(
     self, 
@@ -325,7 +321,7 @@ class Scoring(FittableTransform):
 
   @classmethod
   def get_stage_name(cls):
-    return "predictor"
+    return "scoring"
 
 
   @classmethod
@@ -368,9 +364,9 @@ class Scoring(FittableTransform):
       custom_filters = predictor.training_config.custom_filters,
       custom_mappers = predictor.training_config.custom_mappers)
 
-    writer = predictor.writer_class(config.output_path)
+    writer = TfrWriter(config.output_path)
 
-    files = predictor.reader_class(config.input_path).get_files()
+    files = TfrReader(config.input_path).get_files()
     data = data_fetcher.fetch(files, training_format=False, batch_size = predictor.training_config.batch_size)
 
     counter = 0
@@ -431,7 +427,7 @@ class Scoring(FittableTransform):
         custom_filters = predictor.training_config.custom_filters,
         custom_mappers = predictor.training_config.custom_mappers)
 
-      data = predictor.reader_class(config.input_path).get_files()
+      data = TfrReader(config.input_path).get_files()
 
       predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
       logger.info(f"Saving trained model to {config.model_path}")
@@ -526,5 +522,9 @@ class Deployment(ConfigurableTransform):
 
   def transform_batch(self, input_path: str, output_path: str):
     raise NotImplementedError("This method is not implemented for deployment.")
+
+  @classmethod
+  def get_stage_name(cls):
+    return "deployment"
 
 

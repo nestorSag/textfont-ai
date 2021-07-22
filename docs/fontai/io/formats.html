@@ -58,46 +58,25 @@
 
             </li>
             <li>
-                    <a class="class" href="#InMemoryZipHolder">InMemoryZipHolder</a>
+                    <a class="class" href="#InMemoryZipfile">InMemoryZipfile</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#InMemoryZipHolder.deserialise">deserialise</a>
+                                <a class="function" href="#InMemoryZipfile.deserialise">deserialise</a>
                         </li>
                         <li>
-                                <a class="function" href="#InMemoryZipHolder.serialise">serialise</a>
+                                <a class="function" href="#InMemoryZipfile.serialise">serialise</a>
                         </li>
                 </ul>
 
             </li>
             <li>
-                    <a class="class" href="#InMemoryFontfileHolder">InMemoryFontfileHolder</a>
+                    <a class="class" href="#InMemoryFontfile">InMemoryFontfile</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#InMemoryFontfileHolder.deserialise">deserialise</a>
+                                <a class="function" href="#InMemoryFontfile.deserialise">deserialise</a>
                         </li>
                         <li>
-                                <a class="function" href="#InMemoryFontfileHolder.serialise">serialise</a>
-                        </li>
-                </ul>
-
-            </li>
-            <li>
-                    <a class="class" href="#InMemoryZipBundler">InMemoryZipBundler</a>
-                            <ul class="memberlist">
-                        <li>
-                                <a class="function" href="#InMemoryZipBundler.__init__">InMemoryZipBundler</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#InMemoryZipBundler.write">write</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#InMemoryZipBundler.compress">compress</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#InMemoryZipBundler.close">close</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#InMemoryZipBundler.get_bytes">get_bytes</a>
+                                <a class="function" href="#InMemoryFontfile.serialise">serialise</a>
                         </li>
                 </ul>
 
@@ -220,7 +199,7 @@
 
 
 
-<span class="k">class</span> <span class="nc">InMemoryZipHolder</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">InMemoryZipfile</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;In-memory buffer class for ingested zip bytestream</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -235,17 +214,17 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipHolder is not implemented.&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipfile is not implemented.&quot;</span><span class="p">)</span>
     <span class="c1"># bf = io.BytesIO()</span>
     <span class="c1"># zipped = zipfile.ZipFile(bf,&quot;w&quot;)</span>
     <span class="c1"># for file in obj.filelist():</span>
     <span class="c1">#   zipped.writestr(file, obj.read(file))</span>
 
-    <span class="c1"># return InMemoryZipHolder(filename=&quot;holder&quot;, content = bf.getvalue())</span>
+    <span class="c1"># return InMemoryZipfile(filename=&quot;holder&quot;, content = bf.getvalue())</span>
 
 
 
-<span class="k">class</span> <span class="nc">InMemoryFontfileHolder</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">InMemoryFontfile</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;In-memory buffer class for ingested ttf or otf font files</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -261,59 +240,7 @@
     <span class="k">return</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">truetype</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">),</span><span class="n">font_size</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">font</span><span class="p">:</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">FreeTypeFont</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryFontfileHolder is not implemented.&quot;</span><span class="p">)</span>
-
-
-<span class="k">class</span> <span class="nc">InMemoryZipBundler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Class to fill a zipfile in memory before persisting it to storage.</span>
-<span class="sd">  </span>
-<span class="sd">  Attributes:</span>
-<span class="sd">      buffer (BytesIO): zip file&#39;s buffer</span>
-<span class="sd">      n_files (int): number of files currently in the zip file</span>
-<span class="sd">      size (int): zip file&#39;s size</span>
-<span class="sd">      zip_file (ZipFile): ZipFile instance wrapping the buffer</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-  
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Add a file to the open zip file</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file (InMemoryFile): file to be added</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">+=</span> <span class="n">file_size</span>
-
-  <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compress and close zip file</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryZipBundler: self</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">return</span> <span class="bp">self</span>
-
-  <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closes the zip file&#39;s inner buffer</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-  <span class="k">def</span> <span class="nf">get_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Get zip file contents</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        bytes: contents</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryFontfile is not implemented.&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -651,18 +578,18 @@
                                 </dl>
                             </div>
                 </section>
-                <section id="InMemoryZipHolder">
+                <section id="InMemoryZipfile">
                                 <div class="attr class">
-        <a class="headerlink" href="#InMemoryZipHolder">#&nbsp;&nbsp</a>
+        <a class="headerlink" href="#InMemoryZipfile">#&nbsp;&nbsp</a>
 
         
         <span class="def">class</span>
-        <span class="name">InMemoryZipHolder</span><wbr>(<span class="base"><a href="#InMemoryFile">InMemoryFile</a></span>):
+        <span class="name">InMemoryZipfile</span><wbr>(<span class="base"><a href="#InMemoryFile">InMemoryFile</a></span>):
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryZipHolder</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryZipfile</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;In-memory buffer class for ingested zip bytestream</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -677,13 +604,13 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipHolder is not implemented.&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipfile is not implemented.&quot;</span><span class="p">)</span>
     <span class="c1"># bf = io.BytesIO()</span>
     <span class="c1"># zipped = zipfile.ZipFile(bf,&quot;w&quot;)</span>
     <span class="c1"># for file in obj.filelist():</span>
     <span class="c1">#   zipped.writestr(file, obj.read(file))</span>
 
-    <span class="c1"># return InMemoryZipHolder(filename=&quot;holder&quot;, content = bf.getvalue())</span>
+    <span class="c1"># return InMemoryZipfile(filename=&quot;holder&quot;, content = bf.getvalue())</span>
 </pre></div>
 
         </details>
@@ -692,8 +619,8 @@
 </div>
 
 
-                            <div id="InMemoryZipHolder.deserialise" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipHolder.deserialise">#&nbsp;&nbsp</a>
+                            <div id="InMemoryZipfile.deserialise" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipfile.deserialise">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
@@ -722,8 +649,8 @@
 
 
                             </div>
-                            <div id="InMemoryZipHolder.serialise" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipHolder.serialise">#&nbsp;&nbsp</a>
+                            <div id="InMemoryZipfile.serialise" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipfile.serialise">#&nbsp;&nbsp</a>
 
                 <div class="decorator">@classmethod</div>
 
@@ -735,13 +662,13 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipHolder is not implemented.&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipfile is not implemented.&quot;</span><span class="p">)</span>
     <span class="c1"># bf = io.BytesIO()</span>
     <span class="c1"># zipped = zipfile.ZipFile(bf,&quot;w&quot;)</span>
     <span class="c1"># for file in obj.filelist():</span>
     <span class="c1">#   zipped.writestr(file, obj.read(file))</span>
 
-    <span class="c1"># return InMemoryZipHolder(filename=&quot;holder&quot;, content = bf.getvalue())</span>
+    <span class="c1"># return InMemoryZipfile(filename=&quot;holder&quot;, content = bf.getvalue())</span>
 </pre></div>
 
         </details>
@@ -773,45 +700,45 @@
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="InMemoryZipHolder.__init__" class="function">BaseModel</dd>
-                <dd id="InMemoryZipHolder.Config" class="class">Config</dd>
-                <dd id="InMemoryZipHolder.dict" class="function">dict</dd>
-                <dd id="InMemoryZipHolder.json" class="function">json</dd>
-                <dd id="InMemoryZipHolder.parse_obj" class="function">parse_obj</dd>
-                <dd id="InMemoryZipHolder.parse_raw" class="function">parse_raw</dd>
-                <dd id="InMemoryZipHolder.parse_file" class="function">parse_file</dd>
-                <dd id="InMemoryZipHolder.from_orm" class="function">from_orm</dd>
-                <dd id="InMemoryZipHolder.construct" class="function">construct</dd>
-                <dd id="InMemoryZipHolder.copy" class="function">copy</dd>
-                <dd id="InMemoryZipHolder.schema" class="function">schema</dd>
-                <dd id="InMemoryZipHolder.schema_json" class="function">schema_json</dd>
-                <dd id="InMemoryZipHolder.validate" class="function">validate</dd>
-                <dd id="InMemoryZipHolder.update_forward_refs" class="function">update_forward_refs</dd>
+                                <dd id="InMemoryZipfile.__init__" class="function">BaseModel</dd>
+                <dd id="InMemoryZipfile.Config" class="class">Config</dd>
+                <dd id="InMemoryZipfile.dict" class="function">dict</dd>
+                <dd id="InMemoryZipfile.json" class="function">json</dd>
+                <dd id="InMemoryZipfile.parse_obj" class="function">parse_obj</dd>
+                <dd id="InMemoryZipfile.parse_raw" class="function">parse_raw</dd>
+                <dd id="InMemoryZipfile.parse_file" class="function">parse_file</dd>
+                <dd id="InMemoryZipfile.from_orm" class="function">from_orm</dd>
+                <dd id="InMemoryZipfile.construct" class="function">construct</dd>
+                <dd id="InMemoryZipfile.copy" class="function">copy</dd>
+                <dd id="InMemoryZipfile.schema" class="function">schema</dd>
+                <dd id="InMemoryZipfile.schema_json" class="function">schema_json</dd>
+                <dd id="InMemoryZipfile.validate" class="function">validate</dd>
+                <dd id="InMemoryZipfile.update_forward_refs" class="function">update_forward_refs</dd>
 
             </div>
             <div><dt><a href="#InMemoryFile">InMemoryFile</a></dt>
-                                <dd id="InMemoryZipHolder.filename" class="variable"><a href="#InMemoryFile.filename">filename</a></dd>
-                <dd id="InMemoryZipHolder.content" class="variable"><a href="#InMemoryFile.content">content</a></dd>
-                <dd id="InMemoryZipHolder.to_format" class="function"><a href="#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="InMemoryZipHolder.from_file" class="function"><a href="#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="InMemoryZipHolder.from_bytestream_path" class="function"><a href="#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
+                                <dd id="InMemoryZipfile.filename" class="variable"><a href="#InMemoryFile.filename">filename</a></dd>
+                <dd id="InMemoryZipfile.content" class="variable"><a href="#InMemoryFile.content">content</a></dd>
+                <dd id="InMemoryZipfile.to_format" class="function"><a href="#InMemoryFile.to_format">to_format</a></dd>
+                <dd id="InMemoryZipfile.from_file" class="function"><a href="#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="InMemoryZipfile.from_bytestream_path" class="function"><a href="#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
 
             </div>
                                 </dl>
                             </div>
                 </section>
-                <section id="InMemoryFontfileHolder">
+                <section id="InMemoryFontfile">
                                 <div class="attr class">
-        <a class="headerlink" href="#InMemoryFontfileHolder">#&nbsp;&nbsp</a>
+        <a class="headerlink" href="#InMemoryFontfile">#&nbsp;&nbsp</a>
 
         
         <span class="def">class</span>
-        <span class="name">InMemoryFontfileHolder</span><wbr>(<span class="base"><a href="#InMemoryFile">InMemoryFile</a></span>):
+        <span class="name">InMemoryFontfile</span><wbr>(<span class="base"><a href="#InMemoryFile">InMemoryFile</a></span>):
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryFontfileHolder</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryFontfile</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;In-memory buffer class for ingested ttf or otf font files</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -827,7 +754,7 @@
     <span class="k">return</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">truetype</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">),</span><span class="n">font_size</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">font</span><span class="p">:</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">FreeTypeFont</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryFontfileHolder is not implemented.&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryFontfile is not implemented.&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -836,8 +763,8 @@
 </div>
 
 
-                            <div id="InMemoryFontfileHolder.deserialise" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryFontfileHolder.deserialise">#&nbsp;&nbsp</a>
+                            <div id="InMemoryFontfile.deserialise" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#InMemoryFontfile.deserialise">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
@@ -871,8 +798,8 @@
 
 
                             </div>
-                            <div id="InMemoryFontfileHolder.serialise" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryFontfileHolder.serialise">#&nbsp;&nbsp</a>
+                            <div id="InMemoryFontfile.serialise" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#InMemoryFontfile.serialise">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
@@ -882,7 +809,7 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">font</span><span class="p">:</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">FreeTypeFont</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryFontfileHolder is not implemented.&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryFontfile is not implemented.&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -914,255 +841,31 @@
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="InMemoryFontfileHolder.__init__" class="function">BaseModel</dd>
-                <dd id="InMemoryFontfileHolder.Config" class="class">Config</dd>
-                <dd id="InMemoryFontfileHolder.dict" class="function">dict</dd>
-                <dd id="InMemoryFontfileHolder.json" class="function">json</dd>
-                <dd id="InMemoryFontfileHolder.parse_obj" class="function">parse_obj</dd>
-                <dd id="InMemoryFontfileHolder.parse_raw" class="function">parse_raw</dd>
-                <dd id="InMemoryFontfileHolder.parse_file" class="function">parse_file</dd>
-                <dd id="InMemoryFontfileHolder.from_orm" class="function">from_orm</dd>
-                <dd id="InMemoryFontfileHolder.construct" class="function">construct</dd>
-                <dd id="InMemoryFontfileHolder.copy" class="function">copy</dd>
-                <dd id="InMemoryFontfileHolder.schema" class="function">schema</dd>
-                <dd id="InMemoryFontfileHolder.schema_json" class="function">schema_json</dd>
-                <dd id="InMemoryFontfileHolder.validate" class="function">validate</dd>
-                <dd id="InMemoryFontfileHolder.update_forward_refs" class="function">update_forward_refs</dd>
+                                <dd id="InMemoryFontfile.__init__" class="function">BaseModel</dd>
+                <dd id="InMemoryFontfile.Config" class="class">Config</dd>
+                <dd id="InMemoryFontfile.dict" class="function">dict</dd>
+                <dd id="InMemoryFontfile.json" class="function">json</dd>
+                <dd id="InMemoryFontfile.parse_obj" class="function">parse_obj</dd>
+                <dd id="InMemoryFontfile.parse_raw" class="function">parse_raw</dd>
+                <dd id="InMemoryFontfile.parse_file" class="function">parse_file</dd>
+                <dd id="InMemoryFontfile.from_orm" class="function">from_orm</dd>
+                <dd id="InMemoryFontfile.construct" class="function">construct</dd>
+                <dd id="InMemoryFontfile.copy" class="function">copy</dd>
+                <dd id="InMemoryFontfile.schema" class="function">schema</dd>
+                <dd id="InMemoryFontfile.schema_json" class="function">schema_json</dd>
+                <dd id="InMemoryFontfile.validate" class="function">validate</dd>
+                <dd id="InMemoryFontfile.update_forward_refs" class="function">update_forward_refs</dd>
 
             </div>
             <div><dt><a href="#InMemoryFile">InMemoryFile</a></dt>
-                                <dd id="InMemoryFontfileHolder.filename" class="variable"><a href="#InMemoryFile.filename">filename</a></dd>
-                <dd id="InMemoryFontfileHolder.content" class="variable"><a href="#InMemoryFile.content">content</a></dd>
-                <dd id="InMemoryFontfileHolder.to_format" class="function"><a href="#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="InMemoryFontfileHolder.from_file" class="function"><a href="#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="InMemoryFontfileHolder.from_bytestream_path" class="function"><a href="#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
+                                <dd id="InMemoryFontfile.filename" class="variable"><a href="#InMemoryFile.filename">filename</a></dd>
+                <dd id="InMemoryFontfile.content" class="variable"><a href="#InMemoryFile.content">content</a></dd>
+                <dd id="InMemoryFontfile.to_format" class="function"><a href="#InMemoryFile.to_format">to_format</a></dd>
+                <dd id="InMemoryFontfile.from_file" class="function"><a href="#InMemoryFile.from_file">from_file</a></dd>
+                <dd id="InMemoryFontfile.from_bytestream_path" class="function"><a href="#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
 
             </div>
                                 </dl>
-                            </div>
-                </section>
-                <section id="InMemoryZipBundler">
-                                <div class="attr class">
-        <a class="headerlink" href="#InMemoryZipBundler">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">InMemoryZipBundler</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryZipBundler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Class to fill a zipfile in memory before persisting it to storage.</span>
-<span class="sd">  </span>
-<span class="sd">  Attributes:</span>
-<span class="sd">      buffer (BytesIO): zip file&#39;s buffer</span>
-<span class="sd">      n_files (int): number of files currently in the zip file</span>
-<span class="sd">      size (int): zip file&#39;s size</span>
-<span class="sd">      zip_file (ZipFile): ZipFile instance wrapping the buffer</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-  
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Add a file to the open zip file</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file (InMemoryFile): file to be added</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">+=</span> <span class="n">file_size</span>
-
-  <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compress and close zip file</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryZipBundler: self</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">return</span> <span class="bp">self</span>
-
-  <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closes the zip file&#39;s inner buffer</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-  <span class="k">def</span> <span class="nf">get_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Get zip file contents</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        bytes: contents</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Class to fill a zipfile in memory before persisting it to storage.</p>
-
-<h6 id="attributes">Attributes</h6>
-
-<ul>
-<li><strong>buffer (BytesIO):</strong>  zip file's buffer</li>
-<li><strong>n_files (int):</strong>  number of files currently in the zip file</li>
-<li><strong>size (int):</strong>  zip file's size</li>
-<li><strong>zip_file (ZipFile):</strong>  ZipFile instance wrapping the buffer</li>
-</ul>
-</div>
-
-
-                            <div id="InMemoryZipBundler.__init__" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipBundler.__init__">#&nbsp;&nbsp</a>
-
-        
-            <span class="name">InMemoryZipBundler</span><span class="signature">()</span>
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-    
-
-                            </div>
-                            <div id="InMemoryZipBundler.write" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipBundler.write">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">write</span><span class="signature">(self, file: <a href="#InMemoryFile">fontai.io.formats.InMemoryFile</a>)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Add a file to the open zip file</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file (InMemoryFile): file to be added</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">+=</span> <span class="n">file_size</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Add a file to the open zip file</p>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>file (InMemoryFile):</strong>  file to be added</li>
-</ul>
-</div>
-
-
-                            </div>
-                            <div id="InMemoryZipBundler.compress" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipBundler.compress">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">compress</span><span class="signature">(self)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compress and close zip file</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryZipBundler: self</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">return</span> <span class="bp">self</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Compress and close zip file</p>
-
-<h6 id="returns">Returns</h6>
-
-<blockquote>
-  <p>InMemoryZipBundler: self</p>
-</blockquote>
-</div>
-
-
-                            </div>
-                            <div id="InMemoryZipBundler.close" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipBundler.close">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">close</span><span class="signature">(self)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closes the zip file&#39;s inner buffer</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Closes the zip file's inner buffer</p>
-</div>
-
-
-                            </div>
-                            <div id="InMemoryZipBundler.get_bytes" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#InMemoryZipBundler.get_bytes">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">get_bytes</span><span class="signature">(self)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">get_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Get zip file contents</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        bytes: contents</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Get zip file contents</p>
-
-<h6 id="returns">Returns</h6>
-
-<blockquote>
-  <p>bytes: contents</p>
-</blockquote>
-</div>
-
-
                             </div>
                 </section>
     </main>

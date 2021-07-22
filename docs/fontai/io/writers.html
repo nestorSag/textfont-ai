@@ -108,7 +108,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
-<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryZipHolder</span><span class="p">,</span> <span class="n">InMemoryFontfileHolder</span><span class="p">,</span> <span class="n">InMemoryFile</span>
+<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryZipfile</span><span class="p">,</span> <span class="n">InMemoryFontfile</span><span class="p">,</span> <span class="n">InMemoryFile</span>
 <span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">TfrWritable</span>
 
 <span class="kn">from</span> <span class="nn">tensorflow.io</span> <span class="kn">import</span> <span class="n">TFRecordWriter</span>
@@ -160,6 +160,57 @@
     <span class="k">pass</span>
 
 
+<span class="k">class</span> <span class="nc">InMemoryZipBundler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+  <span class="sd">&quot;&quot;&quot;Class to fill a zipfile in memory before persisting it to storage.</span>
+<span class="sd">  </span>
+<span class="sd">  Attributes:</span>
+<span class="sd">      buffer (BytesIO): zip file&#39;s buffer</span>
+<span class="sd">      n_files (int): number of files currently in the zip file</span>
+<span class="sd">      size (int): zip file&#39;s size</span>
+<span class="sd">      zip_file (ZipFile): ZipFile instance wrapping the buffer</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">file</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add a file to the open zip file</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        file (InMemoryFile): file to be added</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_files</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n_files</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">+=</span> <span class="n">file_size</span>
+
+  <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compress and close zip file</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        InMemoryZipBundler: self</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">zip_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="bp">self</span>
+
+  <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Closes the zip file&#39;s inner buffer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+  <span class="k">def</span> <span class="nf">get_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get zip file contents</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bytes: contents</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
 <span class="k">class</span> <span class="nc">ZipWriter</span><span class="p">(</span><span class="n">BatchWriter</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  persists a list of files as a sequence of zip files, each with a maximum allowed pre-compression size</span>
@@ -173,7 +224,7 @@
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      </span>
 <span class="sd">    Args:</span>
@@ -204,16 +255,13 @@
 <span class="sd">    Args:</span>
 <span class="sd">        file (InMemoryFile): File object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Casting file to InMemoryFile instance before zipping.&quot;</span><span class="p">)</span>
-      <span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">to_in_memory_file</span><span class="p">()</span>
 
     <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">file_size</span> <span class="o">&gt;</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;COmpress and close zip file</span>
@@ -374,25 +422,27 @@
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This writer does not implement a close() method (it does not batch files together)&quot;</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">WriterClassFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Factory class that returns the appropriate writer depending on the expected output file format.</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file_format</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a writer type for instantiation at runtime.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (type): Expected input file format.</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        type: corresponding writer type</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">file_format</span> <span class="o">==</span> <span class="n">TFRecordDataset</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">TfrWriter</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Writer class defaulted to FileWriter; writing individual files.&quot;</span><span class="p">)</span>
-      <span class="k">return</span> <span class="n">FileWriter</span>
+<span class="c1"># class WriterClassFactory(object):</span>
+<span class="c1">#   &quot;&quot;&quot;Factory class that returns the appropriate writer depending on the expected output file format.</span>
+<span class="c1">#   &quot;&quot;&quot;</span>
+<span class="c1">#   @classmethod</span>
+<span class="c1">#   def get(cls, file_format: type) -&gt; type:</span>
+<span class="c1">#     &quot;&quot;&quot;Returns a writer type for instantiation at runtime.</span>
+    
+<span class="c1">#     Args:</span>
+<span class="c1">#         file_format (type): Expected input file format.</span>
+    
+<span class="c1">#     Returns:</span>
+<span class="c1">#         type: corresponding writer type</span>
+    
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     if file_format == TFRecordDataset:</span>
+<span class="c1">#       return TfrWriter</span>
+<span class="c1">#     elif file_format == InMemoryZipfile:</span>
+<span class="c1">#       return ZipWriter</span>
+<span class="c1">#     else:</span>
+<span class="c1">#       logger.info(f&quot;Writer class defaulted to FileWriter; writing individual files.&quot;)</span>
+<span class="c1">#       return FileWriter</span>
 </pre></div>
 
         </details>
@@ -709,7 +759,7 @@
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      </span>
 <span class="sd">    Args:</span>
@@ -740,16 +790,13 @@
 <span class="sd">    Args:</span>
 <span class="sd">        file (InMemoryFile): File object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Casting file to InMemoryFile instance before zipping.&quot;</span><span class="p">)</span>
-      <span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">to_in_memory_file</span><span class="p">()</span>
 
     <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">file_size</span> <span class="o">&gt;</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 
   <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;COmpress and close zip file</span>
@@ -794,12 +841,12 @@
                                         <div class="attr function"><a class="headerlink" href="#ZipWriter.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">ZipWriter</span><span class="signature">(output_path: str, max_output_file_size: float = 128.0)</span>
+            <span class="name">ZipWriter</span><span class="signature">(output_path: str, max_output_file_size: float = 64.0)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">128.0</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_output_file_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">64.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      </span>
 <span class="sd">    Args:</span>
@@ -870,16 +917,13 @@
 <span class="sd">    Args:</span>
 <span class="sd">        file (InMemoryFile): File object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Casting file to InMemoryFile instance before zipping.&quot;</span><span class="p">)</span>
-      <span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">to_in_memory_file</span><span class="p">()</span>
 
     <span class="n">file_size</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">file_size</span> <span class="o">&gt;</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">:</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">bundle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </pre></div>
 
         </details>

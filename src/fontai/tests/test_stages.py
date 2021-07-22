@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 
 import fontai.io.scrappers as scrapper_module
-from fontai.io.formats import InMemoryZipHolder
+from fontai.io.formats import InMemoryZipfile
 from fontai.io.records import ScoredLabeledChar
 from fontai.config.pipeline import Config as PipelineConfig
 from fontai.runners.stages import Ingestion, Preprocessing, Scoring
@@ -38,7 +38,7 @@ def test_preprocessing(config_str):
 
   data_path = list(Path(config.input_path).iterdir())[0]
   extractor = Preprocessing.from_config_object(config)
-  data = InMemoryZipHolder(filename = "0", content = data_path.read_bytes())
+  data = InMemoryZipfile(filename = "0", content = data_path.read_bytes())
   output = list(extractor.transform(data))
   n_examples = len(output)
   assert sum([example.__class__.__name__ ==  config.output_record_class.__name__ for example in output]) == n_examples
@@ -108,7 +108,7 @@ def test_predictor(config_str):
 
 #   streaming_input_file = list(Path(configs[0].output_path).iterdir())[0]
 
-#   data = InMemoryZipHolder(filename = "0", content = streaming_input_file.read_bytes())
+#   data = InMemoryZipfile(filename = "0", content = streaming_input_file.read_bytes())
 
 #   out = list(pipeline.transform(data))
 

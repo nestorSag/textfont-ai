@@ -37,15 +37,6 @@
                                 <a class="function" href="#Ingestion.__init__">Ingestion</a>
                         </li>
                         <li>
-                                <a class="class" href="#Ingestion.input_file_format">Ingestion.input_file_format</a>
-                        </li>
-                        <li>
-                                <a class="class" href="#Ingestion.output_file_format">Ingestion.output_file_format</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#Ingestion.reader_class">reader_class</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#Ingestion.get_config_parser">get_config_parser</a>
                         </li>
                         <li>
@@ -68,12 +59,6 @@
                             <ul class="memberlist">
                         <li>
                                 <a class="function" href="#Preprocessing.__init__">Preprocessing</a>
-                        </li>
-                        <li>
-                                <a class="class" href="#Preprocessing.input_file_format">Preprocessing.input_file_format</a>
-                        </li>
-                        <li>
-                                <a class="class" href="#Preprocessing.output_file_format">Preprocessing.output_file_format</a>
                         </li>
                         <li>
                                 <a class="function" href="#Preprocessing.from_config_object">from_config_object</a>
@@ -101,12 +86,6 @@
                         </li>
                         <li>
                                 <a class="variable" href="#Scoring.CHARSET_OPTIONS">CHARSET_OPTIONS</a>
-                        </li>
-                        <li>
-                                <a class="class" href="#Scoring.input_file_format">Scoring.input_file_format</a>
-                        </li>
-                        <li>
-                                <a class="class" href="#Scoring.output_file_format">Scoring.output_file_format</a>
                         </li>
                         <li>
                                 <a class="function" href="#Scoring.fit">fit</a>
@@ -216,13 +195,14 @@
 <span class="kn">from</span> <span class="nn">fontai.config.deployment</span> <span class="kn">import</span> <span class="n">Config</span> <span class="k">as</span> <span class="n">DeploymentConfig</span><span class="p">,</span> <span class="n">ConfigHandler</span> <span class="k">as</span> <span class="n">DeploymentConfigHandler</span><span class="p">,</span> <span class="n">Grid</span>
 
 <span class="kn">from</span> <span class="nn">fontai.prediction.input_processing</span> <span class="kn">import</span> <span class="n">RecordPreprocessor</span>
-<span class="kn">from</span> <span class="nn">fontai.preprocessing.mappings</span> <span class="kn">import</span> <span class="n">PipelineFactory</span><span class="p">,</span> <span class="n">BeamCompatibleWrapper</span><span class="p">,</span> <span class="n">Writer</span>
+<span class="kn">from</span> <span class="nn">fontai.preprocessing.mappings</span> <span class="kn">import</span> <span class="n">PipelineFactory</span><span class="p">,</span> <span class="n">BeamCompatibleWrapper</span><span class="p">,</span> <span class="n">Writer</span><span class="p">,</span> <span class="n">ZipToFontFiles</span>
 
 <span class="c1">#from fontai.runners.base import MLPipelineTransform</span>
 <span class="kn">from</span> <span class="nn">fontai.io.storage</span> <span class="kn">import</span> <span class="n">BytestreamPath</span>
-<span class="kn">from</span> <span class="nn">fontai.io.readers</span> <span class="kn">import</span> <span class="n">ScrapperReader</span>
+<span class="kn">from</span> <span class="nn">fontai.io.readers</span> <span class="kn">import</span> <span class="n">ScrapperReader</span><span class="p">,</span> <span class="n">ZipReader</span><span class="p">,</span> <span class="n">TfrReader</span>
+<span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">TfrWriter</span><span class="p">,</span> <span class="n">ZipWriter</span>
 <span class="kn">from</span> <span class="nn">fontai.io.records</span> <span class="kn">import</span> <span class="n">TfrWritable</span>
-<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipHolder</span>
+<span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span><span class="p">,</span> <span class="n">InMemoryZipfile</span>
 <span class="kn">from</span> <span class="nn">fontai.runners.base</span> <span class="kn">import</span> <span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">,</span> <span class="n">FittableTransform</span>
 
 <span class="kn">from</span> <span class="nn">fontai.deployment.visualise</span> <span class="kn">import</span> <span class="o">*</span>
@@ -238,22 +218,22 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
   
-
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="s2">&quot;Ingestion&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Preprocessing&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Scoring&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Deployment&quot;</span>
+  <span class="p">]</span>
+  
 <span class="k">class</span> <span class="nc">Ingestion</span><span class="p">(</span><span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">):</span>
 
   <span class="sd">&quot;&quot;&quot;Retrieves zipped font files. It takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">reader_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">ScrapperReader</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     
-    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">=</span><span class="n">config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_config_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -267,9 +247,11 @@
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">):</span>
     
     <span class="n">ingestor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">ingestor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">ingestor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ingestor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scrappers</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">():</span>
-      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="n">font_extractor</span> <span class="o">=</span> <span class="n">ZipToFontFiles</span><span class="p">()</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">ZipWriter</span><span class="p">(</span><span class="n">ingestor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ScrapperReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scrappers</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">():</span>
+      <span class="k">for</span> <span class="n">font_file</span> <span class="ow">in</span> <span class="n">font_extractor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">font_file</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -284,9 +266,6 @@
 <span class="sd">  Processes zipped font files and outputs Tensorflow records consisting of labeled images for ML consumption.</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryZipHolder</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
@@ -351,7 +330,6 @@
     <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
 
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">reader</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
 
     <span class="c1"># if output is locally persisted, create parent folders</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
@@ -364,8 +342,8 @@
 
       <span class="c1"># execute pipeline</span>
       <span class="p">(</span><span class="n">p</span>
-      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
-      <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
+      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">BytestreamPath</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
+      <span class="o">|</span> <span class="s1">&#39;read zipped files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">InMemoryZipfile</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
       <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
         <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
@@ -374,7 +352,7 @@
             <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
         <span class="p">)</span>
       <span class="p">)</span>
-      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
+      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">TfrWriter</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 
     <span class="c1"># unset provisional value for env variable</span>
     <span class="k">if</span> <span class="n">visible_devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -402,9 +380,6 @@
     <span class="s2">&quot;digits&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
     <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
     <span class="p">}</span>
-
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
@@ -509,7 +484,7 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-    <span class="k">return</span> <span class="s2">&quot;predictor&quot;</span>
+    <span class="k">return</span> <span class="s2">&quot;scoring&quot;</span>
 
 
   <span class="nd">@classmethod</span>
@@ -552,9 +527,9 @@
       <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
       <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">TfrWriter</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="n">files</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
 
     <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
@@ -615,7 +590,7 @@
         <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
         <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-      <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
       <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -710,6 +685,10 @@
 
   <span class="k">def</span> <span class="nf">transform_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This method is not implemented for deployment.&quot;</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;deployment&quot;</span>
 </pre></div>
 
         </details>
@@ -731,16 +710,10 @@
   <span class="sd">&quot;&quot;&quot;Retrieves zipped font files. It takes a list of scrappers defined in `fontai.io.scrappers` from which it downloads files to storage.</span>
 <span class="sd">  </span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">reader_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">ScrapperReader</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     
-    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">=</span><span class="n">config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_config_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -754,9 +727,11 @@
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">):</span>
     
     <span class="n">ingestor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">ingestor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">ingestor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ingestor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scrappers</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">():</span>
-      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="n">font_extractor</span> <span class="o">=</span> <span class="n">ZipToFontFiles</span><span class="p">()</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">ZipWriter</span><span class="p">(</span><span class="n">ingestor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ScrapperReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scrappers</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">():</span>
+      <span class="k">for</span> <span class="n">font_file</span> <span class="ow">in</span> <span class="n">font_extractor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">font_file</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -783,19 +758,10 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     
-    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">=</span><span class="n">config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
 </pre></div>
 
         </details>
-
-    
-
-                            </div>
-                            <div id="Ingestion.reader_class" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Ingestion.reader_class">#&nbsp;&nbsp</a>
-
-        <span class="name">reader_class</span>
-    </div>
 
     
 
@@ -867,9 +833,11 @@
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">):</span>
     
     <span class="n">ingestor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">ingestor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">ingestor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ingestor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scrappers</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">():</span>
-      <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="n">font_extractor</span> <span class="o">=</span> <span class="n">ZipToFontFiles</span><span class="p">()</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">ZipWriter</span><span class="p">(</span><span class="n">ingestor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ScrapperReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scrappers</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">():</span>
+      <span class="k">for</span> <span class="n">font_file</span> <span class="ow">in</span> <span class="n">font_extractor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">font_file</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -941,250 +909,6 @@
                                 <dd id="Ingestion.transform" class="function"><a href="base.html#IdentityTransform.transform">transform</a></dd>
 
             </div>
-            <div><dt><a href="base.html#Transform">fontai.runners.base.Transform</a></dt>
-                                <dd id="Ingestion.writer_class" class="variable"><a href="base.html#Transform.writer_class">writer_class</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Ingestion.input_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Ingestion.input_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Ingestion.input_file_format</span><wbr>(<span class="base">pydantic.main.BaseModel</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryFile</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Wrapper class for retrieved file bytestreams</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
-  <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span>
-
-
-  <span class="k">def</span> <span class="nf">to_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_format</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Cast instance as a different file type inehriting from InMemoryFile </span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Target file type</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: cast file instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">file_format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
-
-  <span class="k">def</span> <span class="nf">deserialise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parse instance as the corresponding Python object such as a ZipFile or an ImageFont.truetype</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        filepath (str): FIle path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Serialises a Python object to an instance of InMemoryFile</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        obj (t.Any): Python object</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: Description</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        TypeError: If passed object is not an instance of InMemoryFile</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;InMemoryFile only can be serialised from an instance of the same class.&quot;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">obj</span>
-
-  <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Filename: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">, content size: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB.&quot;</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Wrapper class for retrieved file bytestreams</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="Ingestion.input_file_format.__init__" class="function">BaseModel</dd>
-                <dd id="Ingestion.input_file_format.Config" class="class">Config</dd>
-                <dd id="Ingestion.input_file_format.dict" class="function">dict</dd>
-                <dd id="Ingestion.input_file_format.json" class="function">json</dd>
-                <dd id="Ingestion.input_file_format.parse_obj" class="function">parse_obj</dd>
-                <dd id="Ingestion.input_file_format.parse_raw" class="function">parse_raw</dd>
-                <dd id="Ingestion.input_file_format.parse_file" class="function">parse_file</dd>
-                <dd id="Ingestion.input_file_format.from_orm" class="function">from_orm</dd>
-                <dd id="Ingestion.input_file_format.construct" class="function">construct</dd>
-                <dd id="Ingestion.input_file_format.copy" class="function">copy</dd>
-                <dd id="Ingestion.input_file_format.schema" class="function">schema</dd>
-                <dd id="Ingestion.input_file_format.schema_json" class="function">schema_json</dd>
-                <dd id="Ingestion.input_file_format.validate" class="function">validate</dd>
-                <dd id="Ingestion.input_file_format.update_forward_refs" class="function">update_forward_refs</dd>
-
-            </div>
-            <div><dt><a href="../io/formats.html#InMemoryFile">fontai.io.formats.InMemoryFile</a></dt>
-                                <dd id="Ingestion.input_file_format.filename" class="variable"><a href="../io/formats.html#InMemoryFile.filename">filename</a></dd>
-                <dd id="Ingestion.input_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
-                <dd id="Ingestion.input_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="Ingestion.input_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
-                <dd id="Ingestion.input_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="Ingestion.input_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
-                <dd id="Ingestion.input_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Ingestion.output_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Ingestion.output_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Ingestion.output_file_format</span><wbr>(<span class="base">pydantic.main.BaseModel</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryFile</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Wrapper class for retrieved file bytestreams</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
-  <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span>
-
-
-  <span class="k">def</span> <span class="nf">to_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_format</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Cast instance as a different file type inehriting from InMemoryFile </span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Target file type</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: cast file instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">file_format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
-
-  <span class="k">def</span> <span class="nf">deserialise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parse instance as the corresponding Python object such as a ZipFile or an ImageFont.truetype</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        filepath (str): FIle path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Serialises a Python object to an instance of InMemoryFile</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        obj (t.Any): Python object</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: Description</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        TypeError: If passed object is not an instance of InMemoryFile</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;InMemoryFile only can be serialised from an instance of the same class.&quot;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">obj</span>
-
-  <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Filename: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">, content size: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB.&quot;</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Wrapper class for retrieved file bytestreams</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="Ingestion.output_file_format.__init__" class="function">BaseModel</dd>
-                <dd id="Ingestion.output_file_format.Config" class="class">Config</dd>
-                <dd id="Ingestion.output_file_format.dict" class="function">dict</dd>
-                <dd id="Ingestion.output_file_format.json" class="function">json</dd>
-                <dd id="Ingestion.output_file_format.parse_obj" class="function">parse_obj</dd>
-                <dd id="Ingestion.output_file_format.parse_raw" class="function">parse_raw</dd>
-                <dd id="Ingestion.output_file_format.parse_file" class="function">parse_file</dd>
-                <dd id="Ingestion.output_file_format.from_orm" class="function">from_orm</dd>
-                <dd id="Ingestion.output_file_format.construct" class="function">construct</dd>
-                <dd id="Ingestion.output_file_format.copy" class="function">copy</dd>
-                <dd id="Ingestion.output_file_format.schema" class="function">schema</dd>
-                <dd id="Ingestion.output_file_format.schema_json" class="function">schema_json</dd>
-                <dd id="Ingestion.output_file_format.validate" class="function">validate</dd>
-                <dd id="Ingestion.output_file_format.update_forward_refs" class="function">update_forward_refs</dd>
-
-            </div>
-            <div><dt><a href="../io/formats.html#InMemoryFile">fontai.io.formats.InMemoryFile</a></dt>
-                                <dd id="Ingestion.output_file_format.filename" class="variable"><a href="../io/formats.html#InMemoryFile.filename">filename</a></dd>
-                <dd id="Ingestion.output_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
-                <dd id="Ingestion.output_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="Ingestion.output_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
-                <dd id="Ingestion.output_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="Ingestion.output_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
-                <dd id="Ingestion.output_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
-
-            </div>
                                 </dl>
                             </div>
                 </section>
@@ -1204,9 +928,6 @@
 <span class="sd">  Processes zipped font files and outputs Tensorflow records consisting of labeled images for ML consumption.</span>
 
 <span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryZipHolder</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
@@ -1271,7 +992,6 @@
     <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
 
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">reader</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
 
     <span class="c1"># if output is locally persisted, create parent folders</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
@@ -1284,8 +1004,8 @@
 
       <span class="c1"># execute pipeline</span>
       <span class="p">(</span><span class="n">p</span>
-      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
-      <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
+      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">BytestreamPath</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
+      <span class="o">|</span> <span class="s1">&#39;read zipped files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">InMemoryZipfile</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
       <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
         <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
@@ -1294,7 +1014,7 @@
             <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
         <span class="p">)</span>
       <span class="p">)</span>
-      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
+      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">TfrWriter</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 
     <span class="c1"># unset provisional value for env variable</span>
     <span class="k">if</span> <span class="n">visible_devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1502,7 +1222,6 @@
     <span class="n">output_path</span><span class="p">,</span> <span class="n">input_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input_path</span>
 
     <span class="n">processor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    <span class="n">reader</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
 
     <span class="c1"># if output is locally persisted, create parent folders</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_url</span><span class="p">():</span>
@@ -1515,8 +1234,8 @@
 
       <span class="c1"># execute pipeline</span>
       <span class="p">(</span><span class="n">p</span>
-      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
-      <span class="o">|</span> <span class="s1">&#39;read files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">input_file_format</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
+      <span class="o">|</span> <span class="s1">&#39;create source list&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">BytestreamPath</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">list_sources</span><span class="p">())</span> <span class="c1">#create list of sources as strings</span>
+      <span class="o">|</span> <span class="s1">&#39;read zipped files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">InMemoryZipfile</span><span class="o">.</span><span class="n">from_bytestream_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span> <span class="c1">#line needed to load files lazily and not overwhelm memory</span>
       <span class="o">|</span> <span class="s1">&#39;get labeled exampes from zip files&#39;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span>
         <span class="n">BeamCompatibleWrapper</span><span class="p">(</span>
           <span class="n">mapper</span> <span class="o">=</span> <span class="n">PipelineFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
@@ -1525,7 +1244,7 @@
             <span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">font_to_array_config</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
         <span class="p">)</span>
       <span class="p">)</span>
-      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
+      <span class="o">|</span> <span class="s2">&quot;write to storage&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">beam</span><span class="o">.</span><span class="n">ParDo</span><span class="p">(</span><span class="n">Writer</span><span class="p">(</span><span class="n">TfrWriter</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_output_file_size</span><span class="p">))))</span>
 
     <span class="c1"># unset provisional value for env variable</span>
     <span class="k">if</span> <span class="n">visible_devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1557,210 +1276,6 @@
                 <dd id="Preprocessing.parse_config_file" class="function"><a href="base.html#ConfigurableTransform.parse_config_file">parse_config_file</a></dd>
                 <dd id="Preprocessing.parse_config_str" class="function"><a href="base.html#ConfigurableTransform.parse_config_str">parse_config_str</a></dd>
                 <dd id="Preprocessing.run_from_config_file" class="function"><a href="base.html#ConfigurableTransform.run_from_config_file">run_from_config_file</a></dd>
-
-            </div>
-            <div><dt><a href="base.html#Transform">fontai.runners.base.Transform</a></dt>
-                                <dd id="Preprocessing.reader_class" class="variable"><a href="base.html#Transform.reader_class">reader_class</a></dd>
-                <dd id="Preprocessing.writer_class" class="variable"><a href="base.html#Transform.writer_class">writer_class</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Preprocessing.input_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Preprocessing.input_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Preprocessing.input_file_format</span><wbr>(<span class="base"><a href="../io/formats.html#InMemoryFile">fontai.io.formats.InMemoryFile</a></span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryZipHolder</span><span class="p">(</span><span class="n">InMemoryFile</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;In-memory buffer class for ingested zip bytestream</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-  
-  <span class="k">def</span> <span class="nf">deserialise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        zipfile.ZipFile: An open ZipFile instance with the current instance&#39;s contents</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">),</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="n">NotImplementError</span><span class="p">(</span><span class="s2">&quot;Serialisation to InMemoryZipHolder is not implemented.&quot;</span><span class="p">)</span>
-    <span class="c1"># bf = io.BytesIO()</span>
-    <span class="c1"># zipped = zipfile.ZipFile(bf,&quot;w&quot;)</span>
-    <span class="c1"># for file in obj.filelist():</span>
-    <span class="c1">#   zipped.writestr(file, obj.read(file))</span>
-
-    <span class="c1"># return InMemoryZipHolder(filename=&quot;holder&quot;, content = bf.getvalue())</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>In-memory buffer class for ingested zip bytestream</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="Preprocessing.input_file_format.__init__" class="function">BaseModel</dd>
-                <dd id="Preprocessing.input_file_format.Config" class="class">Config</dd>
-                <dd id="Preprocessing.input_file_format.dict" class="function">dict</dd>
-                <dd id="Preprocessing.input_file_format.json" class="function">json</dd>
-                <dd id="Preprocessing.input_file_format.parse_obj" class="function">parse_obj</dd>
-                <dd id="Preprocessing.input_file_format.parse_raw" class="function">parse_raw</dd>
-                <dd id="Preprocessing.input_file_format.parse_file" class="function">parse_file</dd>
-                <dd id="Preprocessing.input_file_format.from_orm" class="function">from_orm</dd>
-                <dd id="Preprocessing.input_file_format.construct" class="function">construct</dd>
-                <dd id="Preprocessing.input_file_format.copy" class="function">copy</dd>
-                <dd id="Preprocessing.input_file_format.schema" class="function">schema</dd>
-                <dd id="Preprocessing.input_file_format.schema_json" class="function">schema_json</dd>
-                <dd id="Preprocessing.input_file_format.validate" class="function">validate</dd>
-                <dd id="Preprocessing.input_file_format.update_forward_refs" class="function">update_forward_refs</dd>
-
-            </div>
-            <div><dt><a href="../io/formats.html#InMemoryZipHolder">fontai.io.formats.InMemoryZipHolder</a></dt>
-                                <dd id="Preprocessing.input_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryZipHolder.deserialise">deserialise</a></dd>
-                <dd id="Preprocessing.input_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryZipHolder.serialise">serialise</a></dd>
-
-            </div>
-            <div><dt><a href="../io/formats.html#InMemoryFile">fontai.io.formats.InMemoryFile</a></dt>
-                                <dd id="Preprocessing.input_file_format.filename" class="variable"><a href="../io/formats.html#InMemoryFile.filename">filename</a></dd>
-                <dd id="Preprocessing.input_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
-                <dd id="Preprocessing.input_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="Preprocessing.input_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="Preprocessing.input_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Preprocessing.output_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Preprocessing.output_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Preprocessing.output_file_format</span><wbr>(<span class="base">tensorflow.python.data.ops.dataset_ops.DatasetV2</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TFRecordDatasetV2</span><span class="p">(</span><span class="n">dataset_ops</span><span class="o">.</span><span class="n">DatasetV2</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;A `Dataset` comprising records from one or more TFRecord files.&quot;&quot;&quot;</span>
-
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-               <span class="n">filenames</span><span class="p">,</span>
-               <span class="n">compression_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-               <span class="n">buffer_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-               <span class="n">num_parallel_reads</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Creates a `TFRecordDataset` to read one or more TFRecord files.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">      filenames: A `tf.string` tensor or `tf.data.Dataset` containing one or</span>
-<span class="sd">        more filenames.</span>
-<span class="sd">      compression_type: (Optional.) A `tf.string` scalar evaluating to one of</span>
-<span class="sd">        `&quot;&quot;` (no compression), `&quot;ZLIB&quot;`, or `&quot;GZIP&quot;`.</span>
-<span class="sd">      buffer_size: (Optional.) A `tf.int64` scalar representing the number of</span>
-<span class="sd">        bytes in the read buffer. If your input pipeline is I/O bottlenecked,</span>
-<span class="sd">        consider setting this parameter to a value 1-100 MBs. If `None`, a</span>
-<span class="sd">        sensible default for both local and remote file systems is used.</span>
-<span class="sd">      num_parallel_reads: (Optional.) A `tf.int64` scalar representing the</span>
-<span class="sd">        number of files to read in parallel. If greater than one, the records of</span>
-<span class="sd">        files read in parallel are outputted in an interleaved order. If your</span>
-<span class="sd">        input pipeline is I/O bottlenecked, consider setting this parameter to a</span>
-<span class="sd">        value greater than one to parallelize the I/O. If `None`, files will be</span>
-<span class="sd">        read sequentially.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">      TypeError: If any argument does not have the expected type.</span>
-<span class="sd">      ValueError: If any argument does not have the expected shape.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">filenames</span> <span class="o">=</span> <span class="n">_create_or_validate_filenames_dataset</span><span class="p">(</span><span class="n">filenames</span><span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_filenames</span> <span class="o">=</span> <span class="n">filenames</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_compression_type</span> <span class="o">=</span> <span class="n">compression_type</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="n">buffer_size</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_num_parallel_reads</span> <span class="o">=</span> <span class="n">num_parallel_reads</span>
-
-    <span class="k">def</span> <span class="nf">creator_fn</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">_TFRecordDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">compression_type</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span> <span class="o">=</span> <span class="n">_create_dataset_reader</span><span class="p">(</span><span class="n">creator_fn</span><span class="p">,</span> <span class="n">filenames</span><span class="p">,</span>
-                                        <span class="n">num_parallel_reads</span><span class="p">)</span>
-    <span class="n">variant_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">_variant_tensor</span>  <span class="c1"># pylint: disable=protected-access</span>
-    <span class="nb">super</span><span class="p">(</span><span class="n">TFRecordDatasetV2</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">variant_tensor</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">_clone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-             <span class="n">filenames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">compression_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">buffer_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">num_parallel_reads</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">TFRecordDatasetV2</span><span class="p">(</span><span class="n">filenames</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filenames</span><span class="p">,</span> <span class="n">compression_type</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_compression_type</span><span class="p">,</span> <span class="n">buffer_size</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="p">,</span> <span class="n">num_parallel_reads</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_num_parallel_reads</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">_inputs</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">element_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tensor_spec</span><span class="o">.</span><span class="n">TensorSpec</span><span class="p">([],</span> <span class="n">dtypes</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>A <code>Dataset</code> comprising records from one or more TFRecord files.</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>tensorflow.python.data.ops.readers.TFRecordDatasetV2</dt>
-                                <dd id="Preprocessing.output_file_format.__init__" class="function">TFRecordDatasetV2</dd>
-                <dd id="Preprocessing.output_file_format.element_spec" class="variable">element_spec</dd>
-
-            </div>
-            <div><dt>tensorflow.python.data.ops.dataset_ops.DatasetV2</dt>
-                                <dd id="Preprocessing.output_file_format.options" class="function">options</dd>
-                <dd id="Preprocessing.output_file_format.as_numpy_iterator" class="function">as_numpy_iterator</dd>
-                <dd id="Preprocessing.output_file_format.from_tensors" class="function">from_tensors</dd>
-                <dd id="Preprocessing.output_file_format.from_tensor_slices" class="function">from_tensor_slices</dd>
-                <dd id="Preprocessing.output_file_format.from_generator" class="function">from_generator</dd>
-                <dd id="Preprocessing.output_file_format.range" class="function">range</dd>
-                <dd id="Preprocessing.output_file_format.zip" class="function">zip</dd>
-                <dd id="Preprocessing.output_file_format.concatenate" class="function">concatenate</dd>
-                <dd id="Preprocessing.output_file_format.prefetch" class="function">prefetch</dd>
-                <dd id="Preprocessing.output_file_format.list_files" class="function">list_files</dd>
-                <dd id="Preprocessing.output_file_format.repeat" class="function">repeat</dd>
-                <dd id="Preprocessing.output_file_format.enumerate" class="function">enumerate</dd>
-                <dd id="Preprocessing.output_file_format.shuffle" class="function">shuffle</dd>
-                <dd id="Preprocessing.output_file_format.cache" class="function">cache</dd>
-                <dd id="Preprocessing.output_file_format.take" class="function">take</dd>
-                <dd id="Preprocessing.output_file_format.skip" class="function">skip</dd>
-                <dd id="Preprocessing.output_file_format.shard" class="function">shard</dd>
-                <dd id="Preprocessing.output_file_format.batch" class="function">batch</dd>
-                <dd id="Preprocessing.output_file_format.padded_batch" class="function">padded_batch</dd>
-                <dd id="Preprocessing.output_file_format.map" class="function">map</dd>
-                <dd id="Preprocessing.output_file_format.flat_map" class="function">flat_map</dd>
-                <dd id="Preprocessing.output_file_format.interleave" class="function">interleave</dd>
-                <dd id="Preprocessing.output_file_format.filter" class="function">filter</dd>
-                <dd id="Preprocessing.output_file_format.apply" class="function">apply</dd>
-                <dd id="Preprocessing.output_file_format.window" class="function">window</dd>
-                <dd id="Preprocessing.output_file_format.reduce" class="function">reduce</dd>
-                <dd id="Preprocessing.output_file_format.unbatch" class="function">unbatch</dd>
-                <dd id="Preprocessing.output_file_format.with_options" class="function">with_options</dd>
 
             </div>
                                 </dl>
@@ -1795,9 +1310,6 @@
     <span class="s2">&quot;digits&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
     <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
     <span class="p">}</span>
-
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">TFRecordDataset</span>
 
   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> 
@@ -1902,7 +1414,7 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-    <span class="k">return</span> <span class="s2">&quot;predictor&quot;</span>
+    <span class="k">return</span> <span class="s2">&quot;scoring&quot;</span>
 
 
   <span class="nd">@classmethod</span>
@@ -1945,9 +1457,9 @@
       <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
       <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">TfrWriter</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="n">files</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
 
     <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
@@ -2008,7 +1520,7 @@
         <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
         <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-      <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
       <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -2258,7 +1770,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-    <span class="k">return</span> <span class="s2">&quot;predictor&quot;</span>
+    <span class="k">return</span> <span class="s2">&quot;scoring&quot;</span>
 </pre></div>
 
         </details>
@@ -2357,9 +1869,9 @@
       <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
       <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">writer_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">TfrWriter</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="n">files</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
 
     <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
@@ -2451,7 +1963,7 @@
         <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
         <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-      <span class="n">data</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">reader_class</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
+      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
       <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -2485,255 +1997,6 @@
                 <dd id="Scoring.parse_config_file" class="function"><a href="base.html#ConfigurableTransform.parse_config_file">parse_config_file</a></dd>
                 <dd id="Scoring.parse_config_str" class="function"><a href="base.html#ConfigurableTransform.parse_config_str">parse_config_str</a></dd>
                 <dd id="Scoring.run_from_config_file" class="function"><a href="base.html#ConfigurableTransform.run_from_config_file">run_from_config_file</a></dd>
-
-            </div>
-            <div><dt><a href="base.html#Transform">fontai.runners.base.Transform</a></dt>
-                                <dd id="Scoring.reader_class" class="variable"><a href="base.html#Transform.reader_class">reader_class</a></dd>
-                <dd id="Scoring.writer_class" class="variable"><a href="base.html#Transform.writer_class">writer_class</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Scoring.input_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Scoring.input_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Scoring.input_file_format</span><wbr>(<span class="base">tensorflow.python.data.ops.dataset_ops.DatasetV2</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TFRecordDatasetV2</span><span class="p">(</span><span class="n">dataset_ops</span><span class="o">.</span><span class="n">DatasetV2</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;A `Dataset` comprising records from one or more TFRecord files.&quot;&quot;&quot;</span>
-
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-               <span class="n">filenames</span><span class="p">,</span>
-               <span class="n">compression_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-               <span class="n">buffer_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-               <span class="n">num_parallel_reads</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Creates a `TFRecordDataset` to read one or more TFRecord files.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">      filenames: A `tf.string` tensor or `tf.data.Dataset` containing one or</span>
-<span class="sd">        more filenames.</span>
-<span class="sd">      compression_type: (Optional.) A `tf.string` scalar evaluating to one of</span>
-<span class="sd">        `&quot;&quot;` (no compression), `&quot;ZLIB&quot;`, or `&quot;GZIP&quot;`.</span>
-<span class="sd">      buffer_size: (Optional.) A `tf.int64` scalar representing the number of</span>
-<span class="sd">        bytes in the read buffer. If your input pipeline is I/O bottlenecked,</span>
-<span class="sd">        consider setting this parameter to a value 1-100 MBs. If `None`, a</span>
-<span class="sd">        sensible default for both local and remote file systems is used.</span>
-<span class="sd">      num_parallel_reads: (Optional.) A `tf.int64` scalar representing the</span>
-<span class="sd">        number of files to read in parallel. If greater than one, the records of</span>
-<span class="sd">        files read in parallel are outputted in an interleaved order. If your</span>
-<span class="sd">        input pipeline is I/O bottlenecked, consider setting this parameter to a</span>
-<span class="sd">        value greater than one to parallelize the I/O. If `None`, files will be</span>
-<span class="sd">        read sequentially.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">      TypeError: If any argument does not have the expected type.</span>
-<span class="sd">      ValueError: If any argument does not have the expected shape.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">filenames</span> <span class="o">=</span> <span class="n">_create_or_validate_filenames_dataset</span><span class="p">(</span><span class="n">filenames</span><span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_filenames</span> <span class="o">=</span> <span class="n">filenames</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_compression_type</span> <span class="o">=</span> <span class="n">compression_type</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="n">buffer_size</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_num_parallel_reads</span> <span class="o">=</span> <span class="n">num_parallel_reads</span>
-
-    <span class="k">def</span> <span class="nf">creator_fn</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">_TFRecordDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">compression_type</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span> <span class="o">=</span> <span class="n">_create_dataset_reader</span><span class="p">(</span><span class="n">creator_fn</span><span class="p">,</span> <span class="n">filenames</span><span class="p">,</span>
-                                        <span class="n">num_parallel_reads</span><span class="p">)</span>
-    <span class="n">variant_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">_variant_tensor</span>  <span class="c1"># pylint: disable=protected-access</span>
-    <span class="nb">super</span><span class="p">(</span><span class="n">TFRecordDatasetV2</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">variant_tensor</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">_clone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-             <span class="n">filenames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">compression_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">buffer_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">num_parallel_reads</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">TFRecordDatasetV2</span><span class="p">(</span><span class="n">filenames</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filenames</span><span class="p">,</span> <span class="n">compression_type</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_compression_type</span><span class="p">,</span> <span class="n">buffer_size</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="p">,</span> <span class="n">num_parallel_reads</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_num_parallel_reads</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">_inputs</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">element_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tensor_spec</span><span class="o">.</span><span class="n">TensorSpec</span><span class="p">([],</span> <span class="n">dtypes</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>A <code>Dataset</code> comprising records from one or more TFRecord files.</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>tensorflow.python.data.ops.readers.TFRecordDatasetV2</dt>
-                                <dd id="Scoring.input_file_format.__init__" class="function">TFRecordDatasetV2</dd>
-                <dd id="Scoring.input_file_format.element_spec" class="variable">element_spec</dd>
-
-            </div>
-            <div><dt>tensorflow.python.data.ops.dataset_ops.DatasetV2</dt>
-                                <dd id="Scoring.input_file_format.options" class="function">options</dd>
-                <dd id="Scoring.input_file_format.as_numpy_iterator" class="function">as_numpy_iterator</dd>
-                <dd id="Scoring.input_file_format.from_tensors" class="function">from_tensors</dd>
-                <dd id="Scoring.input_file_format.from_tensor_slices" class="function">from_tensor_slices</dd>
-                <dd id="Scoring.input_file_format.from_generator" class="function">from_generator</dd>
-                <dd id="Scoring.input_file_format.range" class="function">range</dd>
-                <dd id="Scoring.input_file_format.zip" class="function">zip</dd>
-                <dd id="Scoring.input_file_format.concatenate" class="function">concatenate</dd>
-                <dd id="Scoring.input_file_format.prefetch" class="function">prefetch</dd>
-                <dd id="Scoring.input_file_format.list_files" class="function">list_files</dd>
-                <dd id="Scoring.input_file_format.repeat" class="function">repeat</dd>
-                <dd id="Scoring.input_file_format.enumerate" class="function">enumerate</dd>
-                <dd id="Scoring.input_file_format.shuffle" class="function">shuffle</dd>
-                <dd id="Scoring.input_file_format.cache" class="function">cache</dd>
-                <dd id="Scoring.input_file_format.take" class="function">take</dd>
-                <dd id="Scoring.input_file_format.skip" class="function">skip</dd>
-                <dd id="Scoring.input_file_format.shard" class="function">shard</dd>
-                <dd id="Scoring.input_file_format.batch" class="function">batch</dd>
-                <dd id="Scoring.input_file_format.padded_batch" class="function">padded_batch</dd>
-                <dd id="Scoring.input_file_format.map" class="function">map</dd>
-                <dd id="Scoring.input_file_format.flat_map" class="function">flat_map</dd>
-                <dd id="Scoring.input_file_format.interleave" class="function">interleave</dd>
-                <dd id="Scoring.input_file_format.filter" class="function">filter</dd>
-                <dd id="Scoring.input_file_format.apply" class="function">apply</dd>
-                <dd id="Scoring.input_file_format.window" class="function">window</dd>
-                <dd id="Scoring.input_file_format.reduce" class="function">reduce</dd>
-                <dd id="Scoring.input_file_format.unbatch" class="function">unbatch</dd>
-                <dd id="Scoring.input_file_format.with_options" class="function">with_options</dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Scoring.output_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Scoring.output_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Scoring.output_file_format</span><wbr>(<span class="base">tensorflow.python.data.ops.dataset_ops.DatasetV2</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TFRecordDatasetV2</span><span class="p">(</span><span class="n">dataset_ops</span><span class="o">.</span><span class="n">DatasetV2</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;A `Dataset` comprising records from one or more TFRecord files.&quot;&quot;&quot;</span>
-
-  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-               <span class="n">filenames</span><span class="p">,</span>
-               <span class="n">compression_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-               <span class="n">buffer_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-               <span class="n">num_parallel_reads</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Creates a `TFRecordDataset` to read one or more TFRecord files.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">      filenames: A `tf.string` tensor or `tf.data.Dataset` containing one or</span>
-<span class="sd">        more filenames.</span>
-<span class="sd">      compression_type: (Optional.) A `tf.string` scalar evaluating to one of</span>
-<span class="sd">        `&quot;&quot;` (no compression), `&quot;ZLIB&quot;`, or `&quot;GZIP&quot;`.</span>
-<span class="sd">      buffer_size: (Optional.) A `tf.int64` scalar representing the number of</span>
-<span class="sd">        bytes in the read buffer. If your input pipeline is I/O bottlenecked,</span>
-<span class="sd">        consider setting this parameter to a value 1-100 MBs. If `None`, a</span>
-<span class="sd">        sensible default for both local and remote file systems is used.</span>
-<span class="sd">      num_parallel_reads: (Optional.) A `tf.int64` scalar representing the</span>
-<span class="sd">        number of files to read in parallel. If greater than one, the records of</span>
-<span class="sd">        files read in parallel are outputted in an interleaved order. If your</span>
-<span class="sd">        input pipeline is I/O bottlenecked, consider setting this parameter to a</span>
-<span class="sd">        value greater than one to parallelize the I/O. If `None`, files will be</span>
-<span class="sd">        read sequentially.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">      TypeError: If any argument does not have the expected type.</span>
-<span class="sd">      ValueError: If any argument does not have the expected shape.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">filenames</span> <span class="o">=</span> <span class="n">_create_or_validate_filenames_dataset</span><span class="p">(</span><span class="n">filenames</span><span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_filenames</span> <span class="o">=</span> <span class="n">filenames</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_compression_type</span> <span class="o">=</span> <span class="n">compression_type</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="n">buffer_size</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_num_parallel_reads</span> <span class="o">=</span> <span class="n">num_parallel_reads</span>
-
-    <span class="k">def</span> <span class="nf">creator_fn</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-      <span class="k">return</span> <span class="n">_TFRecordDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">compression_type</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span> <span class="o">=</span> <span class="n">_create_dataset_reader</span><span class="p">(</span><span class="n">creator_fn</span><span class="p">,</span> <span class="n">filenames</span><span class="p">,</span>
-                                        <span class="n">num_parallel_reads</span><span class="p">)</span>
-    <span class="n">variant_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">_variant_tensor</span>  <span class="c1"># pylint: disable=protected-access</span>
-    <span class="nb">super</span><span class="p">(</span><span class="n">TFRecordDatasetV2</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">variant_tensor</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">_clone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-             <span class="n">filenames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">compression_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">buffer_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">num_parallel_reads</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">TFRecordDatasetV2</span><span class="p">(</span><span class="n">filenames</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filenames</span><span class="p">,</span> <span class="n">compression_type</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_compression_type</span><span class="p">,</span> <span class="n">buffer_size</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="p">,</span> <span class="n">num_parallel_reads</span> <span class="ow">or</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">_num_parallel_reads</span><span class="p">)</span>
-
-  <span class="k">def</span> <span class="nf">_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">_inputs</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">element_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tensor_spec</span><span class="o">.</span><span class="n">TensorSpec</span><span class="p">([],</span> <span class="n">dtypes</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>A <code>Dataset</code> comprising records from one or more TFRecord files.</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>tensorflow.python.data.ops.readers.TFRecordDatasetV2</dt>
-                                <dd id="Scoring.output_file_format.__init__" class="function">TFRecordDatasetV2</dd>
-                <dd id="Scoring.output_file_format.element_spec" class="variable">element_spec</dd>
-
-            </div>
-            <div><dt>tensorflow.python.data.ops.dataset_ops.DatasetV2</dt>
-                                <dd id="Scoring.output_file_format.options" class="function">options</dd>
-                <dd id="Scoring.output_file_format.as_numpy_iterator" class="function">as_numpy_iterator</dd>
-                <dd id="Scoring.output_file_format.from_tensors" class="function">from_tensors</dd>
-                <dd id="Scoring.output_file_format.from_tensor_slices" class="function">from_tensor_slices</dd>
-                <dd id="Scoring.output_file_format.from_generator" class="function">from_generator</dd>
-                <dd id="Scoring.output_file_format.range" class="function">range</dd>
-                <dd id="Scoring.output_file_format.zip" class="function">zip</dd>
-                <dd id="Scoring.output_file_format.concatenate" class="function">concatenate</dd>
-                <dd id="Scoring.output_file_format.prefetch" class="function">prefetch</dd>
-                <dd id="Scoring.output_file_format.list_files" class="function">list_files</dd>
-                <dd id="Scoring.output_file_format.repeat" class="function">repeat</dd>
-                <dd id="Scoring.output_file_format.enumerate" class="function">enumerate</dd>
-                <dd id="Scoring.output_file_format.shuffle" class="function">shuffle</dd>
-                <dd id="Scoring.output_file_format.cache" class="function">cache</dd>
-                <dd id="Scoring.output_file_format.take" class="function">take</dd>
-                <dd id="Scoring.output_file_format.skip" class="function">skip</dd>
-                <dd id="Scoring.output_file_format.shard" class="function">shard</dd>
-                <dd id="Scoring.output_file_format.batch" class="function">batch</dd>
-                <dd id="Scoring.output_file_format.padded_batch" class="function">padded_batch</dd>
-                <dd id="Scoring.output_file_format.map" class="function">map</dd>
-                <dd id="Scoring.output_file_format.flat_map" class="function">flat_map</dd>
-                <dd id="Scoring.output_file_format.interleave" class="function">interleave</dd>
-                <dd id="Scoring.output_file_format.filter" class="function">filter</dd>
-                <dd id="Scoring.output_file_format.apply" class="function">apply</dd>
-                <dd id="Scoring.output_file_format.window" class="function">window</dd>
-                <dd id="Scoring.output_file_format.reduce" class="function">reduce</dd>
-                <dd id="Scoring.output_file_format.unbatch" class="function">unbatch</dd>
-                <dd id="Scoring.output_file_format.with_options" class="function">with_options</dd>
 
             </div>
                                 </dl>
@@ -2838,6 +2101,10 @@
 
   <span class="k">def</span> <span class="nf">transform_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This method is not implemented for deployment.&quot;</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;deployment&quot;</span>
 </pre></div>
 
         </details>
@@ -3113,11 +2380,7 @@
 
             </div>
             <div><dt><a href="base.html#Transform">fontai.runners.base.Transform</a></dt>
-                                <dd id="Deployment.input_file_format" class="class"><a href="base.html#Transform.input_file_format">input_file_format</a></dd>
-                <dd id="Deployment.output_file_format" class="class"><a href="base.html#Transform.output_file_format">output_file_format</a></dd>
-                <dd id="Deployment.reader_class" class="variable"><a href="base.html#Transform.reader_class">reader_class</a></dd>
-                <dd id="Deployment.writer_class" class="variable"><a href="base.html#Transform.writer_class">writer_class</a></dd>
-                <dd id="Deployment.transform" class="function"><a href="base.html#Transform.transform">transform</a></dd>
+                                <dd id="Deployment.transform" class="function"><a href="base.html#Transform.transform">transform</a></dd>
 
             </div>
                                 </dl>

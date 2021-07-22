@@ -11,8 +11,8 @@ from abc import ABC, abstractmethod
 
 from fontai.config.core import BasePipelineTransformConfig, BaseConfigHandler
 from fontai.io.formats import InMemoryFile
-from fontai.io.readers import ReaderClassFactory
-from fontai.io.writers import WriterClassFactory
+from fontai.io.readers import FileReader
+from fontai.io.writers import FileWriter
 
 logger = logging.Logger(__name__)
   
@@ -20,22 +20,7 @@ class Transform(ABC):
 
   """This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.
   
-  Attributes:
-      input_file_format (InMemoryFile): File format expected to be received as input at batch processing
-      output_file_format (InMemoryFile): FIle format in which output is written at batch processing
   """
-
-  input_file_format = InMemoryFile
-  output_file_format = InMemoryFile
-
-  # reader and writer classes are defined in terms of input and output file formats
-  @property
-  def reader_class(self):
-    return ReaderClassFactory.get(self.input_file_format)
-
-  @property
-  def writer_class(self):
-    return WriterClassFactory.get(self.output_file_format)
   
   def transform(self, data: t.Any) -> t.Any:
     """Processes a single data instance.

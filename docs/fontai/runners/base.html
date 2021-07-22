@@ -37,18 +37,6 @@
                                 <a class="function" href="#Transform.__init__">Transform</a>
                         </li>
                         <li>
-                                <a class="class" href="#Transform.input_file_format">Transform.input_file_format</a>
-                        </li>
-                        <li>
-                                <a class="class" href="#Transform.output_file_format">Transform.output_file_format</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#Transform.reader_class">reader_class</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#Transform.writer_class">writer_class</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#Transform.transform">transform</a>
                         </li>
                 </ul>
@@ -144,8 +132,8 @@
 
 <span class="kn">from</span> <span class="nn">fontai.config.core</span> <span class="kn">import</span> <span class="n">BasePipelineTransformConfig</span><span class="p">,</span> <span class="n">BaseConfigHandler</span>
 <span class="kn">from</span> <span class="nn">fontai.io.formats</span> <span class="kn">import</span> <span class="n">InMemoryFile</span>
-<span class="kn">from</span> <span class="nn">fontai.io.readers</span> <span class="kn">import</span> <span class="n">ReaderClassFactory</span>
-<span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">WriterClassFactory</span>
+<span class="kn">from</span> <span class="nn">fontai.io.readers</span> <span class="kn">import</span> <span class="n">FileReader</span>
+<span class="kn">from</span> <span class="nn">fontai.io.writers</span> <span class="kn">import</span> <span class="n">FileWriter</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
   
@@ -153,22 +141,7 @@
 
   <span class="sd">&quot;&quot;&quot;This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</span>
 <span class="sd">  </span>
-<span class="sd">  Attributes:</span>
-<span class="sd">      input_file_format (InMemoryFile): File format expected to be received as input at batch processing</span>
-<span class="sd">      output_file_format (InMemoryFile): FIle format in which output is written at batch processing</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-
-  <span class="c1"># reader and writer classes are defined in terms of input and output file formats</span>
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">reader_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">ReaderClassFactory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_file_format</span><span class="p">)</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">writer_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">WriterClassFactory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_file_format</span><span class="p">)</span>
   
   <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Processes a single data instance.</span>
@@ -375,22 +348,7 @@
 
   <span class="sd">&quot;&quot;&quot;This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</span>
 <span class="sd">  </span>
-<span class="sd">  Attributes:</span>
-<span class="sd">      input_file_format (InMemoryFile): File format expected to be received as input at batch processing</span>
-<span class="sd">      output_file_format (InMemoryFile): FIle format in which output is written at batch processing</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">input_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-  <span class="n">output_file_format</span> <span class="o">=</span> <span class="n">InMemoryFile</span>
-
-  <span class="c1"># reader and writer classes are defined in terms of input and output file formats</span>
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">reader_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">ReaderClassFactory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_file_format</span><span class="p">)</span>
-
-  <span class="nd">@property</span>
-  <span class="k">def</span> <span class="nf">writer_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">WriterClassFactory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_file_format</span><span class="p">)</span>
   
   <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Processes a single data instance.</span>
@@ -415,13 +373,6 @@
         </details>
 
             <div class="docstring"><p>This class is the primary interface implemented by any ML processing stage; it has a process method for real-time processing, and a transform_batch method to process a set of files and persist the results back to storage.</p>
-
-<h6 id="attributes">Attributes</h6>
-
-<ul>
-<li><strong>input_file_format (InMemoryFile):</strong>  File format expected to be received as input at batch processing</li>
-<li><strong>output_file_format (InMemoryFile):</strong>  FIle format in which output is written at batch processing</li>
-</ul>
 </div>
 
 
@@ -433,24 +384,6 @@
     </div>
 
         
-    
-
-                            </div>
-                            <div id="Transform.reader_class" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Transform.reader_class">#&nbsp;&nbsp</a>
-
-        <span class="name">reader_class</span>
-    </div>
-
-    
-
-                            </div>
-                            <div id="Transform.writer_class" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Transform.writer_class">#&nbsp;&nbsp</a>
-
-        <span class="name">writer_class</span>
-    </div>
-
     
 
                             </div>
@@ -485,246 +418,6 @@
 </div>
 
 
-                            </div>
-                </section>
-                <section id="Transform.input_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Transform.input_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Transform.input_file_format</span><wbr>(<span class="base">pydantic.main.BaseModel</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryFile</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Wrapper class for retrieved file bytestreams</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
-  <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span>
-
-
-  <span class="k">def</span> <span class="nf">to_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_format</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Cast instance as a different file type inehriting from InMemoryFile </span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Target file type</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: cast file instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">file_format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
-
-  <span class="k">def</span> <span class="nf">deserialise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parse instance as the corresponding Python object such as a ZipFile or an ImageFont.truetype</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        filepath (str): FIle path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Serialises a Python object to an instance of InMemoryFile</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        obj (t.Any): Python object</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: Description</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        TypeError: If passed object is not an instance of InMemoryFile</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;InMemoryFile only can be serialised from an instance of the same class.&quot;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">obj</span>
-
-  <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Filename: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">, content size: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB.&quot;</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Wrapper class for retrieved file bytestreams</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="Transform.input_file_format.__init__" class="function">BaseModel</dd>
-                <dd id="Transform.input_file_format.Config" class="class">Config</dd>
-                <dd id="Transform.input_file_format.dict" class="function">dict</dd>
-                <dd id="Transform.input_file_format.json" class="function">json</dd>
-                <dd id="Transform.input_file_format.parse_obj" class="function">parse_obj</dd>
-                <dd id="Transform.input_file_format.parse_raw" class="function">parse_raw</dd>
-                <dd id="Transform.input_file_format.parse_file" class="function">parse_file</dd>
-                <dd id="Transform.input_file_format.from_orm" class="function">from_orm</dd>
-                <dd id="Transform.input_file_format.construct" class="function">construct</dd>
-                <dd id="Transform.input_file_format.copy" class="function">copy</dd>
-                <dd id="Transform.input_file_format.schema" class="function">schema</dd>
-                <dd id="Transform.input_file_format.schema_json" class="function">schema_json</dd>
-                <dd id="Transform.input_file_format.validate" class="function">validate</dd>
-                <dd id="Transform.input_file_format.update_forward_refs" class="function">update_forward_refs</dd>
-
-            </div>
-            <div><dt><a href="../io/formats.html#InMemoryFile">fontai.io.formats.InMemoryFile</a></dt>
-                                <dd id="Transform.input_file_format.filename" class="variable"><a href="../io/formats.html#InMemoryFile.filename">filename</a></dd>
-                <dd id="Transform.input_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
-                <dd id="Transform.input_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="Transform.input_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
-                <dd id="Transform.input_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="Transform.input_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
-                <dd id="Transform.input_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
-                </section>
-                <section id="Transform.output_file_format">
-                                <div class="attr class">
-        <a class="headerlink" href="#Transform.output_file_format">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">Transform.output_file_format</span><wbr>(<span class="base">pydantic.main.BaseModel</span>):
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">InMemoryFile</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-
-  <span class="sd">&quot;&quot;&quot;Wrapper class for retrieved file bytestreams</span>
-<span class="sd">  &quot;&quot;&quot;</span>
-
-  <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
-  <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span>
-
-
-  <span class="k">def</span> <span class="nf">to_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_format</span><span class="p">:</span> <span class="n">InMemoryFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Cast instance as a different file type inehriting from InMemoryFile </span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        file_format (InMemoryFile): Target file type</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: cast file instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">file_format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
-
-  <span class="k">def</span> <span class="nf">deserialise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parse instance as the corresponding Python object such as a ZipFile or an ImageFont.truetype</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from file path</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        filepath (str): FIle path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">BytestreamPath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">from_bytestream_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bsp</span><span class="p">:</span> <span class="n">BytestreamPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InMemoryFile</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Instantiate from bytestream path</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: instantiated object</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bsp</span><span class="p">),</span> <span class="n">content</span> <span class="o">=</span> <span class="n">bsp</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span>
-
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Serialises a Python object to an instance of InMemoryFile</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        obj (t.Any): Python object</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        InMemoryFile: Description</span>
-<span class="sd">    </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        TypeError: If passed object is not an instance of InMemoryFile</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">InMemoryFile</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;InMemoryFile only can be serialised from an instance of the same class.&quot;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="n">obj</span>
-
-  <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Filename: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">, content size: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span><span class="si">}</span><span class="s2"> MB.&quot;</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Wrapper class for retrieved file bytestreams</p>
-</div>
-
-
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt>pydantic.main.BaseModel</dt>
-                                <dd id="Transform.output_file_format.__init__" class="function">BaseModel</dd>
-                <dd id="Transform.output_file_format.Config" class="class">Config</dd>
-                <dd id="Transform.output_file_format.dict" class="function">dict</dd>
-                <dd id="Transform.output_file_format.json" class="function">json</dd>
-                <dd id="Transform.output_file_format.parse_obj" class="function">parse_obj</dd>
-                <dd id="Transform.output_file_format.parse_raw" class="function">parse_raw</dd>
-                <dd id="Transform.output_file_format.parse_file" class="function">parse_file</dd>
-                <dd id="Transform.output_file_format.from_orm" class="function">from_orm</dd>
-                <dd id="Transform.output_file_format.construct" class="function">construct</dd>
-                <dd id="Transform.output_file_format.copy" class="function">copy</dd>
-                <dd id="Transform.output_file_format.schema" class="function">schema</dd>
-                <dd id="Transform.output_file_format.schema_json" class="function">schema_json</dd>
-                <dd id="Transform.output_file_format.validate" class="function">validate</dd>
-                <dd id="Transform.output_file_format.update_forward_refs" class="function">update_forward_refs</dd>
-
-            </div>
-            <div><dt><a href="../io/formats.html#InMemoryFile">fontai.io.formats.InMemoryFile</a></dt>
-                                <dd id="Transform.output_file_format.filename" class="variable"><a href="../io/formats.html#InMemoryFile.filename">filename</a></dd>
-                <dd id="Transform.output_file_format.content" class="variable"><a href="../io/formats.html#InMemoryFile.content">content</a></dd>
-                <dd id="Transform.output_file_format.to_format" class="function"><a href="../io/formats.html#InMemoryFile.to_format">to_format</a></dd>
-                <dd id="Transform.output_file_format.deserialise" class="function"><a href="../io/formats.html#InMemoryFile.deserialise">deserialise</a></dd>
-                <dd id="Transform.output_file_format.from_file" class="function"><a href="../io/formats.html#InMemoryFile.from_file">from_file</a></dd>
-                <dd id="Transform.output_file_format.from_bytestream_path" class="function"><a href="../io/formats.html#InMemoryFile.from_bytestream_path">from_bytestream_path</a></dd>
-                <dd id="Transform.output_file_format.serialise" class="function"><a href="../io/formats.html#InMemoryFile.serialise">serialise</a></dd>
-
-            </div>
-                                </dl>
                             </div>
                 </section>
                 <section id="IdentityTransform">
@@ -804,18 +497,6 @@
 </div>
 
 
-                            </div>
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt><a href="#Transform">Transform</a></dt>
-                                <dd id="IdentityTransform.input_file_format" class="class"><a href="#Transform.input_file_format">input_file_format</a></dd>
-                <dd id="IdentityTransform.output_file_format" class="class"><a href="#Transform.output_file_format">output_file_format</a></dd>
-                <dd id="IdentityTransform.reader_class" class="variable"><a href="#Transform.reader_class">reader_class</a></dd>
-                <dd id="IdentityTransform.writer_class" class="variable"><a href="#Transform.writer_class">writer_class</a></dd>
-
-            </div>
-                                </dl>
                             </div>
                 </section>
                 <section id="ConfigurableTransform">
@@ -1275,11 +956,7 @@
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#Transform">Transform</a></dt>
-                                <dd id="ConfigurableTransform.input_file_format" class="class"><a href="#Transform.input_file_format">input_file_format</a></dd>
-                <dd id="ConfigurableTransform.output_file_format" class="class"><a href="#Transform.output_file_format">output_file_format</a></dd>
-                <dd id="ConfigurableTransform.reader_class" class="variable"><a href="#Transform.reader_class">reader_class</a></dd>
-                <dd id="ConfigurableTransform.writer_class" class="variable"><a href="#Transform.writer_class">writer_class</a></dd>
-                <dd id="ConfigurableTransform.transform" class="function"><a href="#Transform.transform">transform</a></dd>
+                                <dd id="ConfigurableTransform.transform" class="function"><a href="#Transform.transform">transform</a></dd>
 
             </div>
                                 </dl>
@@ -1478,11 +1155,7 @@
 
             </div>
             <div><dt><a href="#Transform">Transform</a></dt>
-                                <dd id="FittableTransform.input_file_format" class="class"><a href="#Transform.input_file_format">input_file_format</a></dd>
-                <dd id="FittableTransform.output_file_format" class="class"><a href="#Transform.output_file_format">output_file_format</a></dd>
-                <dd id="FittableTransform.reader_class" class="variable"><a href="#Transform.reader_class">reader_class</a></dd>
-                <dd id="FittableTransform.writer_class" class="variable"><a href="#Transform.writer_class">writer_class</a></dd>
-                <dd id="FittableTransform.transform" class="function"><a href="#Transform.transform">transform</a></dd>
+                                <dd id="FittableTransform.transform" class="function"><a href="#Transform.transform">transform</a></dd>
 
             </div>
                                 </dl>

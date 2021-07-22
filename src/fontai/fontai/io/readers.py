@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 import logging
 
 from fontai.io.storage import BytestreamPath
-from fontai.io.formats import InMemoryFile, InMemoryZipHolder, InMemoryFontfileHolder
+from fontai.io.formats import InMemoryFile, InMemoryZipfile, InMemoryFontfile
 from fontai.io.scrappers import Scrapper
 
 from tensorflow.data import TFRecordDataset
@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
   "TfrReader",
-  "ZipReader",
-  "ReaderClassFactory"]
+  "ZipReader"]
   
 class BatchReader(ABC):
 
@@ -76,7 +75,7 @@ class ZipReader(BatchReader):
   def get_files(self):
 
     for src in self.input_path.list_sources():
-      yield InMemoryZipHolder(filename = str(src), content = src.read_bytes())
+      yield InMemoryZipfile(filename = str(src), content = src.read_bytes())
 
 class FontfileReader(BatchReader):
 
@@ -86,7 +85,7 @@ class FontfileReader(BatchReader):
   def get_files(self):
 
     for src in self.input_path.list_sources():
-      yield InMemoryFontfileHolder(filename = str(src), content = src.read_bytes())
+      yield InMemoryFontfile(filename = str(src), content = src.read_bytes())
 
 
 class ScrapperReader(BatchReader):
@@ -107,30 +106,31 @@ class ScrapperReader(BatchReader):
       for url in scrapper.get_source_urls():
         stream = BytestreamPath(url)
         content = stream.read_bytes()
-        # if any actual data can be downloaded, push as in-memory file
+        # if any actual data can be downloaded, push as in-memory zip file
+        # assume downloaded file is zip
         if sys.getsizeof(content) > 0:
-          yield InMemoryFile(filename = str(stream), content = content)
+          yield InMemoryZipfile(filename = str(stream), content = content)
 
 
 
-class ReaderClassFactory(object):
+# class ReaderClassFactory(object):
 
-  """Factory class that returns the appropriate reader depending on the expected input file format.
-  """
+#   """Factory class that returns the appropriate reader depending on the expected input file format.
+#   """
   
-  def get(file_format: type) -> type:
-    """Returns a reader type for instantiation at runtime.
+#   def get(file_format: type) -> type:
+#     """Returns a reader type for instantiation at runtime.
     
-    Args:
-        file_format (InMemoryFile): Expected input file format.
+#     Args:
+#         file_format (InMemoryFile): Expected input file format.
     
-    """
-    if file_format == TFRecordDataset:
-      return TfrReader
-    elif file_format == InMemoryZipHolder:
-      return ZipReader
-    elif file_format == InMemoryFontfileHolder:
-      return FontfileReader
-    else:
-      logger.info("Reader class defaulted to FileReader; reading uninterpreted bytestreams.")
-      return FileReader
+#     """
+#     if file_format == TFRecordDataset:
+#       return TfrReader
+#     elif file_format == InMemoryZipfile:
+#       return ZipReader
+#     elif file_format == InMemoryFontfile:
+#       return FontfileReader
+#     else:
+#       logger.info("Reader class defaulted to FileReader; reading uninterpreted bytestreams.")
+#       return FileReader

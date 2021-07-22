@@ -8,10 +8,10 @@ from functools import reduce
 
 from fontai.runners.stages import Preprocessing
 from fontai.io.storage import BytestreamPath
-from fontai.io.formats import InMemoryZipHolder, InMemoryFontfileHolder
+from fontai.io.formats import InMemoryZipfile, InMemoryFontfile
 from fontai.io.records import LabeledChar, LabeledFont
 
-from fontai.preprocessing.mappings import InputToFontFiles, FontFileToLabeledChars, FeatureCropper, FeatureResizer, PipelineFactory
+from fontai.preprocessing.mappings import ZipToFontFiles, FontFileToLabeledChars, FeatureCropper, FeatureResizer, PipelineFactory
 
 import numpy as np
 
@@ -34,11 +34,11 @@ def test_mappings(input_file, processing_config, output_schemas):
 
 
   # parse basic character-wise transformations
-  data = InMemoryZipHolder(filename = "0", content = Path(input_file).read_bytes())
+  data = InMemoryZipfile(filename = "0", content = Path(input_file).read_bytes())
 
-  font_files = list(InputToFontFiles().map(data))
+  font_files = list(ZipToFontFiles().map(data))
   assert [file.filename for file in font_files] == ["AFE_Jen.ttf", "AFE_Jen_Bold.ttf"]
-  assert sum([file.__class__.__name__ == "InMemoryFontfileHolder" for file in font_files]) == 2
+  assert sum([file.__class__.__name__ == "InMemoryFontfile" for file in font_files]) == 2
 
   extractor = FontFileToLabeledChars(**processing_config.font_to_array_config.dict())
   examples = reduce(lambda a, b: list(extractor.map(a)) + list(extractor.map(b)), font_files)
