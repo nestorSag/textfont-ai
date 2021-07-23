@@ -34,6 +34,8 @@ class TfrWritable(ABC):
   
   _tfr_schema: t.Dict
 
+  _nonbatched_scoring: bool #if True, batch size is ignored at scoring time for this record type.
+
   @classmethod
   def tensor_to_numpy(cls, x: Tensor) -> ndarray:
     """Converts Tensor to numpy array
@@ -232,6 +234,8 @@ class LabeledChar(TfrWritable, ModelWithAnyType):
     ('label', FixedLenFeature([], tf_str)),
     ('fontname', FixedLenFeature([], tf_str))])
 
+  _nonbatched_scoring = False
+
   # def __init__(self, **data):
 
   #   filtered_data = data.pop("_tfr_schema")
@@ -334,6 +338,7 @@ class LabeledFont(TfrWritable, ModelWithAnyType):
     ('label', FixedLenFeature([], tf_str)),
     ('fontname', FixedLenFeature([], tf_str))])
 
+  _nonbatched_scoring = True
   # def __init__(self, **data):
 
   #   filtered_data = data.pop("_tfr_schema")
@@ -481,6 +486,8 @@ class ScoredRecordFactory(object):
           **{'charset_tensor': FixedLenFeature([], tf_str),'score': FixedLenFeature([], tf_str)}
         }
 
+        _nonbatched_scoring = T._nonbatched_scoring
+
         def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
           if not isinstance(example, T):
             raise TypeError(f"example must be an instance of {T}")
@@ -557,8 +564,6 @@ class ScoredRecordFactory(object):
           return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)
         
       return ScoredRecord
-
-
 
 
 ScoredLabeledChar = ScoredRecordFactory.create(LabeledChar)

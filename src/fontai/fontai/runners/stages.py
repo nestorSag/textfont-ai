@@ -3,6 +3,7 @@
 """
 
 import logging
+
 from collections import OrderedDict
 from pathlib import Path
 import typing
@@ -20,7 +21,6 @@ from strictyaml import as_document
 from tensorflow import Tensor
 import tensorflow as tf
 from tensorflow.data import TFRecordDataset
-
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -52,8 +52,6 @@ from dash.dependencies import Input, Output
 from numpy import array as np_array, clip as np_clip
 
 import mlflow 
-
-logger = logging.Logger(__name__)
   
 __all__ = [
   "Ingestion",
@@ -61,6 +59,8 @@ __all__ = [
   "Scoring",
   "Deployment"
   ]
+
+logger = logging.getLogger(__name__)
   
 class Ingestion(ConfigurableTransform, IdentityTransform):
 
@@ -81,7 +81,7 @@ class Ingestion(ConfigurableTransform, IdentityTransform):
     return cls(config)
 
   @classmethod
-  def run_from_config_object(cls, config: IngestionConfig):
+  def run_from_config_object(cls, config: IngestionConfig, **kwargs):
     
     ingestor = cls.from_config_object(config)
     font_extractor = ZipToFontFiles()
@@ -158,7 +158,7 @@ class Preprocessing(ConfigurableTransform):
     return "preprocessing"
 
   @classmethod
-  def run_from_config_object(cls, config: ProcessingConfig):
+  def run_from_config_object(cls, config: ProcessingConfig, **kwargs):
 
     # set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.
     visible_devices = os.getenv("CUDA_VISIBLE_DEVICES")
@@ -345,7 +345,9 @@ class Scoring(FittableTransform):
         input_dict["custom_class"] = model_class_name
       model_yaml = as_document(input_dict)
 
-      logger.info(f"load_from_model_path flag set to False; loading model from model_path {config.model_path} of class {model_class_name}")
+      message = f"load_from_model_path flag set to True; loading model of class {model_class_name} from {config.model_path}"
+      #print(message)
+      logger.info(message)
       model = ModelFactory().from_yaml(model_yaml)
     else:
       model = config.model
@@ -355,7 +357,6 @@ class Scoring(FittableTransform):
 
   @classmethod
   def run_from_config_object(cls, config: ScoringConfig, load_from_model_path = False):
-
     predictor = cls.from_config_object(config, load_from_model_path)
 
     data_fetcher = RecordPreprocessor(
@@ -386,7 +387,9 @@ class Scoring(FittableTransform):
         counter += 1
       except Exception as e:
         logger.exception(f"Exception scoring batch with features: {features}. Full trace: {traceback.format_exc()}")
-      logger.info(f"Processed {counter} examples.")
+    
+    writer.close()
+    logger.info(f"Processed {counter} examples.")
 
   @classmethod
   def fit_from_config_object(cls, config: ScoringConfig, load_from_model_path = False, run_id: str = None):
@@ -404,22 +407,25 @@ class Scoring(FittableTransform):
 
       logger.info(f"MLFlow run id: {run.info.run_id}")
 
-      # log run configuration into MLFlow
       cfg_log_path = "run-configs"
-      # check whether there are previous run configs
+      # check whether there are previous run configs in this MLFLow run
       client = mlflow.tracking.MlflowClient()
       n_previous_runs = len(client.list_artifacts(run.info.run_id, cfg_log_path))
       current_run = f"{n_previous_runs + 1}.yaml"
 
+      # log config file
       with open(current_run,"w") as f:
         f.write(config.yaml.as_yaml())
       mlflow.log_artifact(current_run,cfg_log_path)
       os.remove(current_run)
 
-      mlflow.tensorflow.autolog() #start keras autologging
+      #start keras autologging
+      mlflow.tensorflow.autolog()
 
       # fetch data and fit model
       predictor = cls.from_config_object(config, load_from_model_path)
+
+      data = TfrReader(config.input_path).get_files()
 
       data_fetcher = RecordPreprocessor(
         input_record_class = config.input_record_class,
@@ -427,10 +433,10 @@ class Scoring(FittableTransform):
         custom_filters = predictor.training_config.custom_filters,
         custom_mappers = predictor.training_config.custom_mappers)
 
-      data = TfrReader(config.input_path).get_files()
-
       predictor.fit(data_fetcher.fetch(data, training_format=True, batch_size=predictor.training_config.batch_size))
+
       logger.info(f"Saving trained model to {config.model_path}")
+      
       predictor.model.save(config.model_path)
 
 
@@ -514,7 +520,7 @@ class Deployment(ConfigurableTransform):
   @classmethod
   def run_from_config_object(cls, config: DeploymentConfig):
     
-    cls.from_config_object(config).launch(debug=True)
+    cls.from_config_object(config).launch(**config.dash_args)
 
   @classmethod
   def get_stage_name(cls):

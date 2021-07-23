@@ -58,14 +58,15 @@ class RecordPreprocessor(object):
     self.charset_tensor = tf.convert_to_tensor(charset_tensor)
 
 
-  def fetch(self, dataset: TFRecordDataset, batch_size = 32, training_format=True):
+  def fetch(self, dataset: TFRecordDataset, batch_size = 32, training_format=True, buffered_batches = 512):
     """
     Fetches a list of input Tensorflow record files and prepares them for training or scoring
-        
+    
     Args:
         dataset (TFRecordDataset): input data
         batch_size (int): training batch size
         training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes
+        buffered_batches (int, optional): Size of in-memory buffer from which batches are taken
     
     Returns:
         TFRecordDataset: Dataset ready for model consumption
@@ -91,7 +92,7 @@ class RecordPreprocessor(object):
         .map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))\
         .filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
 
-      dataset = self.scramble(dataset, batch_size)
+      dataset = self.scramble(dataset, batch_size, buffered_batches)
 
       if batch_size is not None:
         dataset = dataset.batch(batch_size) 
@@ -104,7 +105,12 @@ class RecordPreprocessor(object):
       dataset = dataset.map(self.split_parsed_dict)\
       .filter(self.label_is_nonempty)
 
-      if batch_size is not None:
+      unbatchable = self.input_record_class._nonbatched_scoring
+
+      if unbatchable:
+        logger.warning(f"records of class {self.input_record_class.__name__} aren't batchable at scoring time; setting batch size to None.")
+
+      if batch_size is not None and not unbatchable:
         dataset = dataset.batch(batch_size) 
     
     return dataset
@@ -122,7 +128,7 @@ class RecordPreprocessor(object):
         TFRecordDataset
     """
 
-    buffer_size = buffered_batches*batch_size if batch_size is not None else 512
+    buffer_size = buffered_batches*batch_size if batch_size is not None else 2048
     dataset = dataset\
       .shuffle(buffer_size=buffer_size)\
       .repeat()

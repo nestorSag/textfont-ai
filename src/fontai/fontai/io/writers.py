@@ -91,7 +91,7 @@ class InMemoryZipBundler(object):
         file (InMemoryFile): file to be added
     """
     file_size = sys.getsizeof(file.content)
-    self.zip_file.writestr(f"{file.filename}-{self.n_files}", file.content)
+    self.zip_file.writestr(f"{self.n_files}-{file.filename}", file.content)
     self.n_files += 1
     self.size += file_size
 

@@ -1,0 +1,91 @@
+# Train classification model for uppercase characters only; training all characters is problematic because some char images cannot really be classified correctly without context, e.g. c, k, o, s, u, v, x, y, z
+input_path: data/google/preprocessed/chars
+input_record_class: LabeledChar
+output_path: data/google/scored/uppercase/chars
+model_path: models/google/supervised-uppercase
+charset: uppercase
+training:
+  batch_size: 64 #for LabeledChar workloads
+  epochs: 20
+  steps_per_epoch: 1000
+  optimizer:
+    class: Adam
+    kwargs:
+      learning_rate: 0.001
+  loss:
+    class: CategoricalCrossentropy
+  metrics:
+  - accuracy
+  callbacks:
+  - class: ReduceLROnPlateau
+    kwargs:
+      min_lr: 0.0001
+      factor: 0.5
+      patience: 2
+      monitor: accuracy
+model:
+  class: Sequential
+  kwargs:
+    layers:
+    - class: Input
+      kwargs:
+        shape:
+        - 64
+        - 64
+        - 1
+    - class: Conv2D
+      kwargs: 
+        filters: 32
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: Conv2D
+      kwargs: 
+        filters: 64
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: MaxPooling2D
+      kwargs:
+        pool_size: 2
+    - class: BatchNormalization
+    - class: Conv2D
+      kwargs: 
+        filters: 96
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: Conv2D
+      kwargs: 
+        filters: 128
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: MaxPooling2D
+      kwargs: 
+        pool_size: 2
+    - class: BatchNormalization
+    - class: Conv2D
+      kwargs: 
+        filters: 64
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: Conv2D
+      kwargs: 
+        filters: 64
+        kernel_size: 3
+        activation: elu
+        padding: same
+    - class: MaxPooling2D
+      kwargs: 
+        pool_size: 2
+    - class: BatchNormalization
+    - class: Flatten
+    - class: Dropout
+      kwargs: 
+        rate: 0.5
+    - class: Dense
+      kwargs:
+        units: 26
+        activation: softmax

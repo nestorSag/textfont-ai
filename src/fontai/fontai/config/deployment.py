@@ -34,6 +34,7 @@ class Config(BasePipelineTransformConfig):
   sampler: t.Callable
   charset_size: PositiveInt
   grid: Grid
+  dash_args: t.Dict
 
 class ConfigHandler(BaseConfigHandler):
   """
@@ -63,7 +64,10 @@ class ConfigHandler(BaseConfigHandler):
       yml.Optional("style_sampler", default="normal"): yml.Str(),
       yml.Optional("min_style_value", default=-3): yml.Float(),
       yml.Optional("max_style_value", default=3): yml.Float(),
-      yml.Optional("style_grid_size", default=100): yml.Int()
+      yml.Optional("style_grid_size", default=100): yml.Int(),
+      yml.Optional("dash_args", default={}): yml.MapPattern(
+        yml.Str(), 
+        self.yaml_to_obj.ANY_PRIMITIVES) | yml.EmptyDict()
     })
 
     return schema
@@ -90,8 +94,11 @@ class ConfigHandler(BaseConfigHandler):
       largest = config.get("max_style_value").data,
       size = config.get("style_grid_size").data)
 
+    dash_args = config.get("dash_args").data
+
     return Config(
       model = model,
+      dash_args = dash_args,
       sampler = sampler,
       charset_size = config.get("charset_size").data,
       grid = grid,

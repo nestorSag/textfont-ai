@@ -5,3 +5,6 @@ style_sampler: normal
 min_style_value: -3
 max_style_value: 3
 style_grid_size: 60
+dash_args:
+  host: 0.0.0.0
+  port: 5050
