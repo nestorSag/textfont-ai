@@ -8,7 +8,7 @@ fontairun --stage ingestion \
 fontairun --stage preprocessing \
   --config-file config/parameters/google-fonts-examples/preprocessing.yaml
 
-## remove corrupted or malformed character images by training a classification model and filtering misclassified chars. Corrupted characters are sometimes parsed but displayed as rectangles for some reason.
+## Results from the generative model are better when images are filtered upstream to discard malformed character images or fonts that look nothing like regular characters. This is done by training a classifier and discarding mislabeled examples
 fontairun --stage scoring \
   --fit \
   --config-file config/parameters/google-fonts-examples/supervised-training.yaml
