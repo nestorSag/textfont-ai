@@ -518,7 +518,7 @@ class Deployment(ConfigurableTransform):
       charset_size = config.charset_size)
 
   @classmethod
-  def run_from_config_object(cls, config: DeploymentConfig):
+  def run_from_config_object(cls, config: DeploymentConfig, **kwargs):
     
     cls.from_config_object(config).launch(**config.dash_args)
 
