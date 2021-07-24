@@ -208,11 +208,11 @@ class ModelFactory(object):
       name, constructor = self.schema_constructors[schema]
       try:
         model_yaml = yml.load(yaml.as_yaml(), schema)
-        logger.info(f"Model schema matched to: {name}")
+        logger.info(f"Model schema matches {name}")
         model = constructor(model_yaml)
         return model
       except Exception as e:
-        logger.debug(f"Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}")
+        logger.debug(f"Error when trying to instantiate model with schema {name}; \n Full trace: {traceback.format_exc()}")
         #print(f"Model schema did not match {name}; {e}\n Full trace: {traceback.format_exc()}")
     raise Exception("No valid schema matched provided model YAML; look at DEBUG log level for more info.")
 
@@ -338,11 +338,7 @@ class ConfigHandler(BaseConfigHandler):
 
     model subYAML schema:
 
-    Can be one of two:
-
-    1. A subYAML with entries `path` and optionally `custom_class` to load an existing model from a path; `custom_class` has to be the class name if the model is custom defined in `fontai.prediction.models`
-
-    2. A subYAML with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `fontai.prediction.models`. the kwargs of the specified class can subsequently be Sequential keras models if needed.
+    A subYAML with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `fontai.prediction.models`. the kwargs of the specified class can subsequently be Sequential keras models if needed.
     """
 
     #self.DATA_PREPROCESSING_SCHEMA = yml.Seq(self.yaml_to_obj.PY_CLASS_INSTANCE_FROM_YAML_SCHEMA) | yml.EmptyList()
