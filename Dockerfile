@@ -18,13 +18,20 @@ ENV CONTAINER_ENV=true
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "textfont-ai", "fontairun"]
 
 
-# FOR GOOGLE AI PLATFORM COMMENT THE ABOVE AND USE THE FOLLOWING INSTEAD
+# FOR TRAINING IN GOOGLE'S AI PLATFORM COMMENT THE ABOVE AND USE THE FOLLOWING INSTEAD
 
 # FROM gcr.io/deeplearning-platform-release/tf2-gpu.2-2
 # WORKDIR /textfont-ai
 # ADD ./src/fontai ./src/fontai 
 # RUN pip install ./src/fontai
+
+# #this fixes a compatibility error in apache beam's dependencies
 # RUN pip install typing-extensions==3.7.4.3
+
+# #this installs a minimally modified fork of Python's packaging library and fixes an awkward error caused by the unorthodox versioning syntax of the Tensorflow build in Google's custom deep learning containers when using MLFLow
+# RUN pip uninstall -y packaging
+# RUN pip install git+https://github.com/nestorSag/packaging#egg=packaging
 # ENV TF_FORCE_GPU_ALLOW_GROWTH=true
 # ENV CONTAINER_ENV=true
 # ENTRYPOINT ["fontairun"]
+
