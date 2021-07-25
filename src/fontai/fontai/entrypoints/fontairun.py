@@ -14,6 +14,9 @@ logger = logging.getLogger("fontai")
 from fontai.runners.base import FittableTransform
 import fontai.runners.stages as stages
 
+from tensorflow.config import get_visible_devices
+from tensorflow.python.framework.errors_impl import UnknownError as unknown_tf_error
+
 Path("logs").mkdir(parents=True, exist_ok=True)
 
 class RunNotAllowedError(Exception):
@@ -107,13 +110,14 @@ class StageRunner(object):
 
     if os.environ.get("CONTAINER_ENV", "false") == "true":
       # if executing in a container, log to stdout
-      logging.basicConfig(level=logging_level, force=True)
+      logging.basicConfig(level=logging_level)
+      logger.info(f"sys.argv input: {sys.argv}")
+      logger.info(f"Visible CUDA devices: {get_visible_devices()}")
+
     if os.environ.get("CONTAINER_ENV", "false") != "true":
       logfile = f"{args.stage}-{datetime.datetime.now()}.log"
-      logging.basicConfig(filename=Path("logs") / logfile, level=logging_level, filemode = "w", force=True)
+      logging.basicConfig(filename=Path("logs") / logfile, level=logging_level, filemode = "w")
       print(f"Redirecting logs to logs/{logfile}")
-
-    from tensorflow.python.framework.errors_impl import UnknownError as unknown_tf_error
 
     # sanitize parameters
     try:

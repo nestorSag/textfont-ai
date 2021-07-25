@@ -1,3 +1,4 @@
+
 FROM continuumio/anaconda3
 WORKDIR /root/textfont-ai
 COPY env/conda-env.yaml ./conda-env.yaml 
@@ -10,16 +11,20 @@ RUN conda update -n base -c defaults conda &&\
   conda run -n textfont-ai pip install ./src/fontai &&\
   conda clean --all -y
 
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV TF_FORCE_GPU_ALLOW_GROWTH=true
 ENV CONTAINER_ENV=true
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "textfont-ai", "fontairun"]
 
 
-# FROM tensorflow/tensorflow:latest-gpu
+# USE THE FOLLOWING FOR GOOGLE AI PLATFORM
+
+# FROM gcr.io/deeplearning-platform-release/tf2-gpu.2-2
 # WORKDIR /textfont-ai
-# ADD src/fontai ./fontai 
-# RUN python -m pip install --upgrade pip
-# RUN pip install ./fontai
+# ADD ./src/fontai ./src/fontai 
+# RUN pip install ./src/fontai
+# RUN pip install typing-extensions==3.7.4.3
 # ENV TF_FORCE_GPU_ALLOW_GROWTH=true
 # ENV CONTAINER_ENV=true
 # ENTRYPOINT ["fontairun"]
