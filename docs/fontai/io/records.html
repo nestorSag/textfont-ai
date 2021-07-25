@@ -233,6 +233,8 @@
   
   <span class="n">_tfr_schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span>
 
+  <span class="n">_nonbatched_scoring</span><span class="p">:</span> <span class="nb">bool</span> <span class="c1">#if True, batch size is ignored at scoring time for this record type.</span>
+
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">tensor_to_numpy</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Converts Tensor to numpy array</span>
@@ -431,6 +433,8 @@
     <span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)),</span>
     <span class="p">(</span><span class="s1">&#39;fontname&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">))])</span>
 
+  <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="kc">False</span>
+
   <span class="c1"># def __init__(self, **data):</span>
 
   <span class="c1">#   filtered_data = data.pop(&quot;_tfr_schema&quot;)</span>
@@ -533,6 +537,7 @@
     <span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)),</span>
     <span class="p">(</span><span class="s1">&#39;fontname&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">))])</span>
 
+  <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="kc">True</span>
   <span class="c1"># def __init__(self, **data):</span>
 
   <span class="c1">#   filtered_data = data.pop(&quot;_tfr_schema&quot;)</span>
@@ -680,6 +685,8 @@
           <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
         <span class="p">}</span>
 
+        <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
+
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
           <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -758,8 +765,6 @@
       <span class="k">return</span> <span class="n">ScoredRecord</span>
 
 
-
-
 <span class="n">ScoredLabeledChar</span> <span class="o">=</span> <span class="n">ScoredRecordFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">LabeledChar</span><span class="p">)</span>
 
 <span class="n">ScoredLabeledFont</span> <span class="o">=</span> <span class="n">ScoredRecordFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">LabeledFont</span><span class="p">)</span>
@@ -785,6 +790,8 @@
 <span class="sd">  &quot;&quot;&quot;</span>
   
   <span class="n">_tfr_schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span>
+
+  <span class="n">_nonbatched_scoring</span><span class="p">:</span> <span class="nb">bool</span> <span class="c1">#if True, batch size is ignored at scoring time for this record type.</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">tensor_to_numpy</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
@@ -1642,6 +1649,8 @@
     <span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)),</span>
     <span class="p">(</span><span class="s1">&#39;fontname&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">))])</span>
 
+  <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="kc">False</span>
+
   <span class="c1"># def __init__(self, **data):</span>
 
   <span class="c1">#   filtered_data = data.pop(&quot;_tfr_schema&quot;)</span>
@@ -2092,6 +2101,7 @@
     <span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)),</span>
     <span class="p">(</span><span class="s1">&#39;fontname&#39;</span><span class="p">,</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">))])</span>
 
+  <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="kc">True</span>
   <span class="c1"># def __init__(self, **data):</span>
 
   <span class="c1">#   filtered_data = data.pop(&quot;_tfr_schema&quot;)</span>
@@ -2614,6 +2624,8 @@
           <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
         <span class="p">}</span>
 
+        <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
+
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
           <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -2746,6 +2758,8 @@
           <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
         <span class="p">}</span>
 
+        <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
+
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
           <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;example must be an instance of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -2870,6 +2884,8 @@
           <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
           <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
         <span class="p">}</span>
+
+        <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
 
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
           <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
@@ -3000,6 +3016,8 @@
           <span class="o">**</span><span class="n">record_type</span><span class="o">.</span><span class="n">_tfr_schema</span><span class="p">,</span> 
           <span class="o">**</span><span class="p">{</span><span class="s1">&#39;charset_tensor&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">),</span><span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf_str</span><span class="p">)}</span>
         <span class="p">}</span>
+
+        <span class="n">_nonbatched_scoring</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
 
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">TfrWritable</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">charset_tensor</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">):</span>
           <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>

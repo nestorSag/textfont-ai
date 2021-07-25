@@ -235,13 +235,16 @@
 
     <span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="o">=</span> <span class="kc">None</span>
 
   <span class="k">def</span> <span class="nf">on_epoch_begin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">logs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
+    <span class="c1"># assumes the LR for all models is the same</span>
     <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model_list</span><span class="p">:</span>
       <span class="n">model_lr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">lr</span>
-      <span class="n">lr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">))</span>
-      <span class="n">lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lr</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">))</span>
+      <span class="n">lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
       <span class="n">backend</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">,</span> <span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">lr</span><span class="p">))</span>
 </pre></div>
 
@@ -726,13 +729,16 @@ be called during TRAIN mode.</p>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="o">=</span> <span class="kc">None</span>
 
   <span class="k">def</span> <span class="nf">on_epoch_begin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">logs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
+    <span class="c1"># assumes the LR for all models is the same</span>
     <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model_list</span><span class="p">:</span>
       <span class="n">model_lr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">lr</span>
-      <span class="n">lr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">))</span>
-      <span class="n">lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lr</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">))</span>
+      <span class="n">lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
       <span class="n">backend</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">,</span> <span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">lr</span><span class="p">))</span>
 </pre></div>
 
@@ -762,6 +768,7 @@ be called during TRAIN mode.</p>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 
         </details>
@@ -781,10 +788,12 @@ be called during TRAIN mode.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">on_epoch_begin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">logs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
+    <span class="c1"># assumes the LR for all models is the same</span>
     <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model_list</span><span class="p">:</span>
       <span class="n">model_lr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">lr</span>
-      <span class="n">lr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">))</span>
-      <span class="n">lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lr</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">))</span>
+      <span class="n">lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_lr</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">halve_after</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
       <span class="n">backend</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">model_lr</span><span class="p">,</span> <span class="n">backend</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">lr</span><span class="p">))</span>
 </pre></div>
 

@@ -31,6 +31,12 @@
                     <h2>API Documentation</h2>
                         <ul class="memberlist">
             <li>
+                    <a class="class" href="#RunNotAllowedError">RunNotAllowedError</a>
+                            <ul class="memberlist">
+                </ul>
+
+            </li>
+            <li>
                     <a class="class" href="#StageRunner">StageRunner</a>
                             <ul class="memberlist">
                         <li>
@@ -82,14 +88,18 @@
 <span class="kn">import</span> <span class="nn">traceback</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fontai&quot;</span><span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">fontai.runners.base</span> <span class="kn">import</span> <span class="n">FittableTransform</span>
 <span class="kn">import</span> <span class="nn">fontai.runners.stages</span> <span class="k">as</span> <span class="nn">stages</span>
 
+<span class="kn">from</span> <span class="nn">tensorflow.config</span> <span class="kn">import</span> <span class="n">get_visible_devices</span>
 <span class="kn">from</span> <span class="nn">tensorflow.python.framework.errors_impl</span> <span class="kn">import</span> <span class="n">UnknownError</span> <span class="k">as</span> <span class="n">unknown_tf_error</span>
 
 <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">RunNotAllowedError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+  <span class="k">pass</span>
 
 <span class="k">class</span> <span class="nc">StageRunner</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
@@ -101,12 +111,7 @@
 <span class="sd">      stage_runners (dict): Maps strings to runner clases for the `--stage` argument</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">stage_runners</span> <span class="o">=</span> <span class="p">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">get_stage_name</span><span class="p">()</span> <span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">stages</span><span class="o">.</span><span class="n">__all__</span><span class="p">}</span>
-  <span class="c1"># stage_runners = {</span>
-  <span class="c1">#   &quot;ingestion&quot;: Ingestion,</span>
-  <span class="c1">#   &quot;preprocessing&quot;: Preprocessing,</span>
-  <span class="c1">#   &quot;scoring&quot;: Scoring,</span>
-  <span class="c1">#   &quot;deployment&quot;: Deployment</span>
-  <span class="c1"># }</span>
+
   
   <span class="n">schema_docstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n\n</span><span class="s2">&quot;</span><span class="o">.</span> <span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="se">\n\t</span><span class="si">{</span><span class="n">val</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">get_config_schema</span><span class="o">.</span><span class="vm">__doc__</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">stage_runners</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
   
@@ -139,12 +144,28 @@
 <span class="sd">      If present (and if --stage is &#39;scoring&#39;), fits the provided model, otherwise scores input data and saves the scored examples to the output_path parameter in the config file.</span>
 <span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
   <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+      <span class="s1">&#39;--load-model&#39;</span><span class="p">,</span>
+      <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;load_model&#39;</span><span class="p">,</span>
+      <span class="n">action</span> <span class="o">=</span> <span class="s1">&#39;store_true&#39;</span><span class="p">,</span>      
+      <span class="n">help</span><span class="o">=</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      If set, the model is loaded from model_path instead of building it from scratch. This is useful for retraining an existing model.</span>
+<span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
       <span class="s1">&#39;--run-name&#39;</span><span class="p">,</span>
       <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;run_name&#39;</span><span class="p">,</span>
       <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>      
       <span class="n">help</span><span class="o">=</span>
       <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      Name of previously logged MLFlow run that is to be continued.</span>
+<span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+      <span class="s1">&#39;--logging-level&#39;</span><span class="p">,</span>
+      <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;logging_level&#39;</span><span class="p">,</span>
+      <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>      
+      <span class="n">help</span><span class="o">=</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Logging level. Defaults to &#39;INFO&#39;</span>
 <span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
@@ -162,15 +183,19 @@
       
     <span class="n">args</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
+
     <span class="c1"># set up logging</span>
+    <span class="n">logging_level</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">logging_level</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTAINER_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
       <span class="c1"># if executing in a container, log to stdout</span>
-      <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
-      <span class="n">handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
+      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sys.argv input: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Visible CUDA devices: </span><span class="si">{</span><span class="n">get_visible_devices</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTAINER_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
       <span class="n">logfile</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="si">}</span><span class="s2">.log&quot;</span>
-      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">filemode</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">,</span> <span class="n">filemode</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
       <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Redirecting logs to logs/</span><span class="si">{</span><span class="n">logfile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># sanitize parameters</span>
@@ -180,25 +205,65 @@
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage must be one of </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">stage_runners</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">stage_class</span><span class="p">,</span> <span class="n">FittableTransform</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2"> is not fittable.&quot;</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2"> is not fittable.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">load_model</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="s2">&quot;scoring&quot;</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="s2">&quot;--load-model is only supported for input scoring or model fitting.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">==</span> <span class="s2">&quot;scoring&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="s2">&quot;Scoring input data can only be done with an existing (i.e. saved) model. Use the --load-model flag to load one from model_path.&quot;</span><span class="p">)</span>
+
 
     <span class="c1"># run</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span><span class="p">:</span>
       <span class="k">try</span><span class="p">:</span>
-        <span class="n">stage_class</span><span class="o">.</span><span class="n">fit_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_name</span><span class="p">)</span>
+        <span class="n">stage_class</span><span class="o">.</span><span class="n">fit_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">)</span>
       <span class="k">except</span> <span class="n">unknown_tf_error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">.</span><span class="se">\n\n</span><span class="s2"> *** If you get a cuDNN error, try doing: export TF_FORCE_GPU_ALLOW_GROWTH=true *** </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">stage_class</span><span class="o">.</span><span class="n">run_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">)</span>
+      <span class="n">stage_class</span><span class="o">.</span><span class="n">run_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">)</span>
   
-<span class="c1"># if __name__ == &quot;__main__&quot;:</span>
-
-<span class="c1">#   StageRunner.run(sys.argv)</span>
 </pre></div>
 
         </details>
 
             </section>
+                <section id="RunNotAllowedError">
+                                <div class="attr class">
+        <a class="headerlink" href="#RunNotAllowedError">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">RunNotAllowedError</span><wbr>(<span class="base">builtins.Exception</span>):
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">RunNotAllowedError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+  <span class="k">pass</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Common base class for all non-exit exceptions.</p>
+</div>
+
+
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt>builtins.Exception</dt>
+                                <dd id="RunNotAllowedError.__init__" class="function">Exception</dd>
+
+            </div>
+            <div><dt>builtins.BaseException</dt>
+                                <dd id="RunNotAllowedError.with_traceback" class="function">with_traceback</dd>
+                <dd id="RunNotAllowedError.args" class="variable">args</dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
                 <section id="StageRunner">
                                 <div class="attr class">
         <a class="headerlink" href="#StageRunner">#&nbsp;&nbsp</a>
@@ -220,12 +285,7 @@
 <span class="sd">      stage_runners (dict): Maps strings to runner clases for the `--stage` argument</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">stage_runners</span> <span class="o">=</span> <span class="p">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">get_stage_name</span><span class="p">()</span> <span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">stages</span><span class="o">.</span><span class="n">__all__</span><span class="p">}</span>
-  <span class="c1"># stage_runners = {</span>
-  <span class="c1">#   &quot;ingestion&quot;: Ingestion,</span>
-  <span class="c1">#   &quot;preprocessing&quot;: Preprocessing,</span>
-  <span class="c1">#   &quot;scoring&quot;: Scoring,</span>
-  <span class="c1">#   &quot;deployment&quot;: Deployment</span>
-  <span class="c1"># }</span>
+
   
   <span class="n">schema_docstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n\n</span><span class="s2">&quot;</span><span class="o">.</span> <span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="se">\n\t</span><span class="si">{</span><span class="n">val</span><span class="o">.</span><span class="n">get_config_parser</span><span class="p">()</span><span class="o">.</span><span class="n">get_config_schema</span><span class="o">.</span><span class="vm">__doc__</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">stage_runners</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
   
@@ -258,12 +318,28 @@
 <span class="sd">      If present (and if --stage is &#39;scoring&#39;), fits the provided model, otherwise scores input data and saves the scored examples to the output_path parameter in the config file.</span>
 <span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
   <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+      <span class="s1">&#39;--load-model&#39;</span><span class="p">,</span>
+      <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;load_model&#39;</span><span class="p">,</span>
+      <span class="n">action</span> <span class="o">=</span> <span class="s1">&#39;store_true&#39;</span><span class="p">,</span>      
+      <span class="n">help</span><span class="o">=</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      If set, the model is loaded from model_path instead of building it from scratch. This is useful for retraining an existing model.</span>
+<span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
       <span class="s1">&#39;--run-name&#39;</span><span class="p">,</span>
       <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;run_name&#39;</span><span class="p">,</span>
       <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>      
       <span class="n">help</span><span class="o">=</span>
       <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      Name of previously logged MLFlow run that is to be continued.</span>
+<span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+      <span class="s1">&#39;--logging-level&#39;</span><span class="p">,</span>
+      <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;logging_level&#39;</span><span class="p">,</span>
+      <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>      
+      <span class="n">help</span><span class="o">=</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Logging level. Defaults to &#39;INFO&#39;</span>
 <span class="sd">      &quot;&quot;&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
@@ -281,15 +357,19 @@
       
     <span class="n">args</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
+
     <span class="c1"># set up logging</span>
+    <span class="n">logging_level</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">logging_level</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTAINER_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
       <span class="c1"># if executing in a container, log to stdout</span>
-      <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
-      <span class="n">handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
+      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sys.argv input: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Visible CUDA devices: </span><span class="si">{</span><span class="n">get_visible_devices</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTAINER_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
       <span class="n">logfile</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="si">}</span><span class="s2">.log&quot;</span>
-      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">filemode</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">,</span> <span class="n">filemode</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
       <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Redirecting logs to logs/</span><span class="si">{</span><span class="n">logfile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># sanitize parameters</span>
@@ -299,16 +379,23 @@
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage must be one of </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">stage_runners</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">stage_class</span><span class="p">,</span> <span class="n">FittableTransform</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2"> is not fittable.&quot;</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2"> is not fittable.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">load_model</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="s2">&quot;scoring&quot;</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="s2">&quot;--load-model is only supported for input scoring or model fitting.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">==</span> <span class="s2">&quot;scoring&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="s2">&quot;Scoring input data can only be done with an existing (i.e. saved) model. Use the --load-model flag to load one from model_path.&quot;</span><span class="p">)</span>
+
 
     <span class="c1"># run</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span><span class="p">:</span>
       <span class="k">try</span><span class="p">:</span>
-        <span class="n">stage_class</span><span class="o">.</span><span class="n">fit_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_name</span><span class="p">)</span>
+        <span class="n">stage_class</span><span class="o">.</span><span class="n">fit_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">)</span>
       <span class="k">except</span> <span class="n">unknown_tf_error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">.</span><span class="se">\n\n</span><span class="s2"> *** If you get a cuDNN error, try doing: export TF_FORCE_GPU_ALLOW_GROWTH=true *** </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">stage_class</span><span class="o">.</span><span class="n">run_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">)</span>
+      <span class="n">stage_class</span><span class="o">.</span><span class="n">run_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -348,7 +435,7 @@
                             <div id="StageRunner.schema_docstring" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#StageRunner.schema_docstring">#&nbsp;&nbsp</a>
 
-        <span class="name">schema_docstring</span><span class="default_value"> = &#34;ingestion: \n\t\n    YAML configuration schema:\n    \n    scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `<a href="../io/scrappers.html">fontai.io.scrappers</a> `to use\n    output_path: target output folder\n    max_output_file_size: Maximum individual output file size in MB\n\n    \n\n\npreprocessing: \n\t\n    YAML configuration schema:\n\n    output_record_class: name of record class that will populate output files; it has to inherit from `<a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a>` and at the moment only `LabeledChar` and `LabeledFont` are supported. If `LabeledChar`, individual character images are preprocessed and stored in no particular order and saved as PNGs. If `LabeledFont`, characters from a single font are stored together and saved as tensors.\n    input_path: Input folder with zipped font files\n    output_path: output folder where output Tensorflow records files are stored\n    output_array_size: Size of square output images\n    max_output_file_size: maximum single-file size for output files in MB\n    font_extraction_size: Font size to use when extracting characters to images\n    canvas_size: initial image canvas size in which font chars are extracted\n    canvas_padding: padding for the initial image canvas to allow for unusally large or convoluted fonts\n    beam_cmd_line_args: list of Apache Beam&#39;s command line aeguments\n\n    \n\n\nscoring: \n\t\n    YAML configuration schema:\n\n    input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from `<a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a>`. At the moment only `LabeledChar` and `LabeledFont` are supported. If `LabeledChar`, loaded elements correspond to single images from unordered fonts. If `LabeledFont`, loaded elements correspond to tensors holding all characters corresponding to a single font.\n    input_path: Input files&#39; folder with TF record files\n    output_path: output files&#39; folder when scoring new data\n    model_path: Output model path when training a model\n    charset (optional, defaults to &#39;lowercase&#39;): One of &#39;uppercase&#39;, &#39;lowercase&#39;, &#39;digits&#39; or &#39;all&#39;, and determines the set to use for training or scoring.\n    training: subYAML. See below\n    model: subYAML. See below\n\n\n    &#39;training&#39; subYAML schema:\n\n    batch_size (optional, defaults to None): can be null\n    epochs: number of epochs\n    steps_per_epoch (optional, defauls to 10k): minibatches per epoch; this is needed because the total number of valid records is not known before runtime\n    seed (optional, defaults to 1): random seed for TF functions\n    metrics: List of TF metrics as strings\n    loss: subYAML with keys `class` and `kwargs` to instantiate a Keras loss function\n    optimizer (optional, defaults to Adam with default parameters): subYAML with keys `class` and `kwargs` to instantiate a Keras optimizer\n    callbacks (optional, defaults to []): subYAML with keys `class` and `kwargs` to instantiate a Keras callback or a custom one defined in `<a href="../prediction/callbacks.html">fontai.prediction.callbacks</a>`\n    custom_filters (optional, defaults to []): subYAML with keys `name` and `kwargs` to instantiate a filtering function defined in `<a href="../prediction/custom_filters.html">fontai.prediction.custom_filters</a>` to apply just after records are deserialised for training\n    custom_mappers (optional, defaults to []): subYAML with keys `name` and `kwargs` to instantiate a mapping function defined in `<a href="../prediction.html#custom_mappings">fontai.prediction.custom_mappings</a>` to apply just after records are deserialised for training\n\n    model subYAML schema:\n\n    Can be one of two:\n\n    1. A subYAML with entries `path` and optionally `custom_class` to load an existing model from a path; `custom_class` has to be the class name if the model is custom defined in `<a href="../prediction/models.html">fontai.prediction.models</a>`\n\n    2. A subYAML with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `<a href="../prediction/models.html">fontai.prediction.models</a>`. the kwargs of the specified class can subsequently be Sequential keras models if needed.\n    \n\n\ndeployment: \n\t\n    YAML configuration schema:\n    \n    decoder_path: Path to generative model that takes point in style space and one-hot-encoded character representations and output an image\n    charset_size: Dimensionality of the characters&#39; one-hot-encoded representation\n    style_vector_size: Dimensionality of style space\n    style_sampler (optional, defaults to &#39;normal&#39;): distribution from numpy.random to sample from style space. &#39;size&#39; should be its only argument\n    min_style_value (optional, defaults to -3): minimum componentwise style value in style space grid\n    max_style_value (optional, defaults to 3): maximum componentwise style value in style space grid\n    style_grid_size (optional, defaults to 100): Componentwise number of bins in style grid\n\n\n    &#34;</span>
+        <span class="name">schema_docstring</span><span class="default_value"> = &#34;ingestion: \n\t\n    YAML configuration schema:\n    \n    scrappers: list of subyamls with keys (class, kwargs) specifying the scrapper instances from `<a href="../io/scrappers.html">fontai.io.scrappers</a> `to use\n    output_path: target output folder\n    max_output_file_size: Maximum individual output file size in MB\n\n    \n\n\npreprocessing: \n\t\n    YAML configuration schema:\n\n    output_record_class: name of record class that will populate output files; it has to inherit from `<a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a>` and at the moment only `LabeledChar` and `LabeledFont` are supported. If `LabeledChar`, individual character images are preprocessed and stored in no particular order and saved as PNGs. If `LabeledFont`, characters from a single font are stored together and saved as tensors.\n    input_path: Input folder with zipped font files\n    output_path: output folder where output Tensorflow records files are stored\n    output_array_size: Size of square output images\n    max_output_file_size: maximum single-file size for output files in MB\n    font_extraction_size: Font size to use when extracting characters to images\n    canvas_size: initial image canvas size in which font chars are extracted\n    canvas_padding: padding for the initial image canvas to allow for unusally large or convoluted fonts\n    beam_cmd_line_args: list of Apache Beam&#39;s command line aeguments\n\n    \n\n\nscoring: \n\t\n    YAML configuration schema:\n\n    input_record_class (optional, defaults to LabeledChar): name of record class that will be parsed from input files; it has to inherit from `<a href="../io/records.html#TfrWritable">fontai.io.records.TfrWritable</a>`. At the moment only `LabeledChar` and `LabeledFont` are supported. If `LabeledChar`, loaded elements correspond to single images from unordered fonts. If `LabeledFont`, loaded elements correspond to tensors holding all characters corresponding to a single font.\n    input_path: Input files&#39; folder with TF record files\n    output_path: output files&#39; folder when scoring new data\n    model_path: Output model path when training a model\n    charset (optional, defaults to &#39;lowercase&#39;): One of &#39;uppercase&#39;, &#39;lowercase&#39;, &#39;digits&#39; or &#39;all&#39;, and determines the set to use for training or scoring.\n    training: subYAML. See below\n    model: subYAML. See below\n\n\n    &#39;training&#39; subYAML schema:\n\n    batch_size (optional, defaults to None): can be null\n    epochs: number of epochs\n    steps_per_epoch (optional, defauls to 10k): minibatches per epoch; this is needed because the total number of valid records is not known before runtime\n    seed (optional, defaults to 1): random seed for TF functions\n    metrics: List of TF metrics as strings\n    loss: subYAML with keys `class` and `kwargs` to instantiate a Keras loss function\n    optimizer (optional, defaults to Adam with default parameters): subYAML with keys `class` and `kwargs` to instantiate a Keras optimizer\n    callbacks (optional, defaults to []): subYAML with keys `class` and `kwargs` to instantiate a Keras callback or a custom one defined in `<a href="../prediction/callbacks.html">fontai.prediction.callbacks</a>`\n    custom_filters (optional, defaults to []): subYAML with keys `name` and `kwargs` to instantiate a filtering function defined in `<a href="../prediction/custom_filters.html">fontai.prediction.custom_filters</a>` to apply just after records are deserialised for training\n    custom_mappers (optional, defaults to []): subYAML with keys `name` and `kwargs` to instantiate a mapping function defined in `<a href="../prediction.html#custom_mappings">fontai.prediction.custom_mappings</a>` to apply just after records are deserialised for training\n\n    model subYAML schema:\n\n    A subYAML with entries `class` and `kwargs` to instantiate a Keras model architecture; currently only `Sequential` types are tested. Each Keras layers is specified and instantiated analogously in the kwargs. The class name can also correspond to a custom class in `<a href="../prediction/models.html">fontai.prediction.models</a>`. the kwargs of the specified class can subsequently be Sequential keras models if needed.\n    \n\n\ndeployment: \n\t\n    YAML configuration schema:\n    \n    decoder_path: Path to generative model that takes point in style space and one-hot-encoded character representations and output an image\n    charset_size: Dimensionality of the characters&#39; one-hot-encoded representation\n    style_vector_size: Dimensionality of style space\n    style_sampler (optional, defaults to &#39;normal&#39;): distribution from numpy.random to sample from style space. &#39;size&#39; should be its only argument\n    min_style_value (optional, defaults to -3): minimum componentwise style value in style space grid\n    max_style_value (optional, defaults to 3): maximum componentwise style value in style space grid\n    style_grid_size (optional, defaults to 100): Componentwise number of bins in style grid\n\n\n    &#34;</span>
     </div>
 
     
@@ -389,15 +476,19 @@
       
     <span class="n">args</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
+
     <span class="c1"># set up logging</span>
+    <span class="n">logging_level</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">logging_level</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTAINER_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
       <span class="c1"># if executing in a container, log to stdout</span>
-      <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
-      <span class="n">handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
+      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sys.argv input: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Visible CUDA devices: </span><span class="si">{</span><span class="n">get_visible_devices</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTAINER_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
       <span class="n">logfile</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="si">}</span><span class="s2">.log&quot;</span>
-      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">filemode</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+      <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">,</span> <span class="n">filemode</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
       <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Redirecting logs to logs/</span><span class="si">{</span><span class="n">logfile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># sanitize parameters</span>
@@ -407,16 +498,23 @@
       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage must be one of </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">stage_runners</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">stage_class</span><span class="p">,</span> <span class="n">FittableTransform</span><span class="p">):</span>
-      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2"> is not fittable.&quot;</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">stage</span><span class="si">}</span><span class="s2"> is not fittable.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">load_model</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="s2">&quot;scoring&quot;</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="s2">&quot;--load-model is only supported for input scoring or model fitting.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">==</span> <span class="s2">&quot;scoring&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">RunNotAllowedError</span><span class="p">(</span><span class="s2">&quot;Scoring input data can only be done with an existing (i.e. saved) model. Use the --load-model flag to load one from model_path.&quot;</span><span class="p">)</span>
+
 
     <span class="c1"># run</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fit</span><span class="p">:</span>
       <span class="k">try</span><span class="p">:</span>
-        <span class="n">stage_class</span><span class="o">.</span><span class="n">fit_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_name</span><span class="p">)</span>
+        <span class="n">stage_class</span><span class="o">.</span><span class="n">fit_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">)</span>
       <span class="k">except</span> <span class="n">unknown_tf_error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">.</span><span class="se">\n\n</span><span class="s2"> *** If you get a cuDNN error, try doing: export TF_FORCE_GPU_ALLOW_GROWTH=true *** </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">stage_class</span><span class="o">.</span><span class="n">run_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">)</span>
+      <span class="n">stage_class</span><span class="o">.</span><span class="n">run_from_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_model</span><span class="p">)</span>
 </pre></div>
 
         </details>

@@ -63,6 +63,9 @@
                         <li>
                                 <a class="variable" href="#Config.grid">grid</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Config.dash_args">dash_args</a>
+                        </li>
                 </ul>
 
             </li>
@@ -135,6 +138,7 @@
   <span class="n">sampler</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span>
   <span class="n">charset_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span>
+  <span class="n">dash_args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span>
 
 <span class="k">class</span> <span class="nc">ConfigHandler</span><span class="p">(</span><span class="n">BaseConfigHandler</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
@@ -164,7 +168,10 @@
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_sampler&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;min_style_value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">3</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_style_value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;dash_args&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+        <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()</span>
     <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -191,8 +198,11 @@
       <span class="n">largest</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_style_value&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
       <span class="n">size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
+    <span class="n">dash_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dash_args&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
+      <span class="n">dash_args</span> <span class="o">=</span> <span class="n">dash_args</span><span class="p">,</span>
       <span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">,</span>
       <span class="n">charset_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
       <span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span><span class="p">,</span>
@@ -309,6 +319,7 @@
   <span class="n">sampler</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span>
   <span class="n">charset_size</span><span class="p">:</span> <span class="n">PositiveInt</span>
   <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span>
+  <span class="n">dash_args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span>
 </pre></div>
 
         </details>
@@ -356,6 +367,15 @@
                                             <div class="attr variable"><a class="headerlink" href="#Config.grid">#&nbsp;&nbsp</a>
 
         <span class="name">grid</span><span class="annotation">: <a href="#Grid">fontai.config.deployment.Grid</a></span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Config.dash_args" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Config.dash_args">#&nbsp;&nbsp</a>
+
+        <span class="name">dash_args</span><span class="annotation">: Dict</span>
     </div>
 
     
@@ -429,7 +449,10 @@
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_sampler&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;min_style_value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">3</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_style_value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;dash_args&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+        <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()</span>
     <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -456,8 +479,11 @@
       <span class="n">largest</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_style_value&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
       <span class="n">size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
+    <span class="n">dash_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dash_args&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
+      <span class="n">dash_args</span> <span class="o">=</span> <span class="n">dash_args</span><span class="p">,</span>
       <span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">,</span>
       <span class="n">charset_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
       <span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span><span class="p">,</span>
@@ -507,7 +533,10 @@
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_sampler&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;min_style_value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">3</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
       <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;max_style_value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Float</span><span class="p">(),</span>
-      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">()</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span> <span class="n">yml</span><span class="o">.</span><span class="n">Int</span><span class="p">(),</span>
+      <span class="n">yml</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s2">&quot;dash_args&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">{}):</span> <span class="n">yml</span><span class="o">.</span><span class="n">MapPattern</span><span class="p">(</span>
+        <span class="n">yml</span><span class="o">.</span><span class="n">Str</span><span class="p">(),</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaml_to_obj</span><span class="o">.</span><span class="n">ANY_PRIMITIVES</span><span class="p">)</span> <span class="o">|</span> <span class="n">yml</span><span class="o">.</span><span class="n">EmptyDict</span><span class="p">()</span>
     <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">schema</span>
@@ -563,8 +592,11 @@ style_grid_size (optional, defaults to 100): Componentwise number of bins in sty
       <span class="n">largest</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_style_value&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
       <span class="n">size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style_grid_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
+    <span class="n">dash_args</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dash_args&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
     <span class="k">return</span> <span class="n">Config</span><span class="p">(</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
+      <span class="n">dash_args</span> <span class="o">=</span> <span class="n">dash_args</span><span class="p">,</span>
       <span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">,</span>
       <span class="n">charset_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset_size&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
       <span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span><span class="p">,</span>

@@ -18,7 +18,7 @@ ENV CONTAINER_ENV=true
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "textfont-ai", "fontairun"]
 
 
-# USE THE FOLLOWING FOR GOOGLE AI PLATFORM
+# FOR GOOGLE AI PLATFORM COMMENT THE ABOVE AND USE THE FOLLOWING INSTEAD
 
 # FROM gcr.io/deeplearning-platform-release/tf2-gpu.2-2
 # WORKDIR /textfont-ai

@@ -134,14 +134,15 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
 
-  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fetches a list of input Tensorflow record files and prepares them for training or scoring</span>
-<span class="sd">        </span>
+<span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): input data</span>
 <span class="sd">        batch_size (int): training batch size</span>
 <span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</span>
+<span class="sd">        buffered_batches (int, optional): Size of in-memory buffer from which batches are taken</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset: Dataset ready for model consumption</span>
@@ -167,7 +168,7 @@
         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">))</span>\
         <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span> <span class="c1">#enmpty labels signal something went wrong while parsing</span>
 
-      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">buffered_batches</span><span class="p">)</span>
 
       <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
@@ -180,7 +181,12 @@
       <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_parsed_dict</span><span class="p">)</span>\
       <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span>
 
-      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">unbatchable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
+
+      <span class="k">if</span> <span class="n">unbatchable</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;records of class </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> aren&#39;t batchable at scoring time; setting batch size to None.&quot;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">unbatchable</span><span class="p">:</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
     
     <span class="k">return</span> <span class="n">dataset</span>
@@ -198,7 +204,7 @@
 <span class="sd">        TFRecordDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">512</span>
+    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">2048</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
       <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>\
       <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
@@ -317,14 +323,15 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">charset_tensor</span><span class="p">)</span>
 
 
-  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fetches a list of input Tensorflow record files and prepares them for training or scoring</span>
-<span class="sd">        </span>
+<span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): input data</span>
 <span class="sd">        batch_size (int): training batch size</span>
 <span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</span>
+<span class="sd">        buffered_batches (int, optional): Size of in-memory buffer from which batches are taken</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset: Dataset ready for model consumption</span>
@@ -350,7 +357,7 @@
         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">))</span>\
         <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span> <span class="c1">#enmpty labels signal something went wrong while parsing</span>
 
-      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">buffered_batches</span><span class="p">)</span>
 
       <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
@@ -363,7 +370,12 @@
       <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_parsed_dict</span><span class="p">)</span>\
       <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span>
 
-      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">unbatchable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
+
+      <span class="k">if</span> <span class="n">unbatchable</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;records of class </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> aren&#39;t batchable at scoring time; setting batch size to None.&quot;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">unbatchable</span><span class="p">:</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
     
     <span class="k">return</span> <span class="n">dataset</span>
@@ -381,7 +393,7 @@
 <span class="sd">        TFRecordDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">512</span>
+    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">2048</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
       <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>\
       <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
@@ -527,20 +539,22 @@
     self,
     dataset: tensorflow.python.data.ops.readers.TFRecordDatasetV2,
     batch_size=32,
-    training_format=True
+    training_format=True,
+    buffered_batches=512
 )</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">TFRecordDataset</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">buffered_batches</span> <span class="o">=</span> <span class="mi">512</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fetches a list of input Tensorflow record files and prepares them for training or scoring</span>
-<span class="sd">        </span>
+<span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        dataset (TFRecordDataset): input data</span>
 <span class="sd">        batch_size (int): training batch size</span>
 <span class="sd">        training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</span>
+<span class="sd">        buffered_batches (int, optional): Size of in-memory buffer from which batches are taken</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        TFRecordDataset: Dataset ready for model consumption</span>
@@ -566,7 +580,7 @@
         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">get_training_parser</span><span class="p">(</span><span class="n">charset_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charset_tensor</span><span class="p">))</span>\
         <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span> <span class="c1">#enmpty labels signal something went wrong while parsing</span>
 
-      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+      <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">buffered_batches</span><span class="p">)</span>
 
       <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
@@ -579,7 +593,12 @@
       <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_parsed_dict</span><span class="p">)</span>\
       <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_is_nonempty</span><span class="p">)</span>
 
-      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">unbatchable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="n">_nonbatched_scoring</span>
+
+      <span class="k">if</span> <span class="n">unbatchable</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;records of class </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_record_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> aren&#39;t batchable at scoring time; setting batch size to None.&quot;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">unbatchable</span><span class="p">:</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> 
     
     <span class="k">return</span> <span class="n">dataset</span>
@@ -595,6 +614,7 @@
 <li><strong>dataset (TFRecordDataset):</strong>  input data</li>
 <li><strong>batch_size (int):</strong>  training batch size</li>
 <li><strong>training_format (bool, optional):</strong>  If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes</li>
+<li><strong>buffered_batches (int, optional):</strong>  Size of in-memory buffer from which batches are taken</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -629,7 +649,7 @@
 <span class="sd">        TFRecordDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">512</span>
+    <span class="n">buffer_size</span> <span class="o">=</span> <span class="n">buffered_batches</span><span class="o">*</span><span class="n">batch_size</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">2048</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>\
       <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">buffer_size</span><span class="p">)</span>\
       <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>

@@ -166,6 +166,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">logging</span>
+
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">typing</span>
@@ -183,7 +184,6 @@
 <span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">Tensor</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">tensorflow.data</span> <span class="kn">import</span> <span class="n">TFRecordDataset</span>
-
 
 <span class="kn">import</span> <span class="nn">apache_beam</span> <span class="k">as</span> <span class="nn">beam</span>
 <span class="kn">from</span> <span class="nn">apache_beam.options.pipeline_options</span> <span class="kn">import</span> <span class="n">PipelineOptions</span>
@@ -215,8 +215,6 @@
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">array</span> <span class="k">as</span> <span class="n">np_array</span><span class="p">,</span> <span class="n">clip</span> <span class="k">as</span> <span class="n">np_clip</span>
 
 <span class="kn">import</span> <span class="nn">mlflow</span> 
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
   
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
   <span class="s2">&quot;Ingestion&quot;</span><span class="p">,</span>
@@ -224,6 +222,8 @@
   <span class="s2">&quot;Scoring&quot;</span><span class="p">,</span>
   <span class="s2">&quot;Deployment&quot;</span>
   <span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
   
 <span class="k">class</span> <span class="nc">Ingestion</span><span class="p">(</span><span class="n">ConfigurableTransform</span><span class="p">,</span> <span class="n">IdentityTransform</span><span class="p">):</span>
 
@@ -244,7 +244,7 @@
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     
     <span class="n">ingestor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
     <span class="n">font_extractor</span> <span class="o">=</span> <span class="n">ZipToFontFiles</span><span class="p">()</span>
@@ -321,7 +321,7 @@
     <span class="k">return</span> <span class="s2">&quot;preprocessing&quot;</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="c1"># set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.</span>
     <span class="n">visible_devices</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">)</span>
@@ -508,7 +508,9 @@
         <span class="n">input_dict</span><span class="p">[</span><span class="s2">&quot;custom_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_class_name</span>
       <span class="n">model_yaml</span> <span class="o">=</span> <span class="n">as_document</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
 
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_from_model_path flag set to False; loading model from model_path </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2"> of class </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;load_from_model_path flag set to True; loading model of class </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span>
+      <span class="c1">#print(message)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">ModelFactory</span><span class="p">()</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
@@ -518,7 +520,6 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ScoringConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
@@ -549,7 +550,9 @@
         <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception scoring batch with features: </span><span class="si">{</span><span class="n">features</span><span class="si">}</span><span class="s2">. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2"> examples.&quot;</span><span class="p">)</span>
+    
+    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2"> examples.&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ScoringConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
@@ -567,22 +570,25 @@
 
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MLFlow run id: </span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-      <span class="c1"># log run configuration into MLFlow</span>
       <span class="n">cfg_log_path</span> <span class="o">=</span> <span class="s2">&quot;run-configs&quot;</span>
-      <span class="c1"># check whether there are previous run configs</span>
+      <span class="c1"># check whether there are previous run configs in this MLFLow run</span>
       <span class="n">client</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">tracking</span><span class="o">.</span><span class="n">MlflowClient</span><span class="p">()</span>
       <span class="n">n_previous_runs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">list_artifacts</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="n">cfg_log_path</span><span class="p">))</span>
       <span class="n">current_run</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n_previous_runs</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
 
+      <span class="c1"># log config file</span>
       <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">current_run</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">yaml</span><span class="o">.</span><span class="n">as_yaml</span><span class="p">())</span>
       <span class="n">mlflow</span><span class="o">.</span><span class="n">log_artifact</span><span class="p">(</span><span class="n">current_run</span><span class="p">,</span><span class="n">cfg_log_path</span><span class="p">)</span>
       <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">current_run</span><span class="p">)</span>
 
-      <span class="n">mlflow</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span> <span class="c1">#start keras autologging</span>
+      <span class="c1">#start keras autologging</span>
+      <span class="n">mlflow</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span>
 
       <span class="c1"># fetch data and fit model</span>
       <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
+
+      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
       <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
         <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
@@ -590,10 +596,10 @@
         <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
         <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-
       <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
+
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      
       <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
 
 
@@ -675,9 +681,9 @@
       <span class="n">charset_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">charset_size</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DeploymentConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     
-    <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">dash_args</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -724,7 +730,7 @@
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     
     <span class="n">ingestor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
     <span class="n">font_extractor</span> <span class="o">=</span> <span class="n">ZipToFontFiles</span><span class="p">()</span>
@@ -824,13 +830,13 @@
                 <div class="decorator">@classmethod</div>
 
             <span class="def">def</span>
-            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/ingestion.html#Config">fontai.config.ingestion.Config</a>)</span>:
+            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/ingestion.html#Config">fontai.config.ingestion.Config</a>, **kwargs)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">IngestionConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     
     <span class="n">ingestor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
     <span class="n">font_extractor</span> <span class="o">=</span> <span class="n">ZipToFontFiles</span><span class="p">()</span>
@@ -983,7 +989,7 @@
     <span class="k">return</span> <span class="s2">&quot;preprocessing&quot;</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="c1"># set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.</span>
     <span class="n">visible_devices</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">)</span>
@@ -1207,13 +1213,13 @@
                 <div class="decorator">@classmethod</div>
 
             <span class="def">def</span>
-            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/preprocessing.html#Config">fontai.config.preprocessing.Config</a>)</span>:
+            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/preprocessing.html#Config">fontai.config.preprocessing.Config</a>, **kwargs)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ProcessingConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="c1"># set provisional value for CUDA env variable to prevent out of memory errors from the GPU; this occurs because the preprocessing code depends on (CPU-bound) Tensorflow functionality, which attempts to seize memory from the GPU automatically, but this throws an error when Beam uses multiple threads.</span>
     <span class="n">visible_devices</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CUDA_VISIBLE_DEVICES&quot;</span><span class="p">)</span>
@@ -1438,7 +1444,9 @@
         <span class="n">input_dict</span><span class="p">[</span><span class="s2">&quot;custom_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_class_name</span>
       <span class="n">model_yaml</span> <span class="o">=</span> <span class="n">as_document</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
 
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_from_model_path flag set to False; loading model from model_path </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2"> of class </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;load_from_model_path flag set to True; loading model of class </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span>
+      <span class="c1">#print(message)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">ModelFactory</span><span class="p">()</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
@@ -1448,7 +1456,6 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ScoringConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
@@ -1479,7 +1486,9 @@
         <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception scoring batch with features: </span><span class="si">{</span><span class="n">features</span><span class="si">}</span><span class="s2">. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2"> examples.&quot;</span><span class="p">)</span>
+    
+    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2"> examples.&quot;</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">fit_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ScoringConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
@@ -1497,22 +1506,25 @@
 
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MLFlow run id: </span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-      <span class="c1"># log run configuration into MLFlow</span>
       <span class="n">cfg_log_path</span> <span class="o">=</span> <span class="s2">&quot;run-configs&quot;</span>
-      <span class="c1"># check whether there are previous run configs</span>
+      <span class="c1"># check whether there are previous run configs in this MLFLow run</span>
       <span class="n">client</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">tracking</span><span class="o">.</span><span class="n">MlflowClient</span><span class="p">()</span>
       <span class="n">n_previous_runs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">list_artifacts</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="n">cfg_log_path</span><span class="p">))</span>
       <span class="n">current_run</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n_previous_runs</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
 
+      <span class="c1"># log config file</span>
       <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">current_run</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">yaml</span><span class="o">.</span><span class="n">as_yaml</span><span class="p">())</span>
       <span class="n">mlflow</span><span class="o">.</span><span class="n">log_artifact</span><span class="p">(</span><span class="n">current_run</span><span class="p">,</span><span class="n">cfg_log_path</span><span class="p">)</span>
       <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">current_run</span><span class="p">)</span>
 
-      <span class="n">mlflow</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span> <span class="c1">#start keras autologging</span>
+      <span class="c1">#start keras autologging</span>
+      <span class="n">mlflow</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span>
 
       <span class="c1"># fetch data and fit model</span>
       <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
+
+      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
       <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
         <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
@@ -1520,10 +1532,10 @@
         <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
         <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-
       <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
+
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      
       <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
 </pre></div>
 
@@ -1814,7 +1826,9 @@
         <span class="n">input_dict</span><span class="p">[</span><span class="s2">&quot;custom_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_class_name</span>
       <span class="n">model_yaml</span> <span class="o">=</span> <span class="n">as_document</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
 
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_from_model_path flag set to False; loading model from model_path </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2"> of class </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;load_from_model_path flag set to True; loading model of class </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span>
+      <span class="c1">#print(message)</span>
+      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">ModelFactory</span><span class="p">()</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
@@ -1860,7 +1874,6 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ScoringConfig</span><span class="p">,</span> <span class="n">load_from_model_path</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-
     <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
 
     <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
@@ -1891,7 +1904,9 @@
         <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception scoring batch with features: </span><span class="si">{</span><span class="n">features</span><span class="si">}</span><span class="s2">. Full trace: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2"> examples.&quot;</span><span class="p">)</span>
+    
+    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2"> examples.&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1940,22 +1955,25 @@
 
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MLFlow run id: </span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-      <span class="c1"># log run configuration into MLFlow</span>
       <span class="n">cfg_log_path</span> <span class="o">=</span> <span class="s2">&quot;run-configs&quot;</span>
-      <span class="c1"># check whether there are previous run configs</span>
+      <span class="c1"># check whether there are previous run configs in this MLFLow run</span>
       <span class="n">client</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">tracking</span><span class="o">.</span><span class="n">MlflowClient</span><span class="p">()</span>
       <span class="n">n_previous_runs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">list_artifacts</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="n">cfg_log_path</span><span class="p">))</span>
       <span class="n">current_run</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n_previous_runs</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
 
+      <span class="c1"># log config file</span>
       <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">current_run</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">yaml</span><span class="o">.</span><span class="n">as_yaml</span><span class="p">())</span>
       <span class="n">mlflow</span><span class="o">.</span><span class="n">log_artifact</span><span class="p">(</span><span class="n">current_run</span><span class="p">,</span><span class="n">cfg_log_path</span><span class="p">)</span>
       <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">current_run</span><span class="p">)</span>
 
-      <span class="n">mlflow</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span> <span class="c1">#start keras autologging</span>
+      <span class="c1">#start keras autologging</span>
+      <span class="n">mlflow</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span>
 
       <span class="c1"># fetch data and fit model</span>
       <span class="n">predictor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">load_from_model_path</span><span class="p">)</span>
+
+      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 
       <span class="n">data_fetcher</span> <span class="o">=</span> <span class="n">RecordPreprocessor</span><span class="p">(</span>
         <span class="n">input_record_class</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_record_class</span><span class="p">,</span>
@@ -1963,10 +1981,10 @@
         <span class="n">custom_filters</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_filters</span><span class="p">,</span>
         <span class="n">custom_mappers</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">custom_mappers</span><span class="p">)</span>
 
-      <span class="n">data</span> <span class="o">=</span> <span class="n">TfrReader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
-
       <span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_fetcher</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">training_format</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">predictor</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
+
       <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving trained model to </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+      
       <span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span>
 </pre></div>
 
@@ -2091,9 +2109,9 @@
       <span class="n">charset_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">charset_size</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DeploymentConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     
-    <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">dash_args</span><span class="p">)</span>
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">get_stage_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -2303,15 +2321,15 @@
                 <div class="decorator">@classmethod</div>
 
             <span class="def">def</span>
-            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/deployment.html#Config">fontai.config.deployment.Config</a>)</span>:
+            <span class="name">run_from_config_object</span><span class="signature">(cls, config: <a href="../config/deployment.html#Config">fontai.config.deployment.Config</a>, **kwargs)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DeploymentConfig</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">run_from_config_object</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     
-    <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_object</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="o">.</span><span class="n">dash_args</span><span class="p">)</span>
 </pre></div>
 
         </details>
