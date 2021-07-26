@@ -6,7 +6,8 @@ import typing as t
 
 __all__ = ["filter_misclassified_chars",
   "filter_chars_by_score",
-  "filter_fonts_by_size"]
+  "filter_fonts_by_size",
+  "filter_irregular_fonts"]
 
 def filter_misclassified_chars():
   """Returns a filtering function for Tensorflow datasets that filter out misclassified examples; examples must have the schema as in ScoredLabeledChars._tfr_schema
@@ -76,3 +77,33 @@ def filter_fonts_by_size(n_chars: int):
 
   return f
 
+
+def filter_irregular_fonts(min_score: int):
+  """Returns a Filtering function for Tensorflow datasets that filter out fonts with misclassified characters or low-confidence scores.
+  
+  
+  Args:
+      min_score (int): minimum score threshold
+
+  Returns:
+      t.Callable: Filtering function for Tensorflow datasets
+  
+  """
+  def f(kwargs):
+    """
+    
+    Args:
+        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including "features" and "label" entries.
+    
+    Returns:
+        boolean
+    """
+    predicted_label_idx = tf.argmax(kwargs["score"], axis=-1)
+    predicted_labels = tf.gather(kwargs["charset_tensor"], predicted_label_idx, axis=-1)
+
+    predicted_scores = tf.reduce_max(kwargs["score"], axis=-1)
+
+    return tf.math.logical_and(tf.math.reduce_all(predicted_scores >= min_score), tf.math.reduce_all(predicted_labels == kwargs["label"]))
+    
+
+  return f
