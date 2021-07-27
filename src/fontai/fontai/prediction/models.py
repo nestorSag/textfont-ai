@@ -660,3 +660,235 @@ class PureFontStyleSAAE(tf.keras.Model):
       **d)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class PureFontStyleSA2AE(tf.keras.Model):
+
+  """This model is works like PureFontStyleSA2AE but instead of minimising the MSE reconstruction error, an additional image discriminator classify between real and reconstructed images, so the encoder and decoder now maximise misclassification error.
+
+  """
+  prior_accuracy_metric = tf.keras.metrics.Accuracy(name="adversarial prior accuracy")
+  image_accuracy_metric = tf.keras.metrics.Accuracy(name="adversarial image accuracy")
+  cross_entropy_metric = tf.keras.metrics.BinaryCrossentropy(name="Prior adversarial cross entropy", from_logits=False)
+
+  cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False) #assumes prior_discriminator outputs 
+
+    ## this __init__ has to be copy pasted from the model above, because Tensorflow hates good coding practices aparently
+  def __init__(
+    self,
+    full_encoder: tf.keras.Model,
+    image_encoder: tf.keras.Model,
+    decoder: tf.keras.Model,
+    prior_discriminator: tf.keras.Model,
+    image_discriminator: tf.keras.Model,
+    code_regularisation_weight=0):
+    """Summary
+    
+    Args:
+        decoder (tf.keras.Model): Decoder model that maps style and characters to images
+        prior_discriminator (tf.keras.Model): Discriminator between the embeddings' distribution and the target distribution, e.g. multivariate standard normal.
+        full_encoder (tf.keras.Model): Encoder that takes high-level image features and labels to produce embedded representations
+        image_encoder (tf.keras.Model): Encoder for image features
+        image_discriminator (tf.keras.Model): image discriminator
+    """
+    super(PureFontStyleSA2AE, self).__init__()
+
+    self.full_encoder = full_encoder
+    self.image_encoder = image_encoder
+    self.decoder = decoder
+    self.prior_discriminator = prior_discriminator
+    self.image_discriminator = image_discriminator
+
+    self.prior_sampler = tf.random.normal
+    # list of embedded models as instance attributes 
+    self.model_list = ["full_encoder", "image_encoder", "decoder", "prior_discriminator", "image_discriminator"]
+
+
+  def discriminator_loss(self,real,fake):
+    real_loss = self.cross_entropy(tf.ones_like(real), real)
+    fake_loss = self.cross_entropy(tf.zeros_like(fake), fake)
+    return (real_loss + fake_loss)
+
+  def compile(self,
+    optimizer='rmsprop',
+    loss=None,
+    metrics=None,
+    loss_weights=None,
+    weighted_metrics=None,
+    run_eagerly=None,
+    **kwargs):
+
+    self.full_encoder.compile(optimizer = copy.deepcopy(optimizer),run_eagerly=run_eagerly)
+    self.image_encoder.compile(optimizer = copy.deepcopy(optimizer),run_eagerly=run_eagerly)
+    self.decoder.compile(optimizer = copy.deepcopy(optimizer),run_eagerly=run_eagerly)
+    self.prior_discriminator.compile(optimizer = copy.deepcopy(optimizer),run_eagerly=run_eagerly)
+    self.image_discriminator.compile(optimizer = copy.deepcopy(optimizer),run_eagerly=run_eagerly)  
+
+    super().compile(
+      optimizer=optimizer,
+      loss=loss,
+      metrics=metrics,
+      loss_weights=loss_weights,
+      weighted_metrics=weighted_metrics,
+      run_eagerly=run_eagerly,
+      **kwargs)
+
+  def __call__(self, x, training=True, mask=None):
+    return self.image_encoder(x, training=training)
+
+  def scramble_font_batches(self, x: tf.Tensor, labels: tf.Tensor):
+    """Creates a scrambled copy of a minibatch in which individual fonts are randomly shuffled. Returns the original minibatch in addition to the shuffled version.
+    
+    Args:
+        x (tf.Tensor): Feature tensor
+        labels (tf.Tensor): Label tensor
+    
+    Returns:
+        t.Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]: return scrambled and original feature-label pairs, in that order.
+    """
+    #
+    x_shape = tf.shape(x)
+    n_fonts = x_shape[0]
+    #
+    style_x = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
+    style_y = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
+
+    outcome_x = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
+    outcome_y = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
+    #
+    for k in range(n_fonts):
+      x_k, labels_k = x[k], labels[k]
+      x_k_shape = tf.shape(x_k)
+      shuffling_idx = tf.range(start=0, limit=tf.shape(x_k)[0], dtype=tf.int32)
+      scrambled = tf.random.shuffle(shuffling_idx)
+      #
+      style_x = style_x.write(k, tf.gather(x_k, scrambled, axis=0))
+      style_y = style_y.write(k, tf.gather(labels_k, scrambled, axis=0))
+
+      outcome_x = outcome_x.write(k, x_k)
+      outcome_y = outcome_y.write(k, labels_k)
+      #
+    #
+    #
+    return style_x.concat(), style_y.concat(), outcome_x.concat(), outcome_y.concat()
+
+  def train_step(self, inputs):
+    #prior_sampler = tf.random.normal
+    x, labels = inputs
+
+    #self.prior_batch_size = x.shape[0]
+    style_x, style_y, outcome_x, outcome_y = self.scramble_font_batches(x ,labels)
+
+    n_examples = tf.shape(style_x)[0]
+    with tf.GradientTape(persistent=True) as tape:
+
+      # apply autoencoder
+      image_precode = self.image_encoder(style_x, training=True)
+      full_precode = tf.concat([image_precode, style_y], axis=-1)
+      code = self.full_encoder(full_precode, training=True)
+      extended_code = tf.concat([code,outcome_y],axis=-1)
+      decoded = self.decoder(extended_code,training=True)  
+
+      # apply prior_discriminator model
+      prior_samples = self.prior_sampler(shape=(n_examples,code.shape[1]))
+      real_prior = self.prior_discriminator(prior_samples,training=True)
+      fake_prior = self.prior_discriminator(code,training=True)
+      prior_classification_loss = self.discriminator_loss(real_prior,fake_prior)
+
+      #apply image_discriminator model
+      real_image = self.image_discriminator(outcome_x)
+      fake_image = self.image_discriminator(decoded)
+      image_classification_loss = self.discriminator_loss(real_image, fake_image)
+
+      # compute losses for the models
+      #reconstruction_loss = tf.keras.losses.MSE(outcome_x,decoded) 
+      
+      mixed_loss = -(prior_classification_loss + image_classification_loss)
+
+      #mixed_loss = -(1-self.rec_loss_weight)*(prior_classification_loss) + self.rec_loss_weight*(reconstruction_loss)
+
+
+    # Compute gradients
+    prior_discriminator_gradients = tape.gradient(prior_classification_loss,self.prior_discriminator.trainable_variables)
+    decoder_gradients = tape.gradient(image_classification_loss, self.decoder.trainable_variables)
+    image_encoder_gradients = tape.gradient(mixed_loss, self.image_encoder.trainable_variables)
+    full_encoder_gradients = tape.gradient(mixed_loss, self.full_encoder.trainable_variables)
+    image_discriminator_gradients = tape.gradient(image_classification_loss, self.image_discriminator.trainable_variables)
+
+    #apply gradients
+    self.prior_discriminator.optimizer.apply_gradients(zip(prior_discriminator_gradients,self.prior_discriminator.trainable_variables))
+    self.decoder.optimizer.apply_gradients(zip(decoder_gradients,self.decoder.trainable_variables))
+    self.image_encoder.optimizer.apply_gradients(zip(image_encoder_gradients,self.image_encoder.trainable_variables))
+    self.full_encoder.optimizer.apply_gradients(zip(full_encoder_gradients,self.full_encoder.trainable_variables))
+    self.image_discriminator.optimizer.apply_gradients(zip(image_discriminator_gradients, self.image_discriminator.trainable_variables))
+
+    # compute metrics
+    #self.mse_metric.update_state(outcome_x,decoded)
+
+    discr_true = tf.concat([tf.ones_like(real_prior),tf.zeros_like(fake_prior)],axis=0)
+    discr_predicted = tf.concat([real_prior,fake_prior],axis=0)
+    self.prior_accuracy_metric.update_state(discr_true,tf.round(discr_predicted))
+
+    discr_true = tf.concat([tf.ones_like(real_image),tf.zeros_like(fake_image)],axis=0)
+    discr_predicted = tf.concat([real_image,fake_image],axis=0)
+    self.image_accuracy_metric.update_state(discr_true,tf.round(discr_predicted))
+
+    return {
+    "image discriminator accuracy": self.image_accuracy_metric.result(), 
+    "prior discriminator accuracy": self.prior_accuracy_metric.result()}
+
+
+
+  def save(self,output_dir: str):
+    """Save the model to an output folder
+    
+    Args:
+        output_dir (str): Target output folder
+    """
+
+    self.full_encoder.save(str(BytestreamPath(output_dir) / "full_encoder"))
+    self.image_encoder.save(str(BytestreamPath(output_dir) / "image_encoder"))
+    self.decoder.save(str(BytestreamPath(output_dir) / "decoder"))
+    self.prior_discriminator.save(str(BytestreamPath(output_dir) / "prior_discriminator"))
+    self.image_discriminator.save(str(BytestreamPath(output_dir) / "image_discriminator"))
+
+
+    # with open(str(BytestreamPath(output_dir) / "aae-params.json"),"w") as f:
+    #   json.dump(d,f)
+
+  @classmethod
+  def load(cls, input_dir: str):
+    """Loads a saved instance of this class
+    
+    Args:
+        input_dir (str): Target input folder
+    
+    Returns:
+        SAAE: Loaded model
+    """
+    full_encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "full_encoder"))
+    image_encoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "image_encoder"))
+    decoder = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "decoder"))
+    prior_discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "prior_discriminator"))
+    image_discriminator = tf.keras.models.load_model(str(BytestreamPath(input_dir) / "image_discriminator"))
+
+    return cls(
+      image_encoder = image_encoder, 
+      full_encoder = full_encoder, 
+      decoder = decoder, 
+      prior_discriminator = prior_discriminator, 
+      image_discriminator = image_discriminator)
+
+

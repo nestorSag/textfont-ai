@@ -6,7 +6,8 @@ import tensorflow as tf
 import typing as t
 
 __all__ = ["drop_misclassified_in_font",
-  "keep_high_scores_in_font"]
+  "keep_high_scores_in_font",
+  "map_to_binary_pixels"]
 
 def drop_misclassified_in_font():
   """Returns a mapper function for Tensorflow datasets that drops misclassified images in a font batch; examples must have the schema as in ScoredLabeledChars._tfr_schema
@@ -81,6 +82,24 @@ def keep_high_scores_in_font(threshold: float):
     kwargs["features"] = kwargs["features"][index]
     kwargs["score"] = kwargs["score"][index]
 
+    return kwargs
+
+  return f
+
+def map_to_binary_pixels():
+  """Returns a mapping function to normalise pixels in [0,1] to either 0 or 1
+  """
+  def f(kwargs):
+    """
+    
+    Args:
+        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including "features" and "label" entries.
+    
+    Returns:
+        t.Dict: dictionary with filtered features and scores
+    """
+
+    kwargs["features"] = tf.math.round(kwargs["features"])
     return kwargs
 
   return f
