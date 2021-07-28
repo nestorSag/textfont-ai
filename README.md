@@ -58,12 +58,9 @@ The preprocessing stages takes a YAML list of command line arguments for Apache 
 docker build -t <username>/fontai-runner:1.0.0 .
 ```
 
-This image uses Conda internally. For the particular case of GCP AI platform, it's better to use a different build; look at the comments in the Dockerfile.
-
-
-from the root folder. This image can be deployed to a cloud instance for training, passing the same parameters as for the `fontairun` command, which is its entry point. In this case, the configuration file must be stored in a reachable location and its full path provided as the `config-file` argument; at the moment, only Google Storage is supported, i.e. a `gs://...` path (Google Storage paths are also supported for input, output and model paths in the configuration file). Other cloud providers can be implemented by extending the `fontai.io.storage` module.
+For the particular case of GCP AI platform, it's better to use a different build; look at the comments in the Dockerfile. This image can be deployed to a cloud instance for training, passing the same parameters as for the `fontairun` command, which is its entry point. In this case, the configuration file must be stored in a reachable location and its full path provided as the `config-file` argument; at the moment, only Google Storage is supported, i.e. a `gs://...` path (Google Storage paths are also supported for data input, output and model paths in the configuration file). Other cloud providers can be implemented by extending the `fontai.io.storage` module.
 
 ## Quickstart
 
-To run and end-to-end generative pipeline using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a couple hours.
+To run and end-to-end generative pipeline using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a few hours.
 

@@ -58,7 +58,7 @@ class RecordPreprocessor(object):
     self.charset_tensor = tf.convert_to_tensor(charset_tensor)
 
 
-  def fetch(self, dataset: TFRecordDataset, batch_size = 32, training_format=True, buffered_batches = 512):
+  def fetch(self, dataset: TFRecordDataset, batch_size = 32, training_format=True, buffered_batches = 512, cyclic=True):
     """
     Fetches a list of input Tensorflow record files and prepares them for training or scoring
     
@@ -67,6 +67,7 @@ class RecordPreprocessor(object):
         batch_size (int): training batch size
         training_format (bool, optional): If True, returns features and a one hot encoded label; otherwise, returns a dict of parsed bytestreams with labels as bytes
         buffered_batches (int, optional): Size of in-memory buffer from which batches are taken
+        cyclic (bool, optional): Whether to cycle over the data indefinitely
     
     Returns:
         TFRecordDataset: Dataset ready for model consumption
@@ -80,19 +81,19 @@ class RecordPreprocessor(object):
     # if for training, take only features and formatted labels, and batch together
     if training_format:
 
-      # apply custom map to formatted tuples
-      for example_mapper in self.custom_mappers:
-          dataset = dataset.map(example_mapper)
-
       # apply custom filters to formatted tuples
       for example_filter in self.custom_filters:
           dataset = dataset.filter(example_filter)
+          
+      # apply custom map to formatted tuples
+      for example_mapper in self.custom_mappers:
+          dataset = dataset.map(example_mapper)
 
       dataset = dataset\
         .map(self.input_record_class.get_training_parser(charset_tensor = self.charset_tensor))\
         .filter(self.label_is_nonempty) #enmpty labels signal something went wrong while parsing
 
-      dataset = self.scramble(dataset, batch_size, buffered_batches)
+      dataset = self.scramble(dataset, batch_size, buffered_batches, cyclic)
 
       if batch_size is not None:
         dataset = dataset.batch(batch_size) 
@@ -115,7 +116,7 @@ class RecordPreprocessor(object):
     
     return dataset
 
-  def scramble(self, dataset, batch_size, buffered_batches = 512):
+  def scramble(self, dataset, batch_size, buffered_batches = 512, cyclic=True):
     """
     Scrambles a data set randomly and makes it unbounded in order to process an arbitrary number of batches
     
@@ -129,9 +130,10 @@ class RecordPreprocessor(object):
     """
 
     buffer_size = buffered_batches*batch_size if batch_size is not None else 2048
-    dataset = dataset\
-      .shuffle(buffer_size=buffer_size)\
-      .repeat()
+    dataset = dataset.shuffle(buffer_size=buffer_size)
+
+    if cyclic:
+      dataset = dataset.repeat()
 
     return dataset
 

@@ -103,3 +103,31 @@ def map_to_binary_pixels():
     return kwargs
 
   return f
+
+
+# def font_chars_to_channels():
+#   """Reshapes and flips the feature tensor so that font characters become image channels.
+#   """
+#   def f(kwargs):
+#     """
+    
+#     Args:
+#         kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including "features" and "label" entries.
+    
+#     Returns:
+#         t.Dict: dictionary with mapped features and scores
+#     """
+
+#     features_shape = tf.shape(kwargs["features"])
+#     n_chars = features_shape[0]
+#     height = features_shape[1]
+#     width = features_shape[2]
+
+#     kwargs["features"] = tf.transpose(kwargs["features"])
+#     #print((n_chars, height, width))
+#     #kwargs["features"] = tf.reshape(kwargs["features"], (n_chars, height, width))
+
+#     return kwargs
+
+#   return f
+

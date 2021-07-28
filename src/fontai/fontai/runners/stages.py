@@ -42,7 +42,7 @@ from fontai.io.records import TfrWritable
 from fontai.io.formats import InMemoryFile, InMemoryZipfile
 from fontai.runners.base import ConfigurableTransform, IdentityTransform, FittableTransform
 
-from fontai.deployment.visualise import *
+from fontai.deployment.plotters import AlphabetPlotter
 
 import dash
 import dash_core_components as dcc
@@ -451,19 +451,22 @@ class Deployment(ConfigurableTransform):
     model: tf.keras.Model, 
     sampler: t.Callable, 
     grid: Grid, 
+    plotter: AlphabetPlotter,
     charset_size: int):
     """
-    
     Args:
         model (tf.keras.Model): Generative model
         sampler (t.Callable): Style vectors' sampling function
         grid (Grid): Grid describing the style space's grid to explore
+        plotter (AlphabetPlotter): Plotter object
         charset_size (int): Number of characters in font
+    
     """
     self.model = model
     self.sampler = sampler
     self.grid = grid
     self.charset_size = charset_size
+    self.plotter = plotter
 
     self.external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -496,9 +499,9 @@ class Deployment(ConfigurableTransform):
       [Input(f"slider-{k}", 'value') for k in range(self.grid.dim)])
     def update(*args):
       style_vector = np_array(args).reshape((1,-1))
-      font = generate_font(self.model, style_vector, self.charset_size)
-      img = plot_font(font)
-      return fig_to_str(img)
+      font = self.plotter.generate_font(model=self.model, style_vector=style_vector, charset_size=self.charset_size)
+      img = self.plotter.plot_font(font)
+      return self.plotter.fig_to_str(img)
 
     app.run_server(**kwargs)
 
@@ -515,6 +518,7 @@ class Deployment(ConfigurableTransform):
       model = config.model,
       sampler = config.sampler,
       grid = config.grid,
+      plotter = config.plotter,
       charset_size = config.charset_size)
 
   @classmethod
@@ -528,9 +532,5 @@ class Deployment(ConfigurableTransform):
 
   def transform_batch(self, input_path: str, output_path: str):
     raise NotImplementedError("This method is not implemented for deployment.")
-
-  @classmethod
-  def get_stage_name(cls):
-    return "deployment"
 
 

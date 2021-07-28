@@ -4,10 +4,13 @@ This module contains filtering functions for Tensorflow dataset operations that 
 import tensorflow as tf
 import typing as t
 
-__all__ = ["filter_misclassified_chars",
+__all__ = [
+  "filter_misclassified_chars",
   "filter_chars_by_score",
   "filter_fonts_by_size",
-  "filter_irregular_fonts"]
+  "filter_irregular_fonts",
+  "filter_by_name"
+]
 
 def filter_misclassified_chars():
   """Returns a filtering function for Tensorflow datasets that filter out misclassified examples; examples must have the schema as in ScoredLabeledChars._tfr_schema
@@ -104,6 +107,34 @@ def filter_irregular_fonts(min_score: int):
     predicted_scores = tf.reduce_max(kwargs["score"], axis=-1)
 
     return tf.math.logical_and(tf.math.reduce_all(predicted_scores >= min_score), tf.math.reduce_all(predicted_labels == kwargs["label"]))
+    
+
+  return f
+
+
+def filter_by_name(substring: str):
+  """Returns a Filtering function for Tensorflow datasets that filter out fonts whose name does not contain the provided substring, e.g. italic, 3d, etc.
+  
+  
+  Args:
+      substring (str): substring that will be searched for in the lowercased font names
+
+  Returns:
+      t.Callable: Filtering function for Tensorflow datasets
+  
+  """
+  lower_substring = substring.lower()
+
+  def f(kwargs):
+    """
+    
+    Args:
+        kwargs (t.Dict): a dictionary with every object parsed from a serialised Tensorflow example, including "features" and "label" entries.
+    
+    Returns:
+        boolean
+    """
+    return tf.strings.regex_full_match(tf.strings.lower(kwargs["fontname"]), f".*{lower_substring}.*")
     
 
   return f
