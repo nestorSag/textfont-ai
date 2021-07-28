@@ -10,6 +10,7 @@ import fontai.io.scrappers as scrapper_module
 
 from fontai.config.core import BaseConfigHandler, BasePipelineTransformConfig
 from fontai.config.prediction import ModelFactory
+import fontai.deployment.plotters as plotters
 
 import numpy.random as rnd
 
@@ -35,6 +36,7 @@ class Config(BasePipelineTransformConfig):
   charset_size: PositiveInt
   grid: Grid
   dash_args: t.Dict
+  plotter: plotters.AlphabetPlotter
 
 class ConfigHandler(BaseConfigHandler):
   """
@@ -65,6 +67,7 @@ class ConfigHandler(BaseConfigHandler):
       yml.Optional("min_style_value", default=-3): yml.Float(),
       yml.Optional("max_style_value", default=3): yml.Float(),
       yml.Optional("style_grid_size", default=100): yml.Int(),
+      yml.Optional("plotter", default="SAAEAlphabetPlotter"): yml.Str(),
       yml.Optional("dash_args", default={}): yml.MapPattern(
         yml.Str(), 
         self.yaml_to_obj.ANY_PRIMITIVES) | yml.EmptyDict()
@@ -96,10 +99,13 @@ class ConfigHandler(BaseConfigHandler):
 
     dash_args = config.get("dash_args").data
 
+    plotter = getattr(plotters,config.get("plotter").text)()
+
     return Config(
       model = model,
       dash_args = dash_args,
       sampler = sampler,
+      plotter = plotter,
       charset_size = config.get("charset_size").data,
       grid = grid,
       yaml = config)

@@ -52,7 +52,11 @@ class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
     os.remove(output_file)
 
   def generate_images(self):
-
+    """Produces character images stacked in a tensor from a generative decoder model
+    
+    Returns:
+        tf.Tensor
+    """
     # sample encoded representation
     samples = self.model.prior_sampler(shape=(self.n_imgs,self.embedding_dim)).numpy()
     # sample one hot encoded labels
@@ -66,6 +70,7 @@ class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
     fully_encoded = np.array(labels, dtype=np.float32)
 
     imgs = self.model.decoder.predict(fully_encoded)
+    # images are along first axis (image <=> example)
     return imgs
 
 
@@ -90,12 +95,16 @@ class SAAEImageSamplerCallback(tf.keras.callbacks.Callback):
         x_ = x.numpy()
       np_x = (255 * x_).astype(np.uint8).reshape((height,width))
       axs[int(i/n_cols), i%n_cols].imshow(np_x, cmap="Greys")
+
+    # get rid of subfigure axes
+    for k in range(n_rows*n_cols):
+      axs[int(k/n_cols), k%n_cols].axis("off")
     
     plt.savefig(output_file)
 
 class SAAEFontSamplerCallback(SAAEImageSamplerCallback):
 
-  """Generates a random font style from the model, generates all of its characters and pushes them to MLFLow at the end of each epoch
+  """Generates a random font style from the model, generates all of its characters and pushes them to MLFLow at the end of each epoch. This callback assumes the model generates a single font's character at a time, depending on the provided input label
   
   """
   
@@ -127,6 +136,69 @@ class SAAEFontSamplerCallback(SAAEImageSamplerCallback):
 
     imgs = self.model.decoder.predict(fully_encoded)
     return imgs
+
+
+
+class TensorSAAEFontSamplerCallback(SAAEImageSamplerCallback):
+
+  """Generates a random font style from the model, generates all of its characters and pushes them to MLFLow at the end of each epoch. This callback assumes the model produces all character images as a 3d Tensor where each channel represent one of the font's characters.
+  
+  """
+  
+  def __init__(
+    self,
+    embedding_dim: int):
+    """
+    Args:
+        n_labels (int): Number of labels in model's charset
+        embedding_dim (int): Dimensionality of encoded representation
+    
+    """
+
+    super().__init__(None,embedding_dim,None)
+
+  def generate_images(self):
+    """Generates images as Tensor. Images are along the last axis (images <=>channels)
+    
+    Returns:
+        tf.Tensor
+    """
+    # sample encoded representation
+    samples = self.model.prior_sampler(shape=(1,self.embedding_dim)).numpy()
+    imgs = self.model.decoder.predict(samples)
+    return imgs
+
+
+  def plot_images(self, imgs: t.Union[tf.Tensor, np.ndarray], output_file: str, n_cols = 7) -> None:
+    """Utility function to plot a sequence of characters and save it in a given location as a single tiled figure.
+    
+    Args:
+        imgs (t.Union[tf.Tensor, np.ndarray]): 4-dimensional array of images
+        output_file (str): output file
+        n_cols (int, optional): number of columns in output figure
+    """
+    # plot multiple images
+    n_fonts, height, width, n_imgs = imgs.shape
+    n_rows = int(np.ceil(n_imgs/n_cols))
+
+    fig, axs = plt.subplots(n_rows, n_cols)
+    for i in range(n_imgs):
+      x = imgs[0,:,:,i]
+      if isinstance(x, np.ndarray):
+        x_ = x
+      else:
+        x_ = x.numpy()
+      np_x = (255 * x_).astype(np.uint8).reshape((height,width))
+      axs[int(i/n_cols), i%n_cols].imshow(np_x, cmap="Greys")
+
+    # get rid of subfigure axes
+    for k in range(n_rows*n_cols):
+      axs[int(k/n_cols), k%n_cols].axis("off")
+    
+    plt.savefig(output_file)
+
+
+
 
 class SAAELRHalver(tf.keras.callbacks.Callback):
 
