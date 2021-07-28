@@ -64,3 +64,18 @@ For the particular case of GCP AI platform, it's better to use a different build
 
 To run and end-to-end generative pipeline using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a few hours.
 
+
+## Models
+
+Sequential models from Keras are supported out of the box by specifying them on configuration files; custom generative architectures are defined in the `fontai.prediction.models` module. There are two kind of custom generative architectures:
+
+* Character style [`CharStyleSAAE` class]: These models take batches of individual, randomly chosen characters from different fonts, and use an adversarial autoencoder architecture to embed character styles in a latent space. 
+
+* Font style [`PureFontStyleSAAE` class, `TensorFontStyleSAAE` class]: These architectures take batches of entire fonts and try to use information from all characters to encode the font's style. 
+
+The main difference is that for font style models, a given style vector will map to consistent character styles across the font's character set, which is not necessarily true for character style models.
+
+## Input preprocessing
+
+Model inputs can be mapped and filtered with custom transformations defined in `fontai.prediction.custom_filters` and `fontai.prediction.custom_mappers` before being used for training, for example to just use fonts with certain name patterns such as 'serif' or '3d', or to round normalised pixels to 0 or 1; another good example is that since free fonts usually come with malformed characters or symbol fonts that don't look like characters, using batches of scored images that have been passed through a classifier can be useful to filter misclassified or low-confidence images. This generally improves the final generative model's quality. For such a filter, input records must have the `ScoredLabeledChar` or `ScoredLabeledFont` schema, in the `fontai.io.records` module.
+
