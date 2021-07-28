@@ -1,4 +1,6 @@
 
+## This chunk uses an Anaconda image as a base
+
 # FROM continuumio/anaconda3
 # WORKDIR /root/textfont-ai
 # COPY env/conda-env.yaml ./conda-env.yaml 

@@ -224,3 +224,24 @@ class SAAELRHalver(tf.keras.callbacks.Callback):
         self.initial_lr = float(backend.get_value(model_lr))
       lr = max(self.initial_lr/2**int(epoch/self.halve_after), self.min_lr)
       backend.set_value(model_lr, backend.get_value(lr))
+
+
+class SAAESnapshot(tf.keras.callbacks.Callback):
+
+  """Saves the model every certain number of iterations
+  
+  Attributes:
+      frequency (int): frequency of snapshots in epochs
+      snapshot_path (str): output path
+  
+  """
+
+  def __init__(self, snapshot_path: str, frequency: int = 10):
+
+    self.frequency = frequency
+    self.snapshot_path = snapshot_path
+
+  def on_epoch_end(self, epoch, logs=None):
+
+    if epoch > 1 and epoch % self.frequency == 0:
+      self.model.save(self.snapshot_path)
