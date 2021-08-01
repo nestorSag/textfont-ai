@@ -24,16 +24,19 @@ Trained generative models can be deployed to a small Dash app in which the embed
 
 ## Setup
 
-If you have a working installation of Tensorflow, cuDNN and CUDA, just clone the repo and install the `fontai` package:
+Clone the repo and go to its root folder. If you have a working installation of Tensorflow, cuDNN and CUDA, just install the `fontai` package:
 
 ```
-git clone https://github.com/nestorSag/textfont-ai.git
-cd textfont-ai
 pip install -e src/fontai/
 ```
 
-Otherwise, you can use Miniconda to run `conda env create -f conda-env.yaml` before installing the package to set up the environment, activate it with `conda activate textfont-ai` and install the package.
+Otherwise, you can setup the environment with Miniconda:
 
+```
+conda env create -f conda-env.yaml
+conda activate textfont-ai
+pip install -e src/fontai/
+```
 
 ## Usage
 
@@ -60,10 +63,6 @@ docker build -t <username>/fontai-runner:1.0.0 .
 
 For the particular case of GCP AI platform, it's better to use a different build; look at the comments in the Dockerfile. This image can be deployed to a cloud instance for training, passing the same parameters as for the `fontairun` command, which is its entry point. In this case, the configuration file must be stored in a reachable location and its full path provided as the `config-file` argument; at the moment, only Google Storage is supported, i.e. a `gs://...` path (Google Storage paths are also supported for data input, output and model paths in the configuration file). Other cloud providers can be implemented by extending the `fontai.io.storage` module.
 
-## Quickstart
-
-To run and end-to-end generative pipeline using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a few hours.
-
 
 ## Models
 
@@ -75,7 +74,18 @@ Sequential models from Keras are supported out of the box by specifying them on 
 
 The main difference is that for font style models, a given style vector will map to consistent character styles across the font's character set, which is not necessarily true for character style models.
 
+For more details, see this [post](https://www.nestorsag.com/blog/font2vec-generative-models-for-typefaces/).
+
 ## Input preprocessing
 
 Model inputs can be mapped and filtered with custom transformations defined in `fontai.prediction.custom_filters` and `fontai.prediction.custom_mappers` before being used for training, for example to just use fonts with certain name patterns such as 'serif' or '3d', or to round normalised pixels to 0 or 1; another good example is that since free fonts usually come with malformed characters or symbol fonts that don't look like characters, using batches of scored images that have been passed through a classifier can be useful to filter misclassified or low-confidence images. This generally improves the final generative model's quality. For such a filter, input records must have the `ScoredLabeledChar` or `ScoredLabeledFont` schema, in the `fontai.io.records` module.
 
+## Quickstart
+
+To run and end-to-end generative pipeline using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a few hours.
+
+Pretrained decoder models for character and font styles are in the `pretrained` folder, and deployment configurations are in `config/parameters/deploy-pretrained`. To deploy a Dash web app to visualise the style space from the char model, do:
+
+```
+fontairun --stage deployment --config-file config/parameters/deploy-pretrained/chars-style-model.yaml
+```

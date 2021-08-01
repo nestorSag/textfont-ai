@@ -1,0 +1,10 @@
+decoder_path: pretrained/CharStyleSAAE_decoder
+charset_size: 26
+style_vector_size: 10
+style_sampler: normal
+min_style_value: -3
+max_style_value: 3
+#plotter: TensorSAAEAlphabetPlotter
+style_grid_size: 60
+dash_args:
+  debug: true
