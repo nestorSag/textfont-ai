@@ -3,6 +3,13 @@
 
 This package contains the codebase of an end-to-end ML pipeline to train generative models for text font generation from scrapped open source font files. All of the ML stages, from ingestion to model deployment are designed to be run from a simple entrypoint command passing configuration files with comprehensive schemas. 
 
+<p align="center" style="font-size:20px; margin:10px 10px 0px 10px">
+    <em>Generative font model example</em>
+</p>
+<p align="center" style="font-size:20px; margin:10px 10px 40px 10px">
+  <img src="https://www.nestorsag.com/assets/static/tensor-fonts.a0d7643.332718c7c7b045b834cafc9cedd93a5f.gif" alt="Generative font example" width="640px">
+</p>
+
 ## Stages
 
 ### Ingestion (urls -> zipped font files)
