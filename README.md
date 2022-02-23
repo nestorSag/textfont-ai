@@ -16,10 +16,10 @@ This package contains the codebase of an end-to-end ML pipeline to train generat
   - [Docs](#docs)
   - [Test runs](#test-runs)
 - [Lifecycle Stages](#stages)
-  - [Ingestion](#1.-ingestion)
-  - [Preprocessing](#2.-preprocessing)
-  - [Training](#3.-training)
-  - [Deployment](#4.-deployment)
+  - [Ingestion](#ingestion)
+  - [Preprocessing](#preprocessing)
+  - [Training](#training)
+  - [Deployment](#deployment)
 - [Features](#features)
   - [Experiment tracking](#experiment-tracking)
   - [Scalability](#scalability)
@@ -71,20 +71,20 @@ fontairun --stage deployment --config-file config/parameters/deploy-pretrained/c
 
 ## Stages
 
-### 1. Ingestion
+### Ingestion
 
 The data is ingested by scrapping multiple websites for free font files, storing them as zipped `ttf`/`otf` files. At least one of the original scrappers classes (in `fontai.io.scrappers`) have stopped working as of June 2021 due to changes in the structure of the source websites, however the set of Google's fonts can still be reliably downloaded. New scrapper classes for different websites can be easily added.
 
 
-### 2. Preprocessing 
+### Preprocessing 
 
 Font files are unzipped and converted from `ttf` or `otf` to `k x k` PNG images for each alphanumeric character in each font using Apache Beam, and are then batched together into Tensorflow record files for model consumption. They can be stored as individual characters in no particular order or grouping all characters by font. The latter is useful to train some specific generative architectures in the `fontai.scoring.models` module.
 
-### 3. Training 
+### Training 
 
 The models are ran using Tensorflow's `keras` framework. Custom generative architectures are defined in `fontai.prediction.models`, and are variations of an [adversarial autoencoder architecture](https://arxiv.org/abs/1511.05644). Any sequential Keras architecture is supported out of the box, and custom architectures defined in said module are also supported.
 
-### 4. Deployment 
+### Deployment 
 
 Trained generative models can be deployed to a small Dash app in which the embedded typeface style space can be explored interactively. 
 
@@ -117,7 +117,14 @@ Sequential models from Keras are supported out of the box by specifying them on 
 
 The main difference is that for font style models, a given style vector will map to consistent character styles across the font's character set, which is not necessarily true for character style models.
 
-For more details, see this [post](https://www.nestorsag.com/blog/font2vec-generative-models-for-typefaces/).
+<p align="center" style="font-size:20px; margin:10px 10px 0px 10px">
+    <em>Generative font model example</em>
+</p>
+<p align="center" style="font-size:20px; margin:10px 10px 40px 10px">
+  <img src="https://www.nestorsag.com/assets/static/architecture.cbab2cf.e7156abd33fd01b1a301f1e27a886678.png" alt="One of the custom model architectures" width="640px">
+</p>
+
+For more details, see [this](https://www.nestorsag.com/blog/font2vec-generative-models-for-typefaces/) informal blog post.
 
 ### Input preprocessing
 
