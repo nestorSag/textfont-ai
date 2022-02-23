@@ -11,22 +11,33 @@ This package contains the codebase of an end-to-end ML pipeline to train generat
 </p>
 
 
-* [Setup](#-setup)
-* [lifecycle Stages](#-stages)
-* [Features](#-features)
+- [Setup](#setup)
+  - [Usage](#usage)
+  - [Docs](#docs)
+  - [Test runs](#test-runs)
+- [Lifecycle Stages](#stages)
+  - [Ingestion](#1.-ingestion)
+  - [Preprocessing](#2.-preprocessing)
+  - [Training](#3.-training)
+  - [Deployment](#4.-deployment)
+- [Features](#features)
+  - [Experiment tracking](#experiment-tracking)
+  - [Scalability](#scalability)
+  - [Supported model architectures](#supported-model-architectures)
+  - [Input preprocessing](#4input-preprocessing)
 
 
 ## Setup
 
 * Clone the repo
 
-* If there is a working installation of Tensorflow, cuDNN and CUDA, just install the `fontai` package:
+* If there is a working installation of Tensorflow, cuDNN and CUDA, just install the `fontai` package from the root folder:
 
 ```
 pip install -e src/fontai/
 ```
 
-* Otherwise, you can setup the environment with Miniconda:
+* Otherwise, you can setup the environment with Miniconda, also from the root folder:
 
 ```
 conda env create -f conda-env.yaml
@@ -42,11 +53,15 @@ The main entry point to the package is the command  `fontairun` installed with t
 fontairun --help
 ```
 
-Schemas for a small pipeline run that trains a generative model with Google's public fonts with around 4k examples can be found in `config/parameters/google-fonts-examples/`, and a script putting all stages together can be found in `scripts/google-fonts-pipeline.sh` (running this can be slow without a GPU). In order to scrape other data sources, new `Scrapper` classes need to be implemented in the `fontai.io.scrappers` module and referenced in the passed configuration file, otherwise font zip files can be downloaded by other means and their location passed to the preprocessing and training stages. The full package's documentation can be found [here](https://nestorsag.github.io/textfont-ai/).
+### Docs
+
+[API docs](https://nestorsag.github.io/textfont-ai/)
 
 ### Test runs
 
-To run and end-to-end generative pipeline using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a few hours.
+Schemas for a small pipeline run that trains a generative model with Google's public fonts with around 4k examples can be found in `config/parameters/google-fonts-examples/`, and a script putting all stages together can be found in `scripts/google-fonts-pipeline.sh` (running this can be slow without a GPU). In order to scrape other data sources, new `Scrapper` classes need to be implemented in the `fontai.io.scrappers` module and referenced in the passed configuration file, otherwise font zip files can be downloaded by other means and their location passed to the preprocessing and training stages.
+
+To run and end-to-end generative pipeline locally using Google's public fonts, run `scripts/google-fonts-pipeline.sh`. It might take a couple hours.
 
 Pretrained decoder models for character and font styles are in the `pretrained` folder, and deployment configurations are in `config/parameters/deploy-pretrained`. To deploy a Dash web app to visualise the style space from the char model, do:
 
