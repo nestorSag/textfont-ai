@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>fontai.io.storage API documentation</title>
+<meta name="description" content="This module provides an abstraction fo the storage layer in order to read or write bytestreams to different media. Currently, read/writes are …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>fontai.io.storage</code></h1>
+</header>
+<section id="section-intro">
+<p>This module provides an abstraction fo the storage layer in order to read or write bytestreams to different media. Currently, read/writes are supported for local storage and GCS, and reads are also supported for URLs</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;This module provides an abstraction fo the storage layer in order to read or write bytestreams to different media. Currently, read/writes are supported for local storage and GCS, and reads are also supported for URLs
+
+
+&#34;&#34;&#34;
+
+from __future__ import annotations
+from pathlib import Path
+import io
+import zipfile
+import sys
+import re
+import typing as t
+import requests
+from abc import ABC, abstractmethod
+import logging
+
+
+from apache_beam.io.gcp.gcsio import GcsIO
+
+from numpy import ndarray
+
+logger = logging.getLogger(__name__)
+
+
+class BytestreamHandler(ABC):
+  &#34;&#34;&#34;This class provides an interface to underlying storage media
+
+  &#34;&#34;&#34;
+  
+  @abstractmethod
+  def read(self, path: str) -&gt; bytes:
+    &#34;&#34;&#34;Reads the byte contents from a file
+    
+    Args:
+        path (str): path to file
+
+    Returns:
+        bytes object
+    &#34;&#34;&#34;
+    pass
+
+  @abstractmethod
+  def write(self, path: str, content: bytes) -&gt; None:
+    &#34;&#34;&#34;Writes a bytestream to storage
+    
+    Args:
+        path (str): Description
+        content (bytes): Description
+    &#34;&#34;&#34;
+    pass
+
+  @abstractmethod
+  def list_sources(self, path: str) -&gt; t.Generator[str, None, None]:
+    &#34;&#34;&#34;List files in the folder that path points to
+    
+    Args:
+        path (str): Target folder
+
+    Returns:
+        A generator containing string paths to all sources inside target folder
+
+    &#34;&#34;&#34;
+    pass
+
+
+class LocalBytestreamHandler(BytestreamHandler):
+  &#34;&#34;&#34;Class to interface with local storage
+  &#34;&#34;&#34;
+  
+  def read(self, path: str) -&gt; bytes:
+    path = Path(path)
+    if path.is_file():
+      #return InMemoryBytestream(name=path.name, content=path.read_bytes())
+      return path.read_bytes()
+    else:
+      raise Exception(f&#34;Path ({str(path)}) does not point to file&#34;)
+      #raise Exception(f&#34;An error occurred while trying to read {str(path)}: {e}&#34;)
+
+  def write(self, path: str, content: bytes) -&gt; None:
+    path = Path(path)
+    Path(path.parent).mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+
+  def list_sources(self, path: str):
+    path = Path(path)
+    contents = path.iterdir()
+    return (str(content) for content in contents if content.is_file())
+
+
+class GcsBytestreamHandler(BytestreamHandler):
+
+  &#34;&#34;&#34;Class to interface with Google Cloud Storage.
+  &#34;&#34;&#34;
+  
+  def read(self, url: str) -&gt; bytes:
+    gcs_file = GcsIO().open(url,mode=&#34;r&#34;)
+    content = gcs_file.read()
+    gcs_file.close()
+    return content
+
+  def write(self, url: str, content: bytes) -&gt; None:
+    gcs_file = GcsIO().open(url,mode=&#34;w&#34;)
+    gcs_file.write(content)
+    gcs_file.close()
+
+  def list_sources(self,url: str) -&gt; t.List[str]:
+    #url = self.as_str(url) 
+    raw_list = list(GcsIO().list_prefix(url).keys())
+
+    return (elem for elem in raw_list if Path(elem) != Path(url))
+
+
+class UrlBytestreamHandler(BytestreamHandler):
+
+  &#34;&#34;&#34;Class to download files from URLs
+  &#34;&#34;&#34;
+  
+  def read(self, url: str) -&gt;bytes:
+    r = requests.get(url, stream=True)
+    bf = io.BytesIO()
+    with io.BytesIO() as bf:
+      for chunk in r.iter_content(chunk_size=1024*1024):
+        bf.write(chunk)
+      content = bf.getvalue()
+    return content
+
+  def write(self, url: str, content: bytes):
+    raise NotImplementedError(&#34;Bytestreams cannot be written to a url address&#34;)
+
+  def list_sources(self,url: str) -&gt; t.List[str]:
+    raise NotImplementedError(&#34;Bytestreams cannot be listed from a url address&#34;)
+
+
+class BytestreamHandlerFactory(object):
+
+  &#34;&#34;&#34;Factory method that determines the appropriate file handler class based on the string path
+  
+  &#34;&#34;&#34;
+  allowed_prefixes = {
+    &#34;gs://&#34;: GcsBytestreamHandler,
+    &#34;https://&#34;: UrlBytestreamHandler,
+    &#34;http://&#34;: UrlBytestreamHandler
+  }
+
+  @classmethod
+  def create(cls, path: str):
+    &#34;&#34;&#34;Creates an appropriate BystreamHandler instance for the storage medium referenced in path; defaults to local storage if no match is found for remote storage media.
+    
+    Args:
+        path (str): Path to storage location
+    
+    Returns:
+        BytestreamHandler: storage interface for the matched storage medium.
+    
+    &#34;&#34;&#34;
+
+    for prefix in cls.allowed_prefixes:
+      if prefix in path:
+        return cls.allowed_prefixes[prefix]()
+
+    return LocalBytestreamHandler()
+
+
+class BytestreamPath(object):
+  &#34;&#34;&#34;
+    Data reader/writer class that abstracts the underlying storage location. Supports local and GCS storage and downloadable URLs
+
+
+  &#34;&#34;&#34;
+
+  def __init__(self, source_str: str):
+    &#34;&#34;&#34;
+    
+    Args:
+        source_str (str): target storage location
+    &#34;&#34;&#34;
+    self.string = str(source_str)
+
+    #extensions
+    self.is_gcs = &#34;gs://&#34; in self.string
+    self.is_http = &#34;http://&#34; in self.string
+    self.is_https = &#34;https://&#34; in self.string
+
+    self.handler = BytestreamHandlerFactory.create(self.string)
+
+  @property
+  def filename(self):
+    if self.is_url():
+      filename = self.string.split(&#34;/&#34;)[-1]
+    else:
+      filename = Path(self.string).name
+    return filename
+
+  def is_url(self):
+    &#34;&#34;&#34;Returns a boolean 
+    
+    &#34;&#34;&#34;
+    return self.is_gcs or self.is_http or self.is_https
+
+  def extend_url_path(self, suffix: str) -&gt; BytestreamPath:
+    &#34;&#34;&#34;Appends a suffix to the instance&#39;s storage path 
+    
+    Args:
+        suffix (str): suffix. Usually a filename.
+    
+    Returns:
+        BytestreamPath: BytestreamPath pointing to the suffixed storage path
+    
+    Raises:
+        ValueError: If no remote storage is matched to the instance&#39;s path
+    &#34;&#34;&#34;
+    def extend(preffix, string, suffix):
+      suffixed = string.replace(preffix,&#34;&#34;) + &#34;/&#34; + suffix
+      suffixed = re.sub(&#34;/+&#34;,&#34;/&#34;,suffixed)
+      return BytestreamPath(preffix + suffixed)
+
+    if self.is_gcs:
+      return extend(&#34;gs://&#34;, self.string, suffix)
+    elif self.is_http:
+      return extend(&#34;http://&#34;, self.string, suffix)
+    elif self.is_https:
+      return extend(&#34;https://&#34;, self.string, suffix)
+    else:
+      raise ValueError(&#34;url does not match any valid preffix.&#34;)
+
+  def read_bytes(self) -&gt; bytes:
+    &#34;&#34;&#34;
+      Reads bystream from the path
+
+      Returns :
+          the file&#39;s bytestream
+    &#34;&#34;&#34;
+    return self.handler.read(self.string)
+
+  def write_bytes(self,content: bytes) -&gt; None:
+    &#34;&#34;&#34;
+      Writes bytestream to path
+    &#34;&#34;&#34;
+
+    self.handler.write(self.string, content)
+
+  def list_sources(self) -&gt; t.Generator[BytestreamPath, None, None]:
+    &#34;&#34;&#34;
+      List files (but not dirs) in the folder given by the instance&#39;s storage path
+
+      Returns a generator of BytestreamPath objects corresponding to each source file.
+    &#34;&#34;&#34;
+
+    for elem in self.handler.list_sources(self.string):
+      yield BytestreamPath(elem)
+
+  def __truediv__(self, path: str) -&gt; BytestreamPath:
+    if not isinstance(path, str):
+      raise TypeError(&#34;path must be a string&#34;)
+    elif self.is_url():
+      return self.extend_url_path(path)
+    else:
+      return BytestreamPath(str(Path(self.string) / path))
+
+  def __str__(self):
+    return self.string</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="fontai.io.storage.BytestreamHandler"><code class="flex name class">
+<span>class <span class="ident">BytestreamHandler</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class provides an interface to underlying storage media</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BytestreamHandler(ABC):
+  &#34;&#34;&#34;This class provides an interface to underlying storage media
+
+  &#34;&#34;&#34;
+  
+  @abstractmethod
+  def read(self, path: str) -&gt; bytes:
+    &#34;&#34;&#34;Reads the byte contents from a file
+    
+    Args:
+        path (str): path to file
+
+    Returns:
+        bytes object
+    &#34;&#34;&#34;
+    pass
+
+  @abstractmethod
+  def write(self, path: str, content: bytes) -&gt; None:
+    &#34;&#34;&#34;Writes a bytestream to storage
+    
+    Args:
+        path (str): Description
+        content (bytes): Description
+    &#34;&#34;&#34;
+    pass
+
+  @abstractmethod
+  def list_sources(self, path: str) -&gt; t.Generator[str, None, None]:
+    &#34;&#34;&#34;List files in the folder that path points to
+    
+    Args:
+        path (str): Target folder
+
+    Returns:
+        A generator containing string paths to all sources inside target folder
+
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="fontai.io.storage.GcsBytestreamHandler" href="#fontai.io.storage.GcsBytestreamHandler">GcsBytestreamHandler</a></li>
+<li><a title="fontai.io.storage.LocalBytestreamHandler" href="#fontai.io.storage.LocalBytestreamHandler">LocalBytestreamHandler</a></li>
+<li><a title="fontai.io.storage.UrlBytestreamHandler" href="#fontai.io.storage.UrlBytestreamHandler">UrlBytestreamHandler</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.storage.BytestreamHandler.list_sources"><code class="name flex">
+<span>def <span class="ident">list_sources</span></span>(<span>self, path: str) ‑> Generator[str, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>List files in the folder that path points to</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Target folder</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>A generator containing string paths to all sources inside target folder</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def list_sources(self, path: str) -&gt; t.Generator[str, None, None]:
+  &#34;&#34;&#34;List files in the folder that path points to
+  
+  Args:
+      path (str): Target folder
+
+  Returns:
+      A generator containing string paths to all sources inside target folder
+
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.storage.BytestreamHandler.read"><code class="name flex">
+<span>def <span class="ident">read</span></span>(<span>self, path: str) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads the byte contents from a file</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>path to file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>bytes object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def read(self, path: str) -&gt; bytes:
+  &#34;&#34;&#34;Reads the byte contents from a file
+  
+  Args:
+      path (str): path to file
+
+  Returns:
+      bytes object
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.storage.BytestreamHandler.write"><code class="name flex">
+<span>def <span class="ident">write</span></span>(<span>self, path: str, content: bytes) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes a bytestream to storage</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Description</dd>
+<dt><strong><code>content</code></strong> :&ensp;<code>bytes</code></dt>
+<dd>Description</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def write(self, path: str, content: bytes) -&gt; None:
+  &#34;&#34;&#34;Writes a bytestream to storage
+  
+  Args:
+      path (str): Description
+      content (bytes): Description
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.storage.BytestreamHandlerFactory"><code class="flex name class">
+<span>class <span class="ident">BytestreamHandlerFactory</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Factory method that determines the appropriate file handler class based on the string path</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BytestreamHandlerFactory(object):
+
+  &#34;&#34;&#34;Factory method that determines the appropriate file handler class based on the string path
+  
+  &#34;&#34;&#34;
+  allowed_prefixes = {
+    &#34;gs://&#34;: GcsBytestreamHandler,
+    &#34;https://&#34;: UrlBytestreamHandler,
+    &#34;http://&#34;: UrlBytestreamHandler
+  }
+
+  @classmethod
+  def create(cls, path: str):
+    &#34;&#34;&#34;Creates an appropriate BystreamHandler instance for the storage medium referenced in path; defaults to local storage if no match is found for remote storage media.
+    
+    Args:
+        path (str): Path to storage location
+    
+    Returns:
+        BytestreamHandler: storage interface for the matched storage medium.
+    
+    &#34;&#34;&#34;
+
+    for prefix in cls.allowed_prefixes:
+      if prefix in path:
+        return cls.allowed_prefixes[prefix]()
+
+    return LocalBytestreamHandler()</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="fontai.io.storage.BytestreamHandlerFactory.allowed_prefixes"><code class="name">var <span class="ident">allowed_prefixes</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="fontai.io.storage.BytestreamHandlerFactory.create"><code class="name flex">
+<span>def <span class="ident">create</span></span>(<span>path: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates an appropriate BystreamHandler instance for the storage medium referenced in path; defaults to local storage if no match is found for remote storage media.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to storage location</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></code></dt>
+<dd>storage interface for the matched storage medium.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def create(cls, path: str):
+  &#34;&#34;&#34;Creates an appropriate BystreamHandler instance for the storage medium referenced in path; defaults to local storage if no match is found for remote storage media.
+  
+  Args:
+      path (str): Path to storage location
+  
+  Returns:
+      BytestreamHandler: storage interface for the matched storage medium.
+  
+  &#34;&#34;&#34;
+
+  for prefix in cls.allowed_prefixes:
+    if prefix in path:
+      return cls.allowed_prefixes[prefix]()
+
+  return LocalBytestreamHandler()</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.storage.BytestreamPath"><code class="flex name class">
+<span>class <span class="ident">BytestreamPath</span></span>
+<span>(</span><span>source_str: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Data reader/writer class that abstracts the underlying storage location. Supports local and GCS storage and downloadable URLs</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_str</code></strong> :&ensp;<code>str</code></dt>
+<dd>target storage location</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BytestreamPath(object):
+  &#34;&#34;&#34;
+    Data reader/writer class that abstracts the underlying storage location. Supports local and GCS storage and downloadable URLs
+
+
+  &#34;&#34;&#34;
+
+  def __init__(self, source_str: str):
+    &#34;&#34;&#34;
+    
+    Args:
+        source_str (str): target storage location
+    &#34;&#34;&#34;
+    self.string = str(source_str)
+
+    #extensions
+    self.is_gcs = &#34;gs://&#34; in self.string
+    self.is_http = &#34;http://&#34; in self.string
+    self.is_https = &#34;https://&#34; in self.string
+
+    self.handler = BytestreamHandlerFactory.create(self.string)
+
+  @property
+  def filename(self):
+    if self.is_url():
+      filename = self.string.split(&#34;/&#34;)[-1]
+    else:
+      filename = Path(self.string).name
+    return filename
+
+  def is_url(self):
+    &#34;&#34;&#34;Returns a boolean 
+    
+    &#34;&#34;&#34;
+    return self.is_gcs or self.is_http or self.is_https
+
+  def extend_url_path(self, suffix: str) -&gt; BytestreamPath:
+    &#34;&#34;&#34;Appends a suffix to the instance&#39;s storage path 
+    
+    Args:
+        suffix (str): suffix. Usually a filename.
+    
+    Returns:
+        BytestreamPath: BytestreamPath pointing to the suffixed storage path
+    
+    Raises:
+        ValueError: If no remote storage is matched to the instance&#39;s path
+    &#34;&#34;&#34;
+    def extend(preffix, string, suffix):
+      suffixed = string.replace(preffix,&#34;&#34;) + &#34;/&#34; + suffix
+      suffixed = re.sub(&#34;/+&#34;,&#34;/&#34;,suffixed)
+      return BytestreamPath(preffix + suffixed)
+
+    if self.is_gcs:
+      return extend(&#34;gs://&#34;, self.string, suffix)
+    elif self.is_http:
+      return extend(&#34;http://&#34;, self.string, suffix)
+    elif self.is_https:
+      return extend(&#34;https://&#34;, self.string, suffix)
+    else:
+      raise ValueError(&#34;url does not match any valid preffix.&#34;)
+
+  def read_bytes(self) -&gt; bytes:
+    &#34;&#34;&#34;
+      Reads bystream from the path
+
+      Returns :
+          the file&#39;s bytestream
+    &#34;&#34;&#34;
+    return self.handler.read(self.string)
+
+  def write_bytes(self,content: bytes) -&gt; None:
+    &#34;&#34;&#34;
+      Writes bytestream to path
+    &#34;&#34;&#34;
+
+    self.handler.write(self.string, content)
+
+  def list_sources(self) -&gt; t.Generator[BytestreamPath, None, None]:
+    &#34;&#34;&#34;
+      List files (but not dirs) in the folder given by the instance&#39;s storage path
+
+      Returns a generator of BytestreamPath objects corresponding to each source file.
+    &#34;&#34;&#34;
+
+    for elem in self.handler.list_sources(self.string):
+      yield BytestreamPath(elem)
+
+  def __truediv__(self, path: str) -&gt; BytestreamPath:
+    if not isinstance(path, str):
+      raise TypeError(&#34;path must be a string&#34;)
+    elif self.is_url():
+      return self.extend_url_path(path)
+    else:
+      return BytestreamPath(str(Path(self.string) / path))
+
+  def __str__(self):
+    return self.string</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="fontai.io.storage.BytestreamPath.filename"><code class="name">var <span class="ident">filename</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def filename(self):
+  if self.is_url():
+    filename = self.string.split(&#34;/&#34;)[-1]
+  else:
+    filename = Path(self.string).name
+  return filename</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.storage.BytestreamPath.extend_url_path"><code class="name flex">
+<span>def <span class="ident">extend_url_path</span></span>(<span>self, suffix: str) ‑> <a title="fontai.io.storage.BytestreamPath" href="#fontai.io.storage.BytestreamPath">BytestreamPath</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Appends a suffix to the instance's storage path </p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>suffix</code></strong> :&ensp;<code>str</code></dt>
+<dd>suffix. Usually a filename.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="fontai.io.storage.BytestreamPath" href="#fontai.io.storage.BytestreamPath">BytestreamPath</a></code></dt>
+<dd>BytestreamPath pointing to the suffixed storage path</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If no remote storage is matched to the instance's path</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extend_url_path(self, suffix: str) -&gt; BytestreamPath:
+  &#34;&#34;&#34;Appends a suffix to the instance&#39;s storage path 
+  
+  Args:
+      suffix (str): suffix. Usually a filename.
+  
+  Returns:
+      BytestreamPath: BytestreamPath pointing to the suffixed storage path
+  
+  Raises:
+      ValueError: If no remote storage is matched to the instance&#39;s path
+  &#34;&#34;&#34;
+  def extend(preffix, string, suffix):
+    suffixed = string.replace(preffix,&#34;&#34;) + &#34;/&#34; + suffix
+    suffixed = re.sub(&#34;/+&#34;,&#34;/&#34;,suffixed)
+    return BytestreamPath(preffix + suffixed)
+
+  if self.is_gcs:
+    return extend(&#34;gs://&#34;, self.string, suffix)
+  elif self.is_http:
+    return extend(&#34;http://&#34;, self.string, suffix)
+  elif self.is_https:
+    return extend(&#34;https://&#34;, self.string, suffix)
+  else:
+    raise ValueError(&#34;url does not match any valid preffix.&#34;)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.storage.BytestreamPath.is_url"><code class="name flex">
+<span>def <span class="ident">is_url</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a boolean</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_url(self):
+  &#34;&#34;&#34;Returns a boolean 
+  
+  &#34;&#34;&#34;
+  return self.is_gcs or self.is_http or self.is_https</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.storage.BytestreamPath.list_sources"><code class="name flex">
+<span>def <span class="ident">list_sources</span></span>(<span>self) ‑> Generator[<a title="fontai.io.storage.BytestreamPath" href="#fontai.io.storage.BytestreamPath">BytestreamPath</a>, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>List files (but not dirs) in the folder given by the instance's storage path</p>
+<p>Returns a generator of BytestreamPath objects corresponding to each source file.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list_sources(self) -&gt; t.Generator[BytestreamPath, None, None]:
+  &#34;&#34;&#34;
+    List files (but not dirs) in the folder given by the instance&#39;s storage path
+
+    Returns a generator of BytestreamPath objects corresponding to each source file.
+  &#34;&#34;&#34;
+
+  for elem in self.handler.list_sources(self.string):
+    yield BytestreamPath(elem)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.storage.BytestreamPath.read_bytes"><code class="name flex">
+<span>def <span class="ident">read_bytes</span></span>(<span>self) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads bystream from the path</p>
+<p>Returns :
+the file's bytestream</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_bytes(self) -&gt; bytes:
+  &#34;&#34;&#34;
+    Reads bystream from the path
+
+    Returns :
+        the file&#39;s bytestream
+  &#34;&#34;&#34;
+  return self.handler.read(self.string)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.storage.BytestreamPath.write_bytes"><code class="name flex">
+<span>def <span class="ident">write_bytes</span></span>(<span>self, content: bytes) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes bytestream to path</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_bytes(self,content: bytes) -&gt; None:
+  &#34;&#34;&#34;
+    Writes bytestream to path
+  &#34;&#34;&#34;
+
+  self.handler.write(self.string, content)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.storage.GcsBytestreamHandler"><code class="flex name class">
+<span>class <span class="ident">GcsBytestreamHandler</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class to interface with Google Cloud Storage.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GcsBytestreamHandler(BytestreamHandler):
+
+  &#34;&#34;&#34;Class to interface with Google Cloud Storage.
+  &#34;&#34;&#34;
+  
+  def read(self, url: str) -&gt; bytes:
+    gcs_file = GcsIO().open(url,mode=&#34;r&#34;)
+    content = gcs_file.read()
+    gcs_file.close()
+    return content
+
+  def write(self, url: str, content: bytes) -&gt; None:
+    gcs_file = GcsIO().open(url,mode=&#34;w&#34;)
+    gcs_file.write(content)
+    gcs_file.close()
+
+  def list_sources(self,url: str) -&gt; t.List[str]:
+    #url = self.as_str(url) 
+    raw_list = list(GcsIO().list_prefix(url).keys())
+
+    return (elem for elem in raw_list if Path(elem) != Path(url))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.io.storage.BytestreamHandler.list_sources" href="#fontai.io.storage.BytestreamHandler.list_sources">list_sources</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.read" href="#fontai.io.storage.BytestreamHandler.read">read</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.write" href="#fontai.io.storage.BytestreamHandler.write">write</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.io.storage.LocalBytestreamHandler"><code class="flex name class">
+<span>class <span class="ident">LocalBytestreamHandler</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class to interface with local storage</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LocalBytestreamHandler(BytestreamHandler):
+  &#34;&#34;&#34;Class to interface with local storage
+  &#34;&#34;&#34;
+  
+  def read(self, path: str) -&gt; bytes:
+    path = Path(path)
+    if path.is_file():
+      #return InMemoryBytestream(name=path.name, content=path.read_bytes())
+      return path.read_bytes()
+    else:
+      raise Exception(f&#34;Path ({str(path)}) does not point to file&#34;)
+      #raise Exception(f&#34;An error occurred while trying to read {str(path)}: {e}&#34;)
+
+  def write(self, path: str, content: bytes) -&gt; None:
+    path = Path(path)
+    Path(path.parent).mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+
+  def list_sources(self, path: str):
+    path = Path(path)
+    contents = path.iterdir()
+    return (str(content) for content in contents if content.is_file())</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.io.storage.BytestreamHandler.list_sources" href="#fontai.io.storage.BytestreamHandler.list_sources">list_sources</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.read" href="#fontai.io.storage.BytestreamHandler.read">read</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.write" href="#fontai.io.storage.BytestreamHandler.write">write</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.io.storage.UrlBytestreamHandler"><code class="flex name class">
+<span>class <span class="ident">UrlBytestreamHandler</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class to download files from URLs</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class UrlBytestreamHandler(BytestreamHandler):
+
+  &#34;&#34;&#34;Class to download files from URLs
+  &#34;&#34;&#34;
+  
+  def read(self, url: str) -&gt;bytes:
+    r = requests.get(url, stream=True)
+    bf = io.BytesIO()
+    with io.BytesIO() as bf:
+      for chunk in r.iter_content(chunk_size=1024*1024):
+        bf.write(chunk)
+      content = bf.getvalue()
+    return content
+
+  def write(self, url: str, content: bytes):
+    raise NotImplementedError(&#34;Bytestreams cannot be written to a url address&#34;)
+
+  def list_sources(self,url: str) -&gt; t.List[str]:
+    raise NotImplementedError(&#34;Bytestreams cannot be listed from a url address&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.io.storage.BytestreamHandler.list_sources" href="#fontai.io.storage.BytestreamHandler.list_sources">list_sources</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.read" href="#fontai.io.storage.BytestreamHandler.read">read</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.write" href="#fontai.io.storage.BytestreamHandler.write">write</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="fontai.io" href="index.html">fontai.io</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="fontai.io.storage.BytestreamHandler" href="#fontai.io.storage.BytestreamHandler">BytestreamHandler</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.storage.BytestreamHandler.list_sources" href="#fontai.io.storage.BytestreamHandler.list_sources">list_sources</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.read" href="#fontai.io.storage.BytestreamHandler.read">read</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandler.write" href="#fontai.io.storage.BytestreamHandler.write">write</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.storage.BytestreamHandlerFactory" href="#fontai.io.storage.BytestreamHandlerFactory">BytestreamHandlerFactory</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.storage.BytestreamHandlerFactory.allowed_prefixes" href="#fontai.io.storage.BytestreamHandlerFactory.allowed_prefixes">allowed_prefixes</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamHandlerFactory.create" href="#fontai.io.storage.BytestreamHandlerFactory.create">create</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.storage.BytestreamPath" href="#fontai.io.storage.BytestreamPath">BytestreamPath</a></code></h4>
+<ul class="two-column">
+<li><code><a title="fontai.io.storage.BytestreamPath.extend_url_path" href="#fontai.io.storage.BytestreamPath.extend_url_path">extend_url_path</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamPath.filename" href="#fontai.io.storage.BytestreamPath.filename">filename</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamPath.is_url" href="#fontai.io.storage.BytestreamPath.is_url">is_url</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamPath.list_sources" href="#fontai.io.storage.BytestreamPath.list_sources">list_sources</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamPath.read_bytes" href="#fontai.io.storage.BytestreamPath.read_bytes">read_bytes</a></code></li>
+<li><code><a title="fontai.io.storage.BytestreamPath.write_bytes" href="#fontai.io.storage.BytestreamPath.write_bytes">write_bytes</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.storage.GcsBytestreamHandler" href="#fontai.io.storage.GcsBytestreamHandler">GcsBytestreamHandler</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.io.storage.LocalBytestreamHandler" href="#fontai.io.storage.LocalBytestreamHandler">LocalBytestreamHandler</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.io.storage.UrlBytestreamHandler" href="#fontai.io.storage.UrlBytestreamHandler">UrlBytestreamHandler</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

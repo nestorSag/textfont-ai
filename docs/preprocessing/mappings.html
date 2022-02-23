@@ -1,0 +1,1710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>fontai.preprocessing.mappings API documentation</title>
+<meta name="description" content="This module contains all the transformations and abstractions required to extract labeled examples ready to be used for ML training from zipped font …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>fontai.preprocessing.mappings</code></h1>
+</header>
+<section id="section-intro">
+<p>This module contains all the transformations and abstractions required to extract labeled examples ready to be used for ML training from zipped font files.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;This module contains all the transformations and abstractions required to extract labeled examples ready to be used for ML training from zipped font files.
+
+&#34;&#34;&#34;
+from __future__ import absolute_import
+from collections.abc import Iterable
+import os
+import logging
+import string
+import traceback
+import zipfile
+import io
+import typing as t
+import types
+from abc import ABC, abstractmethod
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageFont, ImageDraw
+import imageio
+import apache_beam as beam
+
+
+from fontai.io.formats import InMemoryZipfile, InMemoryFontfile, InMemoryFile
+from fontai.io.writers import BatchWriter, TfrWriter
+from fontai.io.storage import BytestreamPath
+from fontai.io.records import LabeledChar, LabeledFont, TfrWritable
+
+
+logger = logging.getLogger(__name__)
+
+class ObjectMapper(ABC):
+
+
+  &#34;&#34;&#34;
+  Interface for data transformations that return a generator; useful for one-to-many transformations
+  
+  &#34;&#34;&#34;
+
+  @abstractmethod
+  def raw_map(self,data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+    &#34;&#34;&#34;
+    Applies a transformation to the input data.
+    
+    Args:
+        data (t.Any): input data
+    
+    &#34;&#34;&#34;
+    pass
+
+  def map(self,data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+    &#34;&#34;&#34;
+    Processes a single data instance and returns a generator with output data
+        
+    Args:
+        data (t.Any): input data
+    
+    Returns:
+        t.Generator[t.Any, None, None]: A generator with a variable number of derived data instances
+    
+    Raises:
+        TypeError: Raised if the transformation implemented in raw_map does not return a generator
+    
+    &#34;&#34;&#34;
+    output = self.raw_map(data)
+    if not isinstance(output, types.GeneratorType):
+      raise TypeError(&#34;Output of transform() must be a generator&#34;)
+    return output
+
+
+class ManyToManyMapper(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Wrapper Wrapper class to apply trnsformations to an entire generator of input data
+  
+  
+  Attributes:
+      mapper (ObjectMapper): Description
+  &#34;&#34;&#34;
+
+  def __init__(self, mapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError(&#34;mapper is not an instance of ObjectMapper&#34;)
+
+    self.mapper = mapper
+
+  def raw_map(self, data: t.Iterable[t.Any]) -&gt; t.Generator[t.Any, None, None]:
+    for elem in data:
+      for derived in self.mapper.map(elem):
+        yield derived
+
+
+class PipelineExecutor(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Applies a sequence of transformations to input data.
+    
+  Attributes:
+      stages (ObjectMapper): A list of instances inheriting from ObjectMapper
+  &#34;&#34;&#34;
+
+  def __init__(self, stages: t.List[ObjectMapper]):
+
+    self.stages = stages
+  def raw_map(self, data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+    for stage in self.stages:
+      data = stage.map(data)
+
+    for elem in data:
+      try:
+        yield elem
+      except Exception as e:
+        logger.exception(f&#34;An unexpected exception has occurred while preprocessing an input element. Full trace: {traceback.format_exc()}&#34;)
+
+
+class BeamCompatibleWrapper(beam.DoFn):
+
+  &#34;&#34;&#34;
+  Wrapper class that allows subclasses of ObjectMapper to be used in Beam pipeline stages
+    
+  Attributes:
+      mapper (ObjectMapper): Instance of an ObjectMapper&#39;s subclass
+  
+  &#34;&#34;&#34;
+
+  def __init__(self, mapper: ObjectMapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError(&#34;mapper needs to be a subclass of ObjectMapper&#34;)
+    self.mapper = mapper
+
+  def process(self, data):
+    return self.mapper.map(data)
+
+
+# class ZipReader(ObjectMapper):
+#   &#34;&#34;&#34;
+#   Loads the bytestream from a BytestreamPath object and returns an in memory zip holder object
+  
+#   &#34;&#34;&#34;
+
+#   def raw_map(self, path: BytestreamPath) -&gt; t.Generator[InMemoryZipfile, None, None]:
+#     yield InMemoryZipfile(filename = path.filename, content = path.read_bytes())
+
+
+
+class ZipToFontFiles(ObjectMapper):
+
+  &#34;&#34;&#34;
+    Opens an in-memory zip holder and outputs individual font files
+
+  &#34;&#34;&#34;
+
+  def raw_map(self, file: InMemoryZipfile) -&gt; t.Generator[InMemoryFontfile,None,None]:
+
+    def choose_ext(lst):
+      ttfs = len([x for x in lst if &#34;.ttf&#34; in x.lower()])
+      otfs = len([x for x in lst if &#34;.otf&#34; in x.lower()])
+      if ttfs &gt;= otfs:
+        return &#34;.ttf&#34;
+      else:
+        return &#34;.otf&#34;
+
+    #we assume the stream is a zip file&#39;s contents
+    try:
+      zipped = file.deserialise()
+    except Exception as e:
+      logger.exception(f&#34;Error: source ({file.filename}) can&#39;t be read as zip&#34;)
+      return
+    files_in_zip = zipped.namelist()
+    # choose whether to proces TTFs or OTFs, but not both
+    ext = choose_ext(files_in_zip)
+    valid_files = sorted([filename for filename in files_in_zip if ext in filename.lower()])
+    
+    for file in valid_files:
+      filename = Path(file).name
+      try: 
+        content = zipped.read(file)
+        yield InMemoryFontfile(filename=filename, content = content)
+      except Exception as e:
+        logger.exception(f&#34;Error while extracting file {filename} from zip&#34;)
+
+
+
+
+class FontFileToLabeledChars(ObjectMapper):
+  &#34;&#34;&#34;
+    Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to image features and a fontname string indicating the original filename
+
+  &#34;&#34;&#34;
+  def __init__(
+    self, 
+    charset = string.ascii_letters + string.digits, 
+    font_extraction_size = 100, 
+    canvas_size = 500, 
+    canvas_padding = 100):
+    &#34;&#34;&#34;
+    
+    Args:
+        charset (str, optional): string containg all characters that are to be extracted from the font files
+        font_extraction_size (int, optional): Font size to be used at extraction
+        canvas_size (int, optional): Canvas array size in which to paste the extracted characters
+        canvas_padding (int, optional): Padding to use when pasting the characters
+    
+    Raises:
+        ValueError: Raised when the padding is too large for the provided canvas size
+    &#34;&#34;&#34;
+    if canvas_padding &gt;= canvas_size/2:
+      raise ValueError(f&#34;Canvas padding value ({canvas_padding}) is too large for canvas size ({canvas_size})&#34;)
+
+    self.font_extraction_size = font_extraction_size
+    self.canvas_size = canvas_size
+    self.canvas_padding = canvas_padding
+    self.canvas_size = canvas_size
+    self.charset = charset
+
+  def raw_map(self,file: InMemoryFontfile)-&gt; t.Generator[LabeledChar, None, None]:
+    logger.info(f&#34;exctracting arrays from file &#39;{file.filename}&#39;&#34;)
+    try:
+      font = file.deserialise(font_size = self.font_extraction_size)
+    except Exception as e:
+      logger.exception(f&#34;Error while reading font file &#39;{file.filename}&#39;&#34;)
+      return
+    for char in self.charset:
+      img = Image.new(&#34;RGB&#34;,(self.canvas_size,self.canvas_size))
+      draw = ImageDraw.Draw(img)
+      try:
+        draw.text((self.canvas_padding,self.canvas_padding),char,font=font)
+        with io.BytesIO() as bf2:
+          img.save(bf2,format=&#34;png&#34;)
+          array = imageio.imread(bf2.getvalue(),format=&#34;png&#34;)
+
+        array = np.mean(array, axis = -1).astype(np.uint8)
+        yield LabeledChar(features=array,label=char,fontname=file.filename)
+      except Exception as e:
+        logger.exception(f&#34;Error while reading char &#39;{char}&#39; from font file &#39;{file.filename}&#39;. Full trace: {traceback.format_exc()}&#34;)
+
+
+class FeatureCropper(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Crops a labeled example&#39;s feature array  and returns the smallest bounding box containing all non-zero value.
+  
+  &#34;&#34;&#34;
+
+  def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+    nonzero = np.where(example.features &gt; 0)
+    if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
+      logger.info(&#34;Empty image found. ignoring.&#34;)
+      return
+      #yield key, LabeledChar(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)
+    else:
+      h_bound, w_bound = [(np.min(axis),np.max(axis)) for axis in nonzero]
+      h = h_bound[1] - h_bound[0] + 1
+      w = w_bound[1] - w_bound[0] + 1
+      #crop and map to png
+      cropped = example.features[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+      yield LabeledChar(features=cropped, label=example.label, fontname=example.fontname)
+
+
+class FeatureResizer(ObjectMapper):
+
+  &#34;&#34;&#34;
+    Resizes an image&#39;s numpy array to a square image with the specified dimensions
+
+  &#34;&#34;&#34;
+
+  def __init__(self, output_size = 64):
+    &#34;&#34;&#34;
+    
+    Args:
+        output_size (int, optional): height and width of output array
+    &#34;&#34;&#34;
+    self.output_size = 64
+
+  def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+    &#34;&#34;&#34;
+    resize given image to a squared output image
+    &#34;&#34;&#34;
+    array, y, metadata = example
+
+    output = np.zeros((self.output_size,self.output_size),dtype=np.uint8)
+    # resize img to fit into output dimensions
+    try:
+      height, width = example.features.shape
+      if height &gt; 0 and width &gt; 0:
+        if height &gt;= width:
+          resize_dim = (self.output_size,int(width*self.output_size/height))
+        else:
+          resize_dim = (int(height*self.output_size/width),self.output_size)
+        #try:
+        resized = np.array(Image.fromarray(np.uint8(array)).resize(size=tuple(reversed(resize_dim))))
+        # embed into squared image
+        resized_h, resized_w = resized.shape
+        h_pad, w_pad = int((self.output_size - resized_h)/2), int((self.output_size - resized_w)/2)
+        output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
+        # make the image binary
+        yield LabeledChar(features=output.astype(np.uint8), label=y,fontname=metadata)
+    except Exception as e:
+      logger.exception(f&#34;Error while resizing array: {e}&#34;)
+      return
+
+
+
+
+class FontFileToLabeledFont(FontFileToLabeledChars):
+  &#34;&#34;&#34;
+    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename
+
+  &#34;&#34;&#34;
+  def raw_map(self,file: InMemoryFontfile)-&gt; t.Generator[LabeledFont, None, None]:
+    imgs = []
+    labels = []
+    for mapped in super().raw_map(file):
+      imgs.append(mapped.features)
+      labels.append(mapped.label)
+
+    if len(imgs) &gt; 0:
+      yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    else:
+      return
+
+
+
+class FontMapper(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Applies an ObjectMapper transformation to every character in a LabeledFont object
+  
+  Attributes:
+      mapper (ObjectMapper): Core transformation
+  
+  
+  &#34;&#34;&#34;
+  def __init__(self, mapper: ObjectMapper):
+    self.mapper = mapper
+
+  def raw_map(self, alphabet: LabeledFont) -&gt; t.Generator[LabeledFont, None, None]:
+    imgs = []
+    labels = []
+    for example in alphabet:
+      for mapped in self.mapper.raw_map(example):
+        imgs.append(mapped.features)
+        labels.append(mapped.label)
+
+    if len(imgs) &gt; 0:
+      yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    else:
+      return
+
+
+class FeatureCropperAndResizer(ObjectMapper):
+  
+  &#34;&#34;&#34;
+  Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.
+  
+  Attributes:
+      cropper (ObjectMapper)
+      resizer (ObjectMapper)
+  &#34;&#34;&#34;
+  def __init__(self, output_size = 64):
+    &#34;&#34;&#34;
+    
+    Args:
+        output_size (int, optional): height and width of output array
+    &#34;&#34;&#34;
+
+    self.cropper = FeatureCropper()
+    self.resizer = FeatureResizer(output_size)
+
+  def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+
+    for cropped in self.cropper.raw_map(example):
+      for resized in self.resizer.raw_map(cropped):
+        yield resized
+
+
+
+
+class Writer(beam.DoFn):
+  &#34;&#34;&#34;
+  Takes instances of LabeledChar and writes them to a tensorflow record file.
+  
+  Attributes:
+      output_path (str): Output path
+  
+  &#34;&#34;&#34;
+  def __init__(self, writer: BatchWriter):
+    self.writer = writer
+  def process(self,example: TfrWritable) -&gt; None:
+    try:
+      self.writer.write(example)
+    except Exception as e:
+      logging.exception(f&#34;error writing example {example}: {e}&#34;)
+
+  def teardown(self):
+    self.writer.close()
+
+
+
+class PipelineFactory(object):
+
+  &#34;&#34;&#34;Factory class to construct core transformation sequence for preprocessing font files
+  &#34;&#34;&#34;
+  
+  @classmethod
+  def create(cls, 
+    output_record_class: type,
+    charset: str,
+    font_extraction_size: int,
+    canvas_size: int,
+    canvas_padding: int,
+    output_array_size: int) -&gt; PipelineExecutor:
+    &#34;&#34;&#34;Build file processing pipeline object
+    
+    Args:
+        output_record_class (type): Class of output record schema, inheriting from TfrWritable
+        charset (str): String with characters to be extracted
+        font_extraction_size (int): Font size to use when extracting font images
+        canvas_size (int): Image canvas size in which fonts will be extracted
+        canvas_padding (int): Padding in the image extraction canvas
+        output_array_size (int): Final character image size
+    
+    Returns:
+        PipelineExecutor: Procesing transformation object
+    &#34;&#34;&#34;
+    if output_record_class == LabeledChar:
+      return PipelineExecutor(
+        stages = [
+        ZipToFontFiles(),
+        ManyToManyMapper(
+          mapper = FontFileToLabeledChars(
+            charset = charset,
+            font_extraction_size = font_extraction_size,
+            canvas_size = canvas_size,
+            canvas_padding = canvas_padding)
+        ),
+        ManyToManyMapper(
+          mapper = FeatureCropper()
+        ),
+        ManyToManyMapper(
+          mapper = FeatureResizer(output_size = output_array_size)
+        )]
+      )
+
+    elif output_record_class == LabeledFont:
+
+      return PipelineExecutor(
+        stages = [
+        ZipToFontFiles(),
+        ManyToManyMapper(
+          mapper = FontFileToLabeledFont(
+            charset = charset,
+            font_extraction_size = font_extraction_size,
+            canvas_size = canvas_size,
+            canvas_padding = canvas_padding)
+        ),
+        ManyToManyMapper(
+          mapper = FontMapper(
+            mapper = FeatureCropperAndResizer(output_size = output_array_size)
+        ))]
+      )
+
+    else:
+
+      raise TypeError(f&#34;Output schema class not recognised: {output_record_class}&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="fontai.preprocessing.mappings.BeamCompatibleWrapper"><code class="flex name class">
+<span>class <span class="ident">BeamCompatibleWrapper</span></span>
+<span>(</span><span>mapper: <a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wrapper class that allows subclasses of ObjectMapper to be used in Beam pipeline stages</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>mapper</code></strong> :&ensp;<code><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></code></dt>
+<dd>Instance of an ObjectMapper's subclass</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BeamCompatibleWrapper(beam.DoFn):
+
+  &#34;&#34;&#34;
+  Wrapper class that allows subclasses of ObjectMapper to be used in Beam pipeline stages
+    
+  Attributes:
+      mapper (ObjectMapper): Instance of an ObjectMapper&#39;s subclass
+  
+  &#34;&#34;&#34;
+
+  def __init__(self, mapper: ObjectMapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError(&#34;mapper needs to be a subclass of ObjectMapper&#34;)
+    self.mapper = mapper
+
+  def process(self, data):
+    return self.mapper.map(data)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>apache_beam.transforms.core.DoFn</li>
+<li>apache_beam.typehints.decorators.WithTypeHints</li>
+<li>apache_beam.transforms.display.HasDisplayData</li>
+<li>apache_beam.utils.urns.RunnerApiFn</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.preprocessing.mappings.BeamCompatibleWrapper.process"><code class="name flex">
+<span>def <span class="ident">process</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Method to use for processing elements.</p>
+<p>This is invoked by <code>DoFnRunner</code> for each element of a input
+<code>PCollection</code>.</p>
+<p>The following parameters can be used as default values on <code>process</code>
+arguments to indicate that a DoFn accepts the corresponding parameters. For
+example, a DoFn might accept the element and its timestamp with the
+following signature::</p>
+<p>def process(element=DoFn.ElementParam, timestamp=DoFn.TimestampParam):
+&hellip;</p>
+<p>The full set of parameters is:</p>
+<ul>
+<li><code>DoFn.ElementParam</code>: element to be processed, should not be mutated.</li>
+<li><code>DoFn.SideInputParam</code>: a side input that may be used when processing.</li>
+<li><code>DoFn.TimestampParam</code>: timestamp of the input element.</li>
+<li><code>DoFn.WindowParam</code>: <code>Window</code> the input element belongs to.</li>
+<li><code>DoFn.TimerParam</code>: a <code>userstate.RuntimeTimer</code> object defined by the
+spec of the parameter.</li>
+<li><code>DoFn.StateParam</code>: a <code>userstate.RuntimeState</code> object defined by the
+spec of the parameter.</li>
+<li><code>DoFn.KeyParam</code>: key associated with the element.</li>
+<li><code>DoFn.RestrictionParam</code>: an <code>iobase.RestrictionTracker</code> will be
+provided here to allow treatment as a Splittable <code>DoFn</code>. The restriction
+tracker will be derived from the restriction provider in the parameter.</li>
+<li><code>DoFn.WatermarkEstimatorParam</code>: a function that can be used to track
+output watermark of Splittable <code>DoFn</code> implementations.</li>
+</ul>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>element</code></strong></dt>
+<dd>The element to be processed</dd>
+<dt><strong><code>*args</code></strong></dt>
+<dd>side inputs</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>other keyword arguments.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>An Iterable of output elements or None.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process(self, data):
+  return self.mapper.map(data)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.preprocessing.mappings.FeatureCropper"><code class="flex name class">
+<span>class <span class="ident">FeatureCropper</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Crops a labeled example's feature array
+and returns the smallest bounding box containing all non-zero value.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FeatureCropper(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Crops a labeled example&#39;s feature array  and returns the smallest bounding box containing all non-zero value.
+  
+  &#34;&#34;&#34;
+
+  def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+    nonzero = np.where(example.features &gt; 0)
+    if nonzero[0].shape == (0,) or nonzero[1].shape == (0,):
+      logger.info(&#34;Empty image found. ignoring.&#34;)
+      return
+      #yield key, LabeledChar(x=np.empty((0,),dtype=np.uint8), y=example.y)#(0, 0), (0,0)
+    else:
+      h_bound, w_bound = [(np.min(axis),np.max(axis)) for axis in nonzero]
+      h = h_bound[1] - h_bound[0] + 1
+      w = w_bound[1] - w_bound[0] + 1
+      #crop and map to png
+      cropped = example.features[h_bound[0]:(h_bound[0] + h),w_bound[0]:(w_bound[0]+w)]
+      yield LabeledChar(features=cropped, label=example.label, fontname=example.fontname)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.FeatureCropperAndResizer"><code class="flex name class">
+<span>class <span class="ident">FeatureCropperAndResizer</span></span>
+<span>(</span><span>output_size=64)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.</p>
+<h2 id="attributes">Attributes</h2>
+<p>cropper (ObjectMapper)
+resizer (ObjectMapper)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>height and width of output array</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FeatureCropperAndResizer(ObjectMapper):
+  
+  &#34;&#34;&#34;
+  Crops and resizes character images in a single step; this is to be able to stack output images into a single numpy array in every pipeline stage for LabeledFont instances.
+  
+  Attributes:
+      cropper (ObjectMapper)
+      resizer (ObjectMapper)
+  &#34;&#34;&#34;
+  def __init__(self, output_size = 64):
+    &#34;&#34;&#34;
+    
+    Args:
+        output_size (int, optional): height and width of output array
+    &#34;&#34;&#34;
+
+    self.cropper = FeatureCropper()
+    self.resizer = FeatureResizer(output_size)
+
+  def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+
+    for cropped in self.cropper.raw_map(example):
+      for resized in self.resizer.raw_map(cropped):
+        yield resized</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.FeatureResizer"><code class="flex name class">
+<span>class <span class="ident">FeatureResizer</span></span>
+<span>(</span><span>output_size=64)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Resizes an image's numpy array to a square image with the specified dimensions</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>height and width of output array</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FeatureResizer(ObjectMapper):
+
+  &#34;&#34;&#34;
+    Resizes an image&#39;s numpy array to a square image with the specified dimensions
+
+  &#34;&#34;&#34;
+
+  def __init__(self, output_size = 64):
+    &#34;&#34;&#34;
+    
+    Args:
+        output_size (int, optional): height and width of output array
+    &#34;&#34;&#34;
+    self.output_size = 64
+
+  def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+    &#34;&#34;&#34;
+    resize given image to a squared output image
+    &#34;&#34;&#34;
+    array, y, metadata = example
+
+    output = np.zeros((self.output_size,self.output_size),dtype=np.uint8)
+    # resize img to fit into output dimensions
+    try:
+      height, width = example.features.shape
+      if height &gt; 0 and width &gt; 0:
+        if height &gt;= width:
+          resize_dim = (self.output_size,int(width*self.output_size/height))
+        else:
+          resize_dim = (int(height*self.output_size/width),self.output_size)
+        #try:
+        resized = np.array(Image.fromarray(np.uint8(array)).resize(size=tuple(reversed(resize_dim))))
+        # embed into squared image
+        resized_h, resized_w = resized.shape
+        h_pad, w_pad = int((self.output_size - resized_h)/2), int((self.output_size - resized_w)/2)
+        output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
+        # make the image binary
+        yield LabeledChar(features=output.astype(np.uint8), label=y,fontname=metadata)
+    except Exception as e:
+      logger.exception(f&#34;Error while resizing array: {e}&#34;)
+      return</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.preprocessing.mappings.FeatureResizer.raw_map"><code class="name flex">
+<span>def <span class="ident">raw_map</span></span>(<span>self, example: <a title="fontai.io.records.LabeledChar" href="../io/records.html#fontai.io.records.LabeledChar">LabeledChar</a>) ‑> Generator[<a title="fontai.io.records.LabeledChar" href="../io/records.html#fontai.io.records.LabeledChar">LabeledChar</a>, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>resize given image to a squared output image</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def raw_map(self, example: LabeledChar) -&gt; t.Generator[LabeledChar, None, None]:
+  &#34;&#34;&#34;
+  resize given image to a squared output image
+  &#34;&#34;&#34;
+  array, y, metadata = example
+
+  output = np.zeros((self.output_size,self.output_size),dtype=np.uint8)
+  # resize img to fit into output dimensions
+  try:
+    height, width = example.features.shape
+    if height &gt; 0 and width &gt; 0:
+      if height &gt;= width:
+        resize_dim = (self.output_size,int(width*self.output_size/height))
+      else:
+        resize_dim = (int(height*self.output_size/width),self.output_size)
+      #try:
+      resized = np.array(Image.fromarray(np.uint8(array)).resize(size=tuple(reversed(resize_dim))))
+      # embed into squared image
+      resized_h, resized_w = resized.shape
+      h_pad, w_pad = int((self.output_size - resized_h)/2), int((self.output_size - resized_w)/2)
+      output[h_pad:(h_pad+resized_h),w_pad:(w_pad+resized_w)] = resized
+      # make the image binary
+      yield LabeledChar(features=output.astype(np.uint8), label=y,fontname=metadata)
+  except Exception as e:
+    logger.exception(f&#34;Error while resizing array: {e}&#34;)
+    return</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.FontFileToLabeledChars"><code class="flex name class">
+<span>class <span class="ident">FontFileToLabeledChars</span></span>
+<span>(</span><span>charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', font_extraction_size=100, canvas_size=500, canvas_padding=100)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to image features and a fontname string indicating the original filename</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>charset</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>string containg all characters that are to be extracted from the font files</dd>
+<dt><strong><code>font_extraction_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Font size to be used at extraction</dd>
+<dt><strong><code>canvas_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Canvas array size in which to paste the extracted characters</dd>
+<dt><strong><code>canvas_padding</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Padding to use when pasting the characters</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>Raised when the padding is too large for the provided canvas size</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FontFileToLabeledChars(ObjectMapper):
+  &#34;&#34;&#34;
+    Processes ttf files and outputs labeled examples consisting of a label (character), a numpy array corresponding to image features and a fontname string indicating the original filename
+
+  &#34;&#34;&#34;
+  def __init__(
+    self, 
+    charset = string.ascii_letters + string.digits, 
+    font_extraction_size = 100, 
+    canvas_size = 500, 
+    canvas_padding = 100):
+    &#34;&#34;&#34;
+    
+    Args:
+        charset (str, optional): string containg all characters that are to be extracted from the font files
+        font_extraction_size (int, optional): Font size to be used at extraction
+        canvas_size (int, optional): Canvas array size in which to paste the extracted characters
+        canvas_padding (int, optional): Padding to use when pasting the characters
+    
+    Raises:
+        ValueError: Raised when the padding is too large for the provided canvas size
+    &#34;&#34;&#34;
+    if canvas_padding &gt;= canvas_size/2:
+      raise ValueError(f&#34;Canvas padding value ({canvas_padding}) is too large for canvas size ({canvas_size})&#34;)
+
+    self.font_extraction_size = font_extraction_size
+    self.canvas_size = canvas_size
+    self.canvas_padding = canvas_padding
+    self.canvas_size = canvas_size
+    self.charset = charset
+
+  def raw_map(self,file: InMemoryFontfile)-&gt; t.Generator[LabeledChar, None, None]:
+    logger.info(f&#34;exctracting arrays from file &#39;{file.filename}&#39;&#34;)
+    try:
+      font = file.deserialise(font_size = self.font_extraction_size)
+    except Exception as e:
+      logger.exception(f&#34;Error while reading font file &#39;{file.filename}&#39;&#34;)
+      return
+    for char in self.charset:
+      img = Image.new(&#34;RGB&#34;,(self.canvas_size,self.canvas_size))
+      draw = ImageDraw.Draw(img)
+      try:
+        draw.text((self.canvas_padding,self.canvas_padding),char,font=font)
+        with io.BytesIO() as bf2:
+          img.save(bf2,format=&#34;png&#34;)
+          array = imageio.imread(bf2.getvalue(),format=&#34;png&#34;)
+
+        array = np.mean(array, axis = -1).astype(np.uint8)
+        yield LabeledChar(features=array,label=char,fontname=file.filename)
+      except Exception as e:
+        logger.exception(f&#34;Error while reading char &#39;{char}&#39; from font file &#39;{file.filename}&#39;. Full trace: {traceback.format_exc()}&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.FontFileToLabeledFont" href="#fontai.preprocessing.mappings.FontFileToLabeledFont">FontFileToLabeledFont</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.FontFileToLabeledFont"><code class="flex name class">
+<span>class <span class="ident">FontFileToLabeledFont</span></span>
+<span>(</span><span>charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', font_extraction_size=100, canvas_size=500, canvas_padding=100)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>charset</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>string containg all characters that are to be extracted from the font files</dd>
+<dt><strong><code>font_extraction_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Font size to be used at extraction</dd>
+<dt><strong><code>canvas_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Canvas array size in which to paste the extracted characters</dd>
+<dt><strong><code>canvas_padding</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Padding to use when pasting the characters</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>Raised when the padding is too large for the provided canvas size</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FontFileToLabeledFont(FontFileToLabeledChars):
+  &#34;&#34;&#34;
+    Processes ttf files and outputs a LabeledFont object consisting of labels and numpy arrays corresponding to image features for each character in the alphabet, and a fontname string indicating the original font filename
+
+  &#34;&#34;&#34;
+  def raw_map(self,file: InMemoryFontfile)-&gt; t.Generator[LabeledFont, None, None]:
+    imgs = []
+    labels = []
+    for mapped in super().raw_map(file):
+      imgs.append(mapped.features)
+      labels.append(mapped.label)
+
+    if len(imgs) &gt; 0:
+      yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    else:
+      return</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.FontFileToLabeledChars" href="#fontai.preprocessing.mappings.FontFileToLabeledChars">FontFileToLabeledChars</a></li>
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.FontFileToLabeledChars" href="#fontai.preprocessing.mappings.FontFileToLabeledChars">FontFileToLabeledChars</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.FontFileToLabeledChars.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.FontFileToLabeledChars.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.FontMapper"><code class="flex name class">
+<span>class <span class="ident">FontMapper</span></span>
+<span>(</span><span>mapper: <a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies an ObjectMapper transformation to every character in a LabeledFont object</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>mapper</code></strong> :&ensp;<code><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></code></dt>
+<dd>Core transformation</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FontMapper(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Applies an ObjectMapper transformation to every character in a LabeledFont object
+  
+  Attributes:
+      mapper (ObjectMapper): Core transformation
+  
+  
+  &#34;&#34;&#34;
+  def __init__(self, mapper: ObjectMapper):
+    self.mapper = mapper
+
+  def raw_map(self, alphabet: LabeledFont) -&gt; t.Generator[LabeledFont, None, None]:
+    imgs = []
+    labels = []
+    for example in alphabet:
+      for mapped in self.mapper.raw_map(example):
+        imgs.append(mapped.features)
+        labels.append(mapped.label)
+
+    if len(imgs) &gt; 0:
+      yield LabeledFont(features=np.stack(imgs), label=np.array(labels), fontname = mapped.fontname) 
+    else:
+      return</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.ManyToManyMapper"><code class="flex name class">
+<span>class <span class="ident">ManyToManyMapper</span></span>
+<span>(</span><span>mapper)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wrapper Wrapper class to apply trnsformations to an entire generator of input data</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>mapper</code></strong> :&ensp;<code><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></code></dt>
+<dd>Description</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ManyToManyMapper(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Wrapper Wrapper class to apply trnsformations to an entire generator of input data
+  
+  
+  Attributes:
+      mapper (ObjectMapper): Description
+  &#34;&#34;&#34;
+
+  def __init__(self, mapper):
+
+    if not isinstance(mapper, ObjectMapper):
+      raise TypeError(&#34;mapper is not an instance of ObjectMapper&#34;)
+
+    self.mapper = mapper
+
+  def raw_map(self, data: t.Iterable[t.Any]) -&gt; t.Generator[t.Any, None, None]:
+    for elem in data:
+      for derived in self.mapper.map(elem):
+        yield derived</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.ObjectMapper"><code class="flex name class">
+<span>class <span class="ident">ObjectMapper</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Interface for data transformations that return a generator; useful for one-to-many transformations</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ObjectMapper(ABC):
+
+
+  &#34;&#34;&#34;
+  Interface for data transformations that return a generator; useful for one-to-many transformations
+  
+  &#34;&#34;&#34;
+
+  @abstractmethod
+  def raw_map(self,data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+    &#34;&#34;&#34;
+    Applies a transformation to the input data.
+    
+    Args:
+        data (t.Any): input data
+    
+    &#34;&#34;&#34;
+    pass
+
+  def map(self,data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+    &#34;&#34;&#34;
+    Processes a single data instance and returns a generator with output data
+        
+    Args:
+        data (t.Any): input data
+    
+    Returns:
+        t.Generator[t.Any, None, None]: A generator with a variable number of derived data instances
+    
+    Raises:
+        TypeError: Raised if the transformation implemented in raw_map does not return a generator
+    
+    &#34;&#34;&#34;
+    output = self.raw_map(data)
+    if not isinstance(output, types.GeneratorType):
+      raise TypeError(&#34;Output of transform() must be a generator&#34;)
+    return output</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.FeatureCropper" href="#fontai.preprocessing.mappings.FeatureCropper">FeatureCropper</a></li>
+<li><a title="fontai.preprocessing.mappings.FeatureCropperAndResizer" href="#fontai.preprocessing.mappings.FeatureCropperAndResizer">FeatureCropperAndResizer</a></li>
+<li><a title="fontai.preprocessing.mappings.FeatureResizer" href="#fontai.preprocessing.mappings.FeatureResizer">FeatureResizer</a></li>
+<li><a title="fontai.preprocessing.mappings.FontFileToLabeledChars" href="#fontai.preprocessing.mappings.FontFileToLabeledChars">FontFileToLabeledChars</a></li>
+<li><a title="fontai.preprocessing.mappings.FontMapper" href="#fontai.preprocessing.mappings.FontMapper">FontMapper</a></li>
+<li><a title="fontai.preprocessing.mappings.ManyToManyMapper" href="#fontai.preprocessing.mappings.ManyToManyMapper">ManyToManyMapper</a></li>
+<li><a title="fontai.preprocessing.mappings.PipelineExecutor" href="#fontai.preprocessing.mappings.PipelineExecutor">PipelineExecutor</a></li>
+<li><a title="fontai.preprocessing.mappings.ZipToFontFiles" href="#fontai.preprocessing.mappings.ZipToFontFiles">ZipToFontFiles</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.preprocessing.mappings.ObjectMapper.map"><code class="name flex">
+<span>def <span class="ident">map</span></span>(<span>self, data: Any) ‑> Generator[Any, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Processes a single data instance and returns a generator with output data</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>t.Any</code></dt>
+<dd>input data</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Generator[t.Any, None, None]</code></dt>
+<dd>A generator with a variable number of derived data instances</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>TypeError</code></dt>
+<dd>Raised if the transformation implemented in raw_map does not return a generator</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def map(self,data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+  &#34;&#34;&#34;
+  Processes a single data instance and returns a generator with output data
+      
+  Args:
+      data (t.Any): input data
+  
+  Returns:
+      t.Generator[t.Any, None, None]: A generator with a variable number of derived data instances
+  
+  Raises:
+      TypeError: Raised if the transformation implemented in raw_map does not return a generator
+  
+  &#34;&#34;&#34;
+  output = self.raw_map(data)
+  if not isinstance(output, types.GeneratorType):
+    raise TypeError(&#34;Output of transform() must be a generator&#34;)
+  return output</code></pre>
+</details>
+</dd>
+<dt id="fontai.preprocessing.mappings.ObjectMapper.raw_map"><code class="name flex">
+<span>def <span class="ident">raw_map</span></span>(<span>self, data: Any) ‑> Generator[Any, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies a transformation to the input data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>t.Any</code></dt>
+<dd>input data</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def raw_map(self,data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+  &#34;&#34;&#34;
+  Applies a transformation to the input data.
+  
+  Args:
+      data (t.Any): input data
+  
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.preprocessing.mappings.PipelineExecutor"><code class="flex name class">
+<span>class <span class="ident">PipelineExecutor</span></span>
+<span>(</span><span>stages: List[<a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies a sequence of transformations to input data.</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>stages</code></strong> :&ensp;<code><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></code></dt>
+<dd>A list of instances inheriting from ObjectMapper</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PipelineExecutor(ObjectMapper):
+
+  &#34;&#34;&#34;
+  Applies a sequence of transformations to input data.
+    
+  Attributes:
+      stages (ObjectMapper): A list of instances inheriting from ObjectMapper
+  &#34;&#34;&#34;
+
+  def __init__(self, stages: t.List[ObjectMapper]):
+
+    self.stages = stages
+  def raw_map(self, data: t.Any) -&gt; t.Generator[t.Any, None, None]:
+
+    for stage in self.stages:
+      data = stage.map(data)
+
+    for elem in data:
+      try:
+        yield elem
+      except Exception as e:
+        logger.exception(f&#34;An unexpected exception has occurred while preprocessing an input element. Full trace: {traceback.format_exc()}&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.preprocessing.mappings.PipelineFactory"><code class="flex name class">
+<span>class <span class="ident">PipelineFactory</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Factory class to construct core transformation sequence for preprocessing font files</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PipelineFactory(object):
+
+  &#34;&#34;&#34;Factory class to construct core transformation sequence for preprocessing font files
+  &#34;&#34;&#34;
+  
+  @classmethod
+  def create(cls, 
+    output_record_class: type,
+    charset: str,
+    font_extraction_size: int,
+    canvas_size: int,
+    canvas_padding: int,
+    output_array_size: int) -&gt; PipelineExecutor:
+    &#34;&#34;&#34;Build file processing pipeline object
+    
+    Args:
+        output_record_class (type): Class of output record schema, inheriting from TfrWritable
+        charset (str): String with characters to be extracted
+        font_extraction_size (int): Font size to use when extracting font images
+        canvas_size (int): Image canvas size in which fonts will be extracted
+        canvas_padding (int): Padding in the image extraction canvas
+        output_array_size (int): Final character image size
+    
+    Returns:
+        PipelineExecutor: Procesing transformation object
+    &#34;&#34;&#34;
+    if output_record_class == LabeledChar:
+      return PipelineExecutor(
+        stages = [
+        ZipToFontFiles(),
+        ManyToManyMapper(
+          mapper = FontFileToLabeledChars(
+            charset = charset,
+            font_extraction_size = font_extraction_size,
+            canvas_size = canvas_size,
+            canvas_padding = canvas_padding)
+        ),
+        ManyToManyMapper(
+          mapper = FeatureCropper()
+        ),
+        ManyToManyMapper(
+          mapper = FeatureResizer(output_size = output_array_size)
+        )]
+      )
+
+    elif output_record_class == LabeledFont:
+
+      return PipelineExecutor(
+        stages = [
+        ZipToFontFiles(),
+        ManyToManyMapper(
+          mapper = FontFileToLabeledFont(
+            charset = charset,
+            font_extraction_size = font_extraction_size,
+            canvas_size = canvas_size,
+            canvas_padding = canvas_padding)
+        ),
+        ManyToManyMapper(
+          mapper = FontMapper(
+            mapper = FeatureCropperAndResizer(output_size = output_array_size)
+        ))]
+      )
+
+    else:
+
+      raise TypeError(f&#34;Output schema class not recognised: {output_record_class}&#34;)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="fontai.preprocessing.mappings.PipelineFactory.create"><code class="name flex">
+<span>def <span class="ident">create</span></span>(<span>output_record_class: type, charset: str, font_extraction_size: int, canvas_size: int, canvas_padding: int, output_array_size: int) ‑> <a title="fontai.preprocessing.mappings.PipelineExecutor" href="#fontai.preprocessing.mappings.PipelineExecutor">PipelineExecutor</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Build file processing pipeline object</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_record_class</code></strong> :&ensp;<code>type</code></dt>
+<dd>Class of output record schema, inheriting from TfrWritable</dd>
+<dt><strong><code>charset</code></strong> :&ensp;<code>str</code></dt>
+<dd>String with characters to be extracted</dd>
+<dt><strong><code>font_extraction_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Font size to use when extracting font images</dd>
+<dt><strong><code>canvas_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Image canvas size in which fonts will be extracted</dd>
+<dt><strong><code>canvas_padding</code></strong> :&ensp;<code>int</code></dt>
+<dd>Padding in the image extraction canvas</dd>
+<dt><strong><code>output_array_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Final character image size</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="fontai.preprocessing.mappings.PipelineExecutor" href="#fontai.preprocessing.mappings.PipelineExecutor">PipelineExecutor</a></code></dt>
+<dd>Procesing transformation object</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def create(cls, 
+  output_record_class: type,
+  charset: str,
+  font_extraction_size: int,
+  canvas_size: int,
+  canvas_padding: int,
+  output_array_size: int) -&gt; PipelineExecutor:
+  &#34;&#34;&#34;Build file processing pipeline object
+  
+  Args:
+      output_record_class (type): Class of output record schema, inheriting from TfrWritable
+      charset (str): String with characters to be extracted
+      font_extraction_size (int): Font size to use when extracting font images
+      canvas_size (int): Image canvas size in which fonts will be extracted
+      canvas_padding (int): Padding in the image extraction canvas
+      output_array_size (int): Final character image size
+  
+  Returns:
+      PipelineExecutor: Procesing transformation object
+  &#34;&#34;&#34;
+  if output_record_class == LabeledChar:
+    return PipelineExecutor(
+      stages = [
+      ZipToFontFiles(),
+      ManyToManyMapper(
+        mapper = FontFileToLabeledChars(
+          charset = charset,
+          font_extraction_size = font_extraction_size,
+          canvas_size = canvas_size,
+          canvas_padding = canvas_padding)
+      ),
+      ManyToManyMapper(
+        mapper = FeatureCropper()
+      ),
+      ManyToManyMapper(
+        mapper = FeatureResizer(output_size = output_array_size)
+      )]
+    )
+
+  elif output_record_class == LabeledFont:
+
+    return PipelineExecutor(
+      stages = [
+      ZipToFontFiles(),
+      ManyToManyMapper(
+        mapper = FontFileToLabeledFont(
+          charset = charset,
+          font_extraction_size = font_extraction_size,
+          canvas_size = canvas_size,
+          canvas_padding = canvas_padding)
+      ),
+      ManyToManyMapper(
+        mapper = FontMapper(
+          mapper = FeatureCropperAndResizer(output_size = output_array_size)
+      ))]
+    )
+
+  else:
+
+    raise TypeError(f&#34;Output schema class not recognised: {output_record_class}&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.preprocessing.mappings.Writer"><code class="flex name class">
+<span>class <span class="ident">Writer</span></span>
+<span>(</span><span>writer: fontai.io.writers.BatchWriter)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Takes instances of LabeledChar and writes them to a tensorflow record file.</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>output_path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Output path</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Writer(beam.DoFn):
+  &#34;&#34;&#34;
+  Takes instances of LabeledChar and writes them to a tensorflow record file.
+  
+  Attributes:
+      output_path (str): Output path
+  
+  &#34;&#34;&#34;
+  def __init__(self, writer: BatchWriter):
+    self.writer = writer
+  def process(self,example: TfrWritable) -&gt; None:
+    try:
+      self.writer.write(example)
+    except Exception as e:
+      logging.exception(f&#34;error writing example {example}: {e}&#34;)
+
+  def teardown(self):
+    self.writer.close()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>apache_beam.transforms.core.DoFn</li>
+<li>apache_beam.typehints.decorators.WithTypeHints</li>
+<li>apache_beam.transforms.display.HasDisplayData</li>
+<li>apache_beam.utils.urns.RunnerApiFn</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.preprocessing.mappings.Writer.process"><code class="name flex">
+<span>def <span class="ident">process</span></span>(<span>self, example: <a title="fontai.io.records.TfrWritable" href="../io/records.html#fontai.io.records.TfrWritable">TfrWritable</a>) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Method to use for processing elements.</p>
+<p>This is invoked by <code>DoFnRunner</code> for each element of a input
+<code>PCollection</code>.</p>
+<p>The following parameters can be used as default values on <code>process</code>
+arguments to indicate that a DoFn accepts the corresponding parameters. For
+example, a DoFn might accept the element and its timestamp with the
+following signature::</p>
+<p>def process(element=DoFn.ElementParam, timestamp=DoFn.TimestampParam):
+&hellip;</p>
+<p>The full set of parameters is:</p>
+<ul>
+<li><code>DoFn.ElementParam</code>: element to be processed, should not be mutated.</li>
+<li><code>DoFn.SideInputParam</code>: a side input that may be used when processing.</li>
+<li><code>DoFn.TimestampParam</code>: timestamp of the input element.</li>
+<li><code>DoFn.WindowParam</code>: <code>Window</code> the input element belongs to.</li>
+<li><code>DoFn.TimerParam</code>: a <code>userstate.RuntimeTimer</code> object defined by the
+spec of the parameter.</li>
+<li><code>DoFn.StateParam</code>: a <code>userstate.RuntimeState</code> object defined by the
+spec of the parameter.</li>
+<li><code>DoFn.KeyParam</code>: key associated with the element.</li>
+<li><code>DoFn.RestrictionParam</code>: an <code>iobase.RestrictionTracker</code> will be
+provided here to allow treatment as a Splittable <code>DoFn</code>. The restriction
+tracker will be derived from the restriction provider in the parameter.</li>
+<li><code>DoFn.WatermarkEstimatorParam</code>: a function that can be used to track
+output watermark of Splittable <code>DoFn</code> implementations.</li>
+</ul>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>element</code></strong></dt>
+<dd>The element to be processed</dd>
+<dt><strong><code>*args</code></strong></dt>
+<dd>side inputs</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>other keyword arguments.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>An Iterable of output elements or None.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process(self,example: TfrWritable) -&gt; None:
+  try:
+    self.writer.write(example)
+  except Exception as e:
+    logging.exception(f&#34;error writing example {example}: {e}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="fontai.preprocessing.mappings.Writer.teardown"><code class="name flex">
+<span>def <span class="ident">teardown</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Called to use to clean up this instance before it is discarded.</p>
+<p>A runner will do its best to call this method on any given instance to
+prevent leaks of transient resources, however, there may be situations where
+this is impossible (e.g. process crash, hardware failure, etc.) or
+unnecessary (e.g. the pipeline is shutting down and the process is about to
+be killed anyway, so all transient resources will be released automatically
+by the OS). In these cases, the call may not happen. It will also not be
+retried, because in such situations the DoFn instance no longer exists, so
+there's no instance to retry it on.</p>
+<p>Thus, all work that depends on input elements, and all externally important
+side effects, must be performed in <code>DoFn.process</code> or
+<code>DoFn.finish_bundle</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def teardown(self):
+  self.writer.close()</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.preprocessing.mappings.ZipToFontFiles"><code class="flex name class">
+<span>class <span class="ident">ZipToFontFiles</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Opens an in-memory zip holder and outputs individual font files</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ZipToFontFiles(ObjectMapper):
+
+  &#34;&#34;&#34;
+    Opens an in-memory zip holder and outputs individual font files
+
+  &#34;&#34;&#34;
+
+  def raw_map(self, file: InMemoryZipfile) -&gt; t.Generator[InMemoryFontfile,None,None]:
+
+    def choose_ext(lst):
+      ttfs = len([x for x in lst if &#34;.ttf&#34; in x.lower()])
+      otfs = len([x for x in lst if &#34;.otf&#34; in x.lower()])
+      if ttfs &gt;= otfs:
+        return &#34;.ttf&#34;
+      else:
+        return &#34;.otf&#34;
+
+    #we assume the stream is a zip file&#39;s contents
+    try:
+      zipped = file.deserialise()
+    except Exception as e:
+      logger.exception(f&#34;Error: source ({file.filename}) can&#39;t be read as zip&#34;)
+      return
+    files_in_zip = zipped.namelist()
+    # choose whether to proces TTFs or OTFs, but not both
+    ext = choose_ext(files_in_zip)
+    valid_files = sorted([filename for filename in files_in_zip if ext in filename.lower()])
+    
+    for file in valid_files:
+      filename = Path(file).name
+      try: 
+        content = zipped.read(file)
+        yield InMemoryFontfile(filename=filename, content = content)
+      except Exception as e:
+        logger.exception(f&#34;Error while extracting file {filename} from zip&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="fontai.preprocessing" href="index.html">fontai.preprocessing</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.BeamCompatibleWrapper" href="#fontai.preprocessing.mappings.BeamCompatibleWrapper">BeamCompatibleWrapper</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.preprocessing.mappings.BeamCompatibleWrapper.process" href="#fontai.preprocessing.mappings.BeamCompatibleWrapper.process">process</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.FeatureCropper" href="#fontai.preprocessing.mappings.FeatureCropper">FeatureCropper</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.FeatureCropperAndResizer" href="#fontai.preprocessing.mappings.FeatureCropperAndResizer">FeatureCropperAndResizer</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.FeatureResizer" href="#fontai.preprocessing.mappings.FeatureResizer">FeatureResizer</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.preprocessing.mappings.FeatureResizer.raw_map" href="#fontai.preprocessing.mappings.FeatureResizer.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.FontFileToLabeledChars" href="#fontai.preprocessing.mappings.FontFileToLabeledChars">FontFileToLabeledChars</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.FontFileToLabeledFont" href="#fontai.preprocessing.mappings.FontFileToLabeledFont">FontFileToLabeledFont</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.FontMapper" href="#fontai.preprocessing.mappings.FontMapper">FontMapper</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.ManyToManyMapper" href="#fontai.preprocessing.mappings.ManyToManyMapper">ManyToManyMapper</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.ObjectMapper" href="#fontai.preprocessing.mappings.ObjectMapper">ObjectMapper</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.map" href="#fontai.preprocessing.mappings.ObjectMapper.map">map</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.ObjectMapper.raw_map" href="#fontai.preprocessing.mappings.ObjectMapper.raw_map">raw_map</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.PipelineExecutor" href="#fontai.preprocessing.mappings.PipelineExecutor">PipelineExecutor</a></code></h4>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.PipelineFactory" href="#fontai.preprocessing.mappings.PipelineFactory">PipelineFactory</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.preprocessing.mappings.PipelineFactory.create" href="#fontai.preprocessing.mappings.PipelineFactory.create">create</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.Writer" href="#fontai.preprocessing.mappings.Writer">Writer</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.preprocessing.mappings.Writer.process" href="#fontai.preprocessing.mappings.Writer.process">process</a></code></li>
+<li><code><a title="fontai.preprocessing.mappings.Writer.teardown" href="#fontai.preprocessing.mappings.Writer.teardown">teardown</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.preprocessing.mappings.ZipToFontFiles" href="#fontai.preprocessing.mappings.ZipToFontFiles">ZipToFontFiles</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

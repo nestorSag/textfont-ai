@@ -1,0 +1,2363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>fontai.io.records API documentation</title>
+<meta name="description" content="This module contains classes that can be serialised/deserialised to/from Tensorflow record files; they are used by the prediction stage for both …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>fontai.io.records</code></h1>
+</header>
+<section id="section-intro">
+<p>This module contains classes that can be serialised/deserialised to/from Tensorflow record files; they are used by the prediction stage for both training and scoring</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;This module contains classes that can be serialised/deserialised to/from Tensorflow record files; they are used by the prediction stage for both training and scoring
+
+&#34;&#34;&#34;
+from __future__ import annotations
+import zipfile
+import typing as t
+from typing import TypeVar, SupportsAbs, Generic
+import io
+import logging
+from abc import ABC, abstractmethod
+
+from collections import OrderedDict
+
+from pydantic import BaseModel
+
+from numpy import ndarray, uint8, all as np_all
+import imageio
+
+from tensorflow import string as tf_str, Tensor, executing_eagerly, convert_to_tensor
+from tensorflow.train import (Example as TFExample, Feature as TFFeature, Features as TFFeatures, BytesList as TFBytesList, FloatList as TFFloatList)
+from tensorflow.io import FixedLenFeature, parse_single_example, serialize_tensor
+
+import tensorflow as tf
+from tensorflow.data import TFRecordDataset
+
+
+
+logger = logging.getLogger(__name__)
+
+class TfrWritable(ABC):
+
+  &#34;&#34;&#34;Class that provides Tensorflow record&#39;s encoding and decoding logic for downstream data formats used by the package
+  &#34;&#34;&#34;
+  
+  _tfr_schema: t.Dict
+
+  _nonbatched_scoring: bool #if True, batch size is ignored at scoring time for this record type.
+
+  @classmethod
+  def tensor_to_numpy(cls, x: Tensor) -&gt; ndarray:
+    &#34;&#34;&#34;Converts Tensor to numpy array
+    
+    Args:
+        x (Tensor): Input tensor
+    
+    Returns:
+        ndarray: numpy array
+    &#34;&#34;&#34;
+
+    if executing_eagerly():
+      return x.numpy()
+    else:
+      return x.eval()
+
+  @classmethod
+  def array_to_bytes(cls, x: t.Union[Tensor, ndarray], dtype: type) -&gt; bytes:
+    &#34;&#34;&#34;Converts an array, either from numpy or Tensorflow, to a stream of bytes to be serialized
+    
+    Args:
+        x (t.Union[Tensor, ndarray]): Input array
+        dtype: type of returned tensor
+    
+    Returns:
+        bytes: serialized array
+    &#34;&#34;&#34;
+
+    serialised_tensor = serialize_tensor(convert_to_tensor(x, dtype=dtype))
+
+    byte_content = cls.tensor_to_numpy(serialised_tensor)
+
+    return byte_content
+
+  @classmethod
+  def bytes_feature(cls, value: bytes) -&gt; TFFeature:
+    &#34;&#34;&#34;Maps a bytestream to a TF Feature instance
+    
+    Args:
+        value (bytes): bytes to encode
+    
+    Returns:
+        TFFeature: encoded value
+    &#34;&#34;&#34;
+    return TFFeature(bytes_list=TFBytesList(value=[value]))
+
+
+  @classmethod
+  @abstractmethod
+  def to_bytes_dict(self) -&gt; TFFeature:
+    &#34;&#34;&#34;Maps an object inheriting from this class to a TF record compatible format
+    
+    Returns:
+        t.Dict: dictionary with encoded features that will be stored into a TF record.
+    &#34;&#34;&#34;
+    pass
+
+  def to_tf_example(self):
+    &#34;&#34;&#34;Returns a Tensorflow example instance encoding the instance&#39;s contents
+    
+    &#34;&#34;&#34;
+
+    return TFExample(
+      features = TFFeatures(feature = self.to_bytes_dict()))
+
+  @classmethod
+  def from_tf_example(cls, example: Tensor) -&gt; t.Dict:
+    &#34;&#34;&#34;Creates an instance by deserialising a TF record using the class schema
+    
+    Args:
+        example (TFExample): example TF example
+    
+    Returns:
+        TfrWritable: deserialised TfrWritable instance
+    &#34;&#34;&#34;
+    return parse_single_example(example,cls._tfr_schema)
+
+  @classmethod
+  def img_to_png_bytes(cls, img):
+    bf = io.BytesIO()
+    imageio.imwrite(bf,img.astype(uint8),&#34;png&#34;)
+    val = bf.getvalue()
+    bf.close()
+    return val
+
+  def add_score(self, score: Tensor, charset_tensor: Tensor) -&gt; TfrWritable:
+    &#34;&#34;&#34;Adds a model&#39;s score and return the appropriate record instance
+    
+    Args:
+        score (Tensor): Model score
+
+        charset (Tensor): charset used by the scoring model
+    
+    Returns:
+
+        TfrWritable: scored record instance
+    &#34;&#34;&#34;
+    return NotImplementError(&#34;Adding a score is not implemented for this schema.&#34;)
+
+  @classmethod
+  @abstractmethod
+  def parse_bytes_dict(self, record):
+    &#34;&#34;&#34;Performs basic parsing of deserialised features and returns dict with the same keys as the tfr schema&#39;s ordered dict
+    
+    Args:
+        record (tf.train.TFExample): Input record
+    
+    Returns:
+        t.Dict: Output dictionary
+    &#34;&#34;&#34;
+    pass
+
+
+  @classmethod
+  @abstractmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+    &#34;&#34;&#34;Returns a function that maps partially parsed objects as outputted by parse_bytes_dict to a (features, label) tuple for training consumption
+    
+    Args:
+        charset_tensor (Tensor): tensor fo valid characters
+    
+    Returns:
+        t.Callable: Parser function
+    &#34;&#34;&#34;
+    pass
+
+  @classmethod
+  def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+    &#34;&#34;&#34;Instantiate from a parsed bytes dict extracted from a Tensorflow record file
+    
+    Args:
+        kwargs (t.Dict): Parsed dictionary
+    
+    Returns:
+        TfrWritable
+    &#34;&#34;&#34;
+    return cls(**{key: kwargs[key].numpy() for key in kwargs})
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    label: ndarray,
+    fontname: t.Union[str, ndarray],
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[TfrWritable, None, None]:
+    &#34;&#34;&#34;Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.
+    
+    Args:
+        features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.
+        label (ndarray): batch labels
+        fontname (t.Union[str, ndarray]): batch fontnames
+        scores (ndarray): batch scores
+        charset_tensor (ndarray): tensor with a single char element per charset element
+    
+    Returns:
+        t.Generator[TfrWritable, None, None]: Generator of formatted records
+    
+    &#34;&#34;&#34;
+    return NotImplementError(&#34;This method is only implemented for subclasses&#34;)
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+    &#34;&#34;&#34;This function is needed because filtering by character requires different logic for individual char images and for entire fonts.
+    
+    Args:
+        dataset (TFRecordDataset): input dataset
+        charset_tensor (ndarray): tensor with a single char element per charset element
+    &#34;&#34;&#34;
+
+    return NotImplementError(&#34;This method is only implemented for subclasses&#34;)
+
+
+
+
+
+
+class ModelWithAnyType(BaseModel):
+
+    # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True
+
+
+class LabeledChar(TfrWritable, ModelWithAnyType):
+  # wrapper that holds a labeled ML example, with asociated metadata
+  features: ndarray
+  label: str
+  fontname: str
+
+
+  _tfr_schema = OrderedDict([
+    (&#39;features&#39;, FixedLenFeature([], tf_str)),
+    (&#39;label&#39;, FixedLenFeature([], tf_str)),
+    (&#39;fontname&#39;, FixedLenFeature([], tf_str))])
+
+  _nonbatched_scoring = False
+
+  # def __init__(self, **data):
+
+  #   filtered_data = data.pop(&#34;_tfr_schema&#34;)
+  #   super().__init__(**filtered_data)
+
+
+  def __iter__(self):
+    return iter((self.features,self.label,self.fontname))
+
+  def __eq__(self,other):
+    return isinstance(other, LabeledChar) and np_all(self.features == other.features) and self.label == other.label and self.fontname == other.fontname
+
+  def to_bytes_dict(self) -&gt; t.Dict:
+    return {
+    &#34;label&#34;: self.bytes_feature(bytes(str.encode(self.label))),
+    &#34;fontname&#34;: self.bytes_feature(bytes(str.encode(self.fontname))),
+    &#34;features&#34;: self.bytes_feature(self.img_to_png_bytes(self.features))
+    }
+
+  def add_score(self, score: ndarray, charset_tensor: ndarray) -&gt; TfrWritable:
+
+    return ScoredLabeledChar(example = self, score = score, charset_tensor = charset_tensor)
+
+
+  @classmethod
+  def parse_bytes_dict(cls, record):
+
+    img = tf.image.decode_png(record[&#34;features&#34;])
+    img = tf.cast(img,dtype=tf.float32)/255.0 #rescaled image data
+
+    record[&#34;features&#34;] = img
+    return record
+
+
+  @classmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+
+    def parser(kwargs):
+
+      num_classes = len(charset_tensor)
+
+      one_hot_label = tf.cast(tf.where(charset_tensor == kwargs[&#34;label&#34;]),dtype=tf.int32)
+      if tf.equal(tf.size(one_hot_label),0):
+        label = tf.cast(one_hot_label, dtype=tf.float32) #if label not in current charset, pass empty label for downstream deletion
+      else:
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
+      
+      #return kwargs[&#34;features&#34;], label
+      #kwargs[&#34;label&#34;] = label
+      #return kwargs
+      return kwargs[&#34;features&#34;], label
+
+    return parser
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+    try:
+      batch_size, height, width, channels = features.shape
+    except ValueError as e:
+      raise ValueError(&#34;Features should have 4 dimensions, including batch and channels&#34;)
+
+    for k in range(batch_size):
+      yield cls(
+        features = (255 * features[k].reshape((height, width))).astype(uint8),
+        label = labels[k],
+        fontname = fontnames[k]
+        ).add_score(
+        score = scores[k],
+        charset_tensor = charset_tensor)
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    def filter_func(kwargs):
+      idx = tf.where(charset_tensor == kwargs[&#34;label&#34;])
+      return tf.math.logical_not(tf.equal(tf.size(idx), 0))
+
+    return dataset.filter(filter_func)
+  
+
+
+
+class LabeledFont(TfrWritable, ModelWithAnyType):
+  # wrapper that holds an entire font&#39;s character set
+  features: ndarray
+  label: ndarray
+  fontname: str
+
+  _tfr_schema = OrderedDict([
+    (&#39;features&#39;, FixedLenFeature([], tf_str)),
+    (&#39;label&#39;, FixedLenFeature([], tf_str)),
+    (&#39;fontname&#39;, FixedLenFeature([], tf_str))])
+
+  _nonbatched_scoring = True
+  # def __init__(self, **data):
+
+  #   filtered_data = data.pop(&#34;_tfr_schema&#34;)
+  #   super().__init__(**filtered_data)
+
+
+  def __iter__(self):
+    n = len(self.label)
+    return (LabeledChar(
+      features = self.features[k], 
+      label = self.label[k], 
+      fontname=self.fontname) for k in range(n))
+
+  def __eq__(self,other):
+    return isinstance(other, LabeledFont) and np_all(self.features == other.features) and np_all(self.label == other.label) and self.fontname == other.fontname
+
+
+  def to_bytes_dict(self) -&gt; t.Dict:
+
+    feature_shape = self.features.shape
+
+    # add channel dimension to feature
+    return {
+    &#34;features&#34;: self.bytes_feature(self.array_to_bytes(self.features.reshape(feature_shape + (1,)), dtype=tf.uint8)),
+    &#34;label&#34;: self.bytes_feature(self.array_to_bytes(self.label, dtype=tf.string)),
+    &#34;fontname&#34;: self.bytes_feature(bytes(str.encode(self.fontname))),
+    }
+
+  def add_score(self, score: ndarray, charset_tensor: ndarray) -&gt; TfrWritable:
+
+    return ScoredLabeledFont(example = self, score = score, charset_tensor = charset_tensor)
+
+  @classmethod
+  def parse_bytes_dict(cls, record):
+    imgs = tf.io.parse_tensor(record[&#34;features&#34;], out_type=tf.uint8)
+    imgs = tf.cast(imgs,dtype=tf.float32)/255.0 #rescaled image data
+    label = tf.io.parse_tensor(record[&#34;label&#34;], out_type=tf.string)
+
+    record[&#34;features&#34;] = imgs
+    record[&#34;label&#34;] = label
+    return record
+
+  @classmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+
+    def parser(kwargs: t.Dict):
+
+      #if label is empty, pass empty for downstream deletion
+      if tf.equal(tf.size(kwargs[&#34;label&#34;]), 0):
+        return kwargs[&#34;features&#34;], tf.zeros((0,),dtype=tf.float32)
+
+      num_classes = len(charset_tensor)
+
+      raw_one_hot = tf.cast(
+        tf.reshape(kwargs[&#34;label&#34;], (-1,1)) == charset_tensor,
+        dtype=tf.int32
+      ) #one hot encoding with up to 62 columns
+
+      index = tf.reduce_sum(raw_one_hot, axis=-1) &gt; 0 # detect rows where all columns are zero (labels not in current charset)
+
+      if tf.equal(tf.reduce_sum(tf.cast(index, dtype=tf.int32)), 0):
+        features = kwargs[&#34;features&#34;]
+        label = tf.zeros((0,),dtype=tf.float32) #if no labels are in current charset, pass empty label for downstream deletion
+      else:
+        one_hot_label = tf.argmax(raw_one_hot[index]) # filter chars not in charset
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1)) #create restricted one hot encoding
+        features = kwargs[&#34;features&#34;][index]
+
+
+      return features, label
+      # kwargs[&#34;label&#34;] = label
+      # kwargs[&#34;features&#34;] = features
+      # return kwargs
+
+
+    return parser
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+    try:
+      font_size, height, width, channels = features.shape
+    except ValueError as e:
+      raise ValueError(&#34;Features should have 4 dimensions, including batch and channels; make sure that batch size parameter in RecordProcessor.fetch is null for font records)&#34;)
+
+    yield cls(
+      features = (255 * features.reshape((font_size, height, width))).astype(uint8),
+      label = labels,
+      fontname = fontnames
+      ).add_score(
+      score = scores,
+      charset_tensor = charset_tensor)
+
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    def filter_func(kwargs):
+      reshaped_labels = tf.reshape(kwargs[&#34;label&#34;], (-1,1))
+      in_charset = tf.reduce_sum(tf.cast(reshaped_labels == charset_tensor, tf.int32), axis=-1)
+      index = in_charset &gt; 0
+      kwargs[&#34;features&#34;] = kwargs[&#34;features&#34;][index]
+      kwargs[&#34;label&#34;] = kwargs[&#34;label&#34;][index]
+
+      return kwargs
+
+    return dataset.map(filter_func)
+
+class ScoredRecordFactory(object):
+
+  &#34;&#34;&#34;Creates classes for scored TfrWritable records
+  &#34;&#34;&#34;
+  
+  @classmethod
+  def create(cls, T: type):
+    &#34;&#34;&#34;Create a scored record&#39;s class
+    
+    Args:
+        T (type): Subclass of TfrWritable
+    
+    Returns:
+        TfrWritable: scored record class
+    
+    Raises:
+        TypeError
+    &#34;&#34;&#34;
+    if not issubclass(T, TfrWritable):
+      raise TypeError(&#34;T must be a subclass of TfrWritable&#34;)
+    else:
+      class ScoredRecord(TfrWritable):
+        #
+
+        record_type = T
+
+        _tfr_schema = {
+          **record_type._tfr_schema, 
+          **{&#39;charset_tensor&#39;: FixedLenFeature([], tf_str),&#39;score&#39;: FixedLenFeature([], tf_str)}
+        }
+
+        _nonbatched_scoring = T._nonbatched_scoring
+
+        def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
+          if not isinstance(example, T):
+            raise TypeError(f&#34;example must be an instance of {T}&#34;)
+          elif not isinstance(score, ndarray):
+            raise TypeError(f&#34;score must be an instance of ndarray&#34;)
+          elif not isinstance(charset_tensor, ndarray):
+            raise TypeError(f&#34;charset_tensor must be an instance of {ndarray}; found {charset_tensor.__class__}&#34;)
+          # elif len(charset_tensor) != len(score):
+          #   raise ValueError(&#34;charset_tensor must be the same length as score&#34;)
+
+          self.example = example
+          self.score = score
+          self.charset_tensor = charset_tensor
+
+
+        def __eq__(self,other):
+          return self.example == other.example and np_all(self.score == other.score) and np_all(self.charset_tensor == other.charset_tensor)
+        #
+        def to_bytes_dict(self) -&gt; t.Dict:
+          #
+          return {
+          &#34;charset_tensor&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+          &#34;score&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
+          **self.example.to_bytes_dict()
+          }
+        #
+        @classmethod
+        def parse_bytes_dict(cls, record):
+          parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
+          score = tf.io.parse_tensor(record[&#34;score&#34;], out_type=tf.float32)
+          parsed_record_bytes_dict[&#34;score&#34;] = score
+
+          charset_tensor = tf.io.parse_tensor(record[&#34;charset_tensor&#34;], out_type=tf.string)
+          parsed_record_bytes_dict[&#34;charset_tensor&#34;] = charset_tensor
+
+          return parsed_record_bytes_dict 
+
+        @classmethod
+        def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+          kwargs = {key: kwargs[key].numpy() for key in kwargs}
+          score = kwargs.pop(&#34;score&#34;)
+          charset_tensor = kwargs.pop(&#34;charset_tensor&#34;)
+
+          return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)
+
+        @classmethod
+        def get_training_parser(
+          cls, 
+          charset_tensor: Tensor) -&gt; t.Callable:
+
+          return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
+
+        @classmethod
+        def from_scored_batch(
+          cls,
+          features: ndarray,
+          labels: ndarray,
+          fontnames: ndarray,
+          scores: ndarray,
+          charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+          return cls.record_type.from_scored_batch(
+            features,
+            labels,
+            fontnames,
+            scores,
+            charset_tensor)
+
+        @classmethod
+        def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+          return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)
+        
+      return ScoredRecord
+
+
+ScoredLabeledChar = ScoredRecordFactory.create(LabeledChar)
+
+ScoredLabeledFont = ScoredRecordFactory.create(LabeledFont)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="fontai.io.records.LabeledChar"><code class="flex name class">
+<span>class <span class="ident">LabeledChar</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises ValidationError if the input data cannot be parsed to form a valid model.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LabeledChar(TfrWritable, ModelWithAnyType):
+  # wrapper that holds a labeled ML example, with asociated metadata
+  features: ndarray
+  label: str
+  fontname: str
+
+
+  _tfr_schema = OrderedDict([
+    (&#39;features&#39;, FixedLenFeature([], tf_str)),
+    (&#39;label&#39;, FixedLenFeature([], tf_str)),
+    (&#39;fontname&#39;, FixedLenFeature([], tf_str))])
+
+  _nonbatched_scoring = False
+
+  # def __init__(self, **data):
+
+  #   filtered_data = data.pop(&#34;_tfr_schema&#34;)
+  #   super().__init__(**filtered_data)
+
+
+  def __iter__(self):
+    return iter((self.features,self.label,self.fontname))
+
+  def __eq__(self,other):
+    return isinstance(other, LabeledChar) and np_all(self.features == other.features) and self.label == other.label and self.fontname == other.fontname
+
+  def to_bytes_dict(self) -&gt; t.Dict:
+    return {
+    &#34;label&#34;: self.bytes_feature(bytes(str.encode(self.label))),
+    &#34;fontname&#34;: self.bytes_feature(bytes(str.encode(self.fontname))),
+    &#34;features&#34;: self.bytes_feature(self.img_to_png_bytes(self.features))
+    }
+
+  def add_score(self, score: ndarray, charset_tensor: ndarray) -&gt; TfrWritable:
+
+    return ScoredLabeledChar(example = self, score = score, charset_tensor = charset_tensor)
+
+
+  @classmethod
+  def parse_bytes_dict(cls, record):
+
+    img = tf.image.decode_png(record[&#34;features&#34;])
+    img = tf.cast(img,dtype=tf.float32)/255.0 #rescaled image data
+
+    record[&#34;features&#34;] = img
+    return record
+
+
+  @classmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+
+    def parser(kwargs):
+
+      num_classes = len(charset_tensor)
+
+      one_hot_label = tf.cast(tf.where(charset_tensor == kwargs[&#34;label&#34;]),dtype=tf.int32)
+      if tf.equal(tf.size(one_hot_label),0):
+        label = tf.cast(one_hot_label, dtype=tf.float32) #if label not in current charset, pass empty label for downstream deletion
+      else:
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,))
+      
+      #return kwargs[&#34;features&#34;], label
+      #kwargs[&#34;label&#34;] = label
+      #return kwargs
+      return kwargs[&#34;features&#34;], label
+
+    return parser
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+    try:
+      batch_size, height, width, channels = features.shape
+    except ValueError as e:
+      raise ValueError(&#34;Features should have 4 dimensions, including batch and channels&#34;)
+
+    for k in range(batch_size):
+      yield cls(
+        features = (255 * features[k].reshape((height, width))).astype(uint8),
+        label = labels[k],
+        fontname = fontnames[k]
+        ).add_score(
+        score = scores[k],
+        charset_tensor = charset_tensor)
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    def filter_func(kwargs):
+      idx = tf.where(charset_tensor == kwargs[&#34;label&#34;])
+      return tf.math.logical_not(tf.equal(tf.size(idx), 0))
+
+    return dataset.filter(filter_func)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></li>
+<li>abc.ABC</li>
+<li><a title="fontai.io.records.ModelWithAnyType" href="#fontai.io.records.ModelWithAnyType">ModelWithAnyType</a></li>
+<li>pydantic.main.BaseModel</li>
+<li>pydantic.utils.Representation</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="fontai.io.records.LabeledChar.features"><code class="name">var <span class="ident">features</span> : numpy.ndarray</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="fontai.io.records.LabeledChar.fontname"><code class="name">var <span class="ident">fontname</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="fontai.io.records.LabeledChar.label"><code class="name">var <span class="ident">label</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.io.records.TfrWritable.add_score" href="#fontai.io.records.TfrWritable.add_score">add_score</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.array_to_bytes" href="#fontai.io.records.TfrWritable.array_to_bytes">array_to_bytes</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.bytes_feature" href="#fontai.io.records.TfrWritable.bytes_feature">bytes_feature</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.filter_charset_for_scoring" href="#fontai.io.records.TfrWritable.filter_charset_for_scoring">filter_charset_for_scoring</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_parsed_bytes_dict" href="#fontai.io.records.TfrWritable.from_parsed_bytes_dict">from_parsed_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_scored_batch" href="#fontai.io.records.TfrWritable.from_scored_batch">from_scored_batch</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_tf_example" href="#fontai.io.records.TfrWritable.from_tf_example">from_tf_example</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.get_training_parser" href="#fontai.io.records.TfrWritable.get_training_parser">get_training_parser</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.parse_bytes_dict" href="#fontai.io.records.TfrWritable.parse_bytes_dict">parse_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.tensor_to_numpy" href="#fontai.io.records.TfrWritable.tensor_to_numpy">tensor_to_numpy</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_bytes_dict" href="#fontai.io.records.TfrWritable.to_bytes_dict">to_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_tf_example" href="#fontai.io.records.TfrWritable.to_tf_example">to_tf_example</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.io.records.LabeledFont"><code class="flex name class">
+<span>class <span class="ident">LabeledFont</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises ValidationError if the input data cannot be parsed to form a valid model.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LabeledFont(TfrWritable, ModelWithAnyType):
+  # wrapper that holds an entire font&#39;s character set
+  features: ndarray
+  label: ndarray
+  fontname: str
+
+  _tfr_schema = OrderedDict([
+    (&#39;features&#39;, FixedLenFeature([], tf_str)),
+    (&#39;label&#39;, FixedLenFeature([], tf_str)),
+    (&#39;fontname&#39;, FixedLenFeature([], tf_str))])
+
+  _nonbatched_scoring = True
+  # def __init__(self, **data):
+
+  #   filtered_data = data.pop(&#34;_tfr_schema&#34;)
+  #   super().__init__(**filtered_data)
+
+
+  def __iter__(self):
+    n = len(self.label)
+    return (LabeledChar(
+      features = self.features[k], 
+      label = self.label[k], 
+      fontname=self.fontname) for k in range(n))
+
+  def __eq__(self,other):
+    return isinstance(other, LabeledFont) and np_all(self.features == other.features) and np_all(self.label == other.label) and self.fontname == other.fontname
+
+
+  def to_bytes_dict(self) -&gt; t.Dict:
+
+    feature_shape = self.features.shape
+
+    # add channel dimension to feature
+    return {
+    &#34;features&#34;: self.bytes_feature(self.array_to_bytes(self.features.reshape(feature_shape + (1,)), dtype=tf.uint8)),
+    &#34;label&#34;: self.bytes_feature(self.array_to_bytes(self.label, dtype=tf.string)),
+    &#34;fontname&#34;: self.bytes_feature(bytes(str.encode(self.fontname))),
+    }
+
+  def add_score(self, score: ndarray, charset_tensor: ndarray) -&gt; TfrWritable:
+
+    return ScoredLabeledFont(example = self, score = score, charset_tensor = charset_tensor)
+
+  @classmethod
+  def parse_bytes_dict(cls, record):
+    imgs = tf.io.parse_tensor(record[&#34;features&#34;], out_type=tf.uint8)
+    imgs = tf.cast(imgs,dtype=tf.float32)/255.0 #rescaled image data
+    label = tf.io.parse_tensor(record[&#34;label&#34;], out_type=tf.string)
+
+    record[&#34;features&#34;] = imgs
+    record[&#34;label&#34;] = label
+    return record
+
+  @classmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+
+    def parser(kwargs: t.Dict):
+
+      #if label is empty, pass empty for downstream deletion
+      if tf.equal(tf.size(kwargs[&#34;label&#34;]), 0):
+        return kwargs[&#34;features&#34;], tf.zeros((0,),dtype=tf.float32)
+
+      num_classes = len(charset_tensor)
+
+      raw_one_hot = tf.cast(
+        tf.reshape(kwargs[&#34;label&#34;], (-1,1)) == charset_tensor,
+        dtype=tf.int32
+      ) #one hot encoding with up to 62 columns
+
+      index = tf.reduce_sum(raw_one_hot, axis=-1) &gt; 0 # detect rows where all columns are zero (labels not in current charset)
+
+      if tf.equal(tf.reduce_sum(tf.cast(index, dtype=tf.int32)), 0):
+        features = kwargs[&#34;features&#34;]
+        label = tf.zeros((0,),dtype=tf.float32) #if no labels are in current charset, pass empty label for downstream deletion
+      else:
+        one_hot_label = tf.argmax(raw_one_hot[index]) # filter chars not in charset
+        label = tf.reshape(tf.one_hot(indices=one_hot_label,depth=num_classes),(num_classes,-1)) #create restricted one hot encoding
+        features = kwargs[&#34;features&#34;][index]
+
+
+      return features, label
+      # kwargs[&#34;label&#34;] = label
+      # kwargs[&#34;features&#34;] = features
+      # return kwargs
+
+
+    return parser
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+    try:
+      font_size, height, width, channels = features.shape
+    except ValueError as e:
+      raise ValueError(&#34;Features should have 4 dimensions, including batch and channels; make sure that batch size parameter in RecordProcessor.fetch is null for font records)&#34;)
+
+    yield cls(
+      features = (255 * features.reshape((font_size, height, width))).astype(uint8),
+      label = labels,
+      fontname = fontnames
+      ).add_score(
+      score = scores,
+      charset_tensor = charset_tensor)
+
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    def filter_func(kwargs):
+      reshaped_labels = tf.reshape(kwargs[&#34;label&#34;], (-1,1))
+      in_charset = tf.reduce_sum(tf.cast(reshaped_labels == charset_tensor, tf.int32), axis=-1)
+      index = in_charset &gt; 0
+      kwargs[&#34;features&#34;] = kwargs[&#34;features&#34;][index]
+      kwargs[&#34;label&#34;] = kwargs[&#34;label&#34;][index]
+
+      return kwargs
+
+    return dataset.map(filter_func)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></li>
+<li>abc.ABC</li>
+<li><a title="fontai.io.records.ModelWithAnyType" href="#fontai.io.records.ModelWithAnyType">ModelWithAnyType</a></li>
+<li>pydantic.main.BaseModel</li>
+<li>pydantic.utils.Representation</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="fontai.io.records.LabeledFont.features"><code class="name">var <span class="ident">features</span> : numpy.ndarray</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="fontai.io.records.LabeledFont.fontname"><code class="name">var <span class="ident">fontname</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="fontai.io.records.LabeledFont.label"><code class="name">var <span class="ident">label</span> : numpy.ndarray</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.io.records.TfrWritable.add_score" href="#fontai.io.records.TfrWritable.add_score">add_score</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.array_to_bytes" href="#fontai.io.records.TfrWritable.array_to_bytes">array_to_bytes</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.bytes_feature" href="#fontai.io.records.TfrWritable.bytes_feature">bytes_feature</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.filter_charset_for_scoring" href="#fontai.io.records.TfrWritable.filter_charset_for_scoring">filter_charset_for_scoring</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_parsed_bytes_dict" href="#fontai.io.records.TfrWritable.from_parsed_bytes_dict">from_parsed_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_scored_batch" href="#fontai.io.records.TfrWritable.from_scored_batch">from_scored_batch</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_tf_example" href="#fontai.io.records.TfrWritable.from_tf_example">from_tf_example</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.get_training_parser" href="#fontai.io.records.TfrWritable.get_training_parser">get_training_parser</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.parse_bytes_dict" href="#fontai.io.records.TfrWritable.parse_bytes_dict">parse_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.tensor_to_numpy" href="#fontai.io.records.TfrWritable.tensor_to_numpy">tensor_to_numpy</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_bytes_dict" href="#fontai.io.records.TfrWritable.to_bytes_dict">to_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_tf_example" href="#fontai.io.records.TfrWritable.to_tf_example">to_tf_example</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.io.records.ModelWithAnyType"><code class="flex name class">
+<span>class <span class="ident">ModelWithAnyType</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises ValidationError if the input data cannot be parsed to form a valid model.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ModelWithAnyType(BaseModel):
+
+    # internal BaseModel configuration class
+  class Config:
+    arbitrary_types_allowed = True</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+<li>pydantic.utils.Representation</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="fontai.io.records.LabeledChar" href="#fontai.io.records.LabeledChar">LabeledChar</a></li>
+<li><a title="fontai.io.records.LabeledFont" href="#fontai.io.records.LabeledFont">LabeledFont</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="fontai.io.records.ModelWithAnyType.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory"><code class="flex name class">
+<span>class <span class="ident">ScoredRecordFactory</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates classes for scored TfrWritable records</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ScoredRecordFactory(object):
+
+  &#34;&#34;&#34;Creates classes for scored TfrWritable records
+  &#34;&#34;&#34;
+  
+  @classmethod
+  def create(cls, T: type):
+    &#34;&#34;&#34;Create a scored record&#39;s class
+    
+    Args:
+        T (type): Subclass of TfrWritable
+    
+    Returns:
+        TfrWritable: scored record class
+    
+    Raises:
+        TypeError
+    &#34;&#34;&#34;
+    if not issubclass(T, TfrWritable):
+      raise TypeError(&#34;T must be a subclass of TfrWritable&#34;)
+    else:
+      class ScoredRecord(TfrWritable):
+        #
+
+        record_type = T
+
+        _tfr_schema = {
+          **record_type._tfr_schema, 
+          **{&#39;charset_tensor&#39;: FixedLenFeature([], tf_str),&#39;score&#39;: FixedLenFeature([], tf_str)}
+        }
+
+        _nonbatched_scoring = T._nonbatched_scoring
+
+        def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
+          if not isinstance(example, T):
+            raise TypeError(f&#34;example must be an instance of {T}&#34;)
+          elif not isinstance(score, ndarray):
+            raise TypeError(f&#34;score must be an instance of ndarray&#34;)
+          elif not isinstance(charset_tensor, ndarray):
+            raise TypeError(f&#34;charset_tensor must be an instance of {ndarray}; found {charset_tensor.__class__}&#34;)
+          # elif len(charset_tensor) != len(score):
+          #   raise ValueError(&#34;charset_tensor must be the same length as score&#34;)
+
+          self.example = example
+          self.score = score
+          self.charset_tensor = charset_tensor
+
+
+        def __eq__(self,other):
+          return self.example == other.example and np_all(self.score == other.score) and np_all(self.charset_tensor == other.charset_tensor)
+        #
+        def to_bytes_dict(self) -&gt; t.Dict:
+          #
+          return {
+          &#34;charset_tensor&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+          &#34;score&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
+          **self.example.to_bytes_dict()
+          }
+        #
+        @classmethod
+        def parse_bytes_dict(cls, record):
+          parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
+          score = tf.io.parse_tensor(record[&#34;score&#34;], out_type=tf.float32)
+          parsed_record_bytes_dict[&#34;score&#34;] = score
+
+          charset_tensor = tf.io.parse_tensor(record[&#34;charset_tensor&#34;], out_type=tf.string)
+          parsed_record_bytes_dict[&#34;charset_tensor&#34;] = charset_tensor
+
+          return parsed_record_bytes_dict 
+
+        @classmethod
+        def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+          kwargs = {key: kwargs[key].numpy() for key in kwargs}
+          score = kwargs.pop(&#34;score&#34;)
+          charset_tensor = kwargs.pop(&#34;charset_tensor&#34;)
+
+          return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)
+
+        @classmethod
+        def get_training_parser(
+          cls, 
+          charset_tensor: Tensor) -&gt; t.Callable:
+
+          return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
+
+        @classmethod
+        def from_scored_batch(
+          cls,
+          features: ndarray,
+          labels: ndarray,
+          fontnames: ndarray,
+          scores: ndarray,
+          charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+          return cls.record_type.from_scored_batch(
+            features,
+            labels,
+            fontnames,
+            scores,
+            charset_tensor)
+
+        @classmethod
+        def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+          return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)
+        
+      return ScoredRecord</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="fontai.io.records.ScoredRecordFactory.create"><code class="name flex">
+<span>def <span class="ident">create</span></span>(<span>T: type)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a scored record's class</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>T</code></strong> :&ensp;<code>type</code></dt>
+<dd>Subclass of TfrWritable</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></code></dt>
+<dd>scored record class</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<p>TypeError</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def create(cls, T: type):
+  &#34;&#34;&#34;Create a scored record&#39;s class
+  
+  Args:
+      T (type): Subclass of TfrWritable
+  
+  Returns:
+      TfrWritable: scored record class
+  
+  Raises:
+      TypeError
+  &#34;&#34;&#34;
+  if not issubclass(T, TfrWritable):
+    raise TypeError(&#34;T must be a subclass of TfrWritable&#34;)
+  else:
+    class ScoredRecord(TfrWritable):
+      #
+
+      record_type = T
+
+      _tfr_schema = {
+        **record_type._tfr_schema, 
+        **{&#39;charset_tensor&#39;: FixedLenFeature([], tf_str),&#39;score&#39;: FixedLenFeature([], tf_str)}
+      }
+
+      _nonbatched_scoring = T._nonbatched_scoring
+
+      def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
+        if not isinstance(example, T):
+          raise TypeError(f&#34;example must be an instance of {T}&#34;)
+        elif not isinstance(score, ndarray):
+          raise TypeError(f&#34;score must be an instance of ndarray&#34;)
+        elif not isinstance(charset_tensor, ndarray):
+          raise TypeError(f&#34;charset_tensor must be an instance of {ndarray}; found {charset_tensor.__class__}&#34;)
+        # elif len(charset_tensor) != len(score):
+        #   raise ValueError(&#34;charset_tensor must be the same length as score&#34;)
+
+        self.example = example
+        self.score = score
+        self.charset_tensor = charset_tensor
+
+
+      def __eq__(self,other):
+        return self.example == other.example and np_all(self.score == other.score) and np_all(self.charset_tensor == other.charset_tensor)
+      #
+      def to_bytes_dict(self) -&gt; t.Dict:
+        #
+        return {
+        &#34;charset_tensor&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+        &#34;score&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
+        **self.example.to_bytes_dict()
+        }
+      #
+      @classmethod
+      def parse_bytes_dict(cls, record):
+        parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
+        score = tf.io.parse_tensor(record[&#34;score&#34;], out_type=tf.float32)
+        parsed_record_bytes_dict[&#34;score&#34;] = score
+
+        charset_tensor = tf.io.parse_tensor(record[&#34;charset_tensor&#34;], out_type=tf.string)
+        parsed_record_bytes_dict[&#34;charset_tensor&#34;] = charset_tensor
+
+        return parsed_record_bytes_dict 
+
+      @classmethod
+      def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+        kwargs = {key: kwargs[key].numpy() for key in kwargs}
+        score = kwargs.pop(&#34;score&#34;)
+        charset_tensor = kwargs.pop(&#34;charset_tensor&#34;)
+
+        return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)
+
+      @classmethod
+      def get_training_parser(
+        cls, 
+        charset_tensor: Tensor) -&gt; t.Callable:
+
+        return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
+
+      @classmethod
+      def from_scored_batch(
+        cls,
+        features: ndarray,
+        labels: ndarray,
+        fontnames: ndarray,
+        scores: ndarray,
+        charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+        return cls.record_type.from_scored_batch(
+          features,
+          labels,
+          fontnames,
+          scores,
+          charset_tensor)
+
+      @classmethod
+      def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+        return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)
+      
+    return ScoredRecord</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord"><code class="flex name class">
+<span>class <span class="ident">ScoredLabeledChar</span></span>
+<span>(</span><span>example: <a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a>, score: ndarray, charset_tensor: ndarray)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ScoredRecord(TfrWritable):
+  #
+
+  record_type = T
+
+  _tfr_schema = {
+    **record_type._tfr_schema, 
+    **{&#39;charset_tensor&#39;: FixedLenFeature([], tf_str),&#39;score&#39;: FixedLenFeature([], tf_str)}
+  }
+
+  _nonbatched_scoring = T._nonbatched_scoring
+
+  def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
+    if not isinstance(example, T):
+      raise TypeError(f&#34;example must be an instance of {T}&#34;)
+    elif not isinstance(score, ndarray):
+      raise TypeError(f&#34;score must be an instance of ndarray&#34;)
+    elif not isinstance(charset_tensor, ndarray):
+      raise TypeError(f&#34;charset_tensor must be an instance of {ndarray}; found {charset_tensor.__class__}&#34;)
+    # elif len(charset_tensor) != len(score):
+    #   raise ValueError(&#34;charset_tensor must be the same length as score&#34;)
+
+    self.example = example
+    self.score = score
+    self.charset_tensor = charset_tensor
+
+
+  def __eq__(self,other):
+    return self.example == other.example and np_all(self.score == other.score) and np_all(self.charset_tensor == other.charset_tensor)
+  #
+  def to_bytes_dict(self) -&gt; t.Dict:
+    #
+    return {
+    &#34;charset_tensor&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+    &#34;score&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
+    **self.example.to_bytes_dict()
+    }
+  #
+  @classmethod
+  def parse_bytes_dict(cls, record):
+    parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
+    score = tf.io.parse_tensor(record[&#34;score&#34;], out_type=tf.float32)
+    parsed_record_bytes_dict[&#34;score&#34;] = score
+
+    charset_tensor = tf.io.parse_tensor(record[&#34;charset_tensor&#34;], out_type=tf.string)
+    parsed_record_bytes_dict[&#34;charset_tensor&#34;] = charset_tensor
+
+    return parsed_record_bytes_dict 
+
+  @classmethod
+  def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+    kwargs = {key: kwargs[key].numpy() for key in kwargs}
+    score = kwargs.pop(&#34;score&#34;)
+    charset_tensor = kwargs.pop(&#34;charset_tensor&#34;)
+
+    return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)
+
+  @classmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+
+    return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+    return cls.record_type.from_scored_batch(
+      features,
+      labels,
+      fontnames,
+      scores,
+      charset_tensor)
+
+  @classmethod
+  def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.record_type"><code class="name">var <span class="ident">record_type</span></code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.filter_charset_for_scoring"><code class="name flex">
+<span>def <span class="ident">filter_charset_for_scoring</span></span>(<span>dataset: TFRecordDataset, charset_tensor: ndarray)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset</code></strong> :&ensp;<code>TFRecordDataset</code></dt>
+<dd>input dataset</dd>
+<dt><strong><code>charset_tensor</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>tensor with a single char element per charset element</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+  return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.from_parsed_bytes_dict"><code class="name flex">
+<span>def <span class="ident">from_parsed_bytes_dict</span></span>(<span>kwargs: t.Dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Instantiate from a parsed bytes dict extracted from a Tensorflow record file</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>kwargs</code></strong> :&ensp;<code>t.Dict</code></dt>
+<dd>Parsed dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>TfrWritable</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+  kwargs = {key: kwargs[key].numpy() for key in kwargs}
+  score = kwargs.pop(&#34;score&#34;)
+  charset_tensor = kwargs.pop(&#34;charset_tensor&#34;)
+
+  return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.from_scored_batch"><code class="name flex">
+<span>def <span class="ident">from_scored_batch</span></span>(<span>features: ndarray, labels: ndarray, fontnames: ndarray, scores: ndarray, charset_tensor: ndarray) ‑> Generator[<a title="fontai.io.records.LabeledChar" href="#fontai.io.records.LabeledChar">LabeledChar</a>, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>features</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</dd>
+<dt><strong><code>label</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>batch labels</dd>
+<dt><strong><code>fontname</code></strong> :&ensp;<code>t.Union[str, ndarray]</code></dt>
+<dd>batch fontnames</dd>
+<dt><strong><code>scores</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>batch scores</dd>
+<dt><strong><code>charset_tensor</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>tensor with a single char element per charset element</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Generator[<a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a>, None, None]</code></dt>
+<dd>Generator of formatted records</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_scored_batch(
+  cls,
+  features: ndarray,
+  labels: ndarray,
+  fontnames: ndarray,
+  scores: ndarray,
+  charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+  return cls.record_type.from_scored_batch(
+    features,
+    labels,
+    fontnames,
+    scores,
+    charset_tensor)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.get_training_parser"><code class="name flex">
+<span>def <span class="ident">get_training_parser</span></span>(<span>charset_tensor: Tensor) ‑> Callable</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a function that maps partially parsed objects as outputted by parse_bytes_dict to a (features, label) tuple for training consumption</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>charset_tensor</code></strong> :&ensp;<code>Tensor</code></dt>
+<dd>tensor fo valid characters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Callable</code></dt>
+<dd>Parser function</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_training_parser(
+  cls, 
+  charset_tensor: Tensor) -&gt; t.Callable:
+
+  return cls.record_type.get_training_parser(charset_tensor=charset_tensor)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.parse_bytes_dict"><code class="name flex">
+<span>def <span class="ident">parse_bytes_dict</span></span>(<span>record)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Performs basic parsing of deserialised features and returns dict with the same keys as the tfr schema's ordered dict</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>record</code></strong> :&ensp;<code>tf.train.TFExample</code></dt>
+<dd>Input record</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Dict</code></dt>
+<dd>Output dictionary</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def parse_bytes_dict(cls, record):
+  parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
+  score = tf.io.parse_tensor(record[&#34;score&#34;], out_type=tf.float32)
+  parsed_record_bytes_dict[&#34;score&#34;] = score
+
+  charset_tensor = tf.io.parse_tensor(record[&#34;charset_tensor&#34;], out_type=tf.string)
+  parsed_record_bytes_dict[&#34;charset_tensor&#34;] = charset_tensor
+
+  return parsed_record_bytes_dict </code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.to_bytes_dict"><code class="name flex">
+<span>def <span class="ident">to_bytes_dict</span></span>(<span>self) ‑> Dict[~KT, ~VT]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_bytes_dict(self) -&gt; t.Dict:
+  #
+  return {
+  &#34;charset_tensor&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+  &#34;score&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
+  **self.example.to_bytes_dict()
+  }</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord"><code class="flex name class">
+<span>class <span class="ident">ScoredLabeledFont</span></span>
+<span>(</span><span>example: <a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a>, score: ndarray, charset_tensor: ndarray)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ScoredRecord(TfrWritable):
+  #
+
+  record_type = T
+
+  _tfr_schema = {
+    **record_type._tfr_schema, 
+    **{&#39;charset_tensor&#39;: FixedLenFeature([], tf_str),&#39;score&#39;: FixedLenFeature([], tf_str)}
+  }
+
+  _nonbatched_scoring = T._nonbatched_scoring
+
+  def __init__(self, example: TfrWritable, score: ndarray, charset_tensor: ndarray):
+    if not isinstance(example, T):
+      raise TypeError(f&#34;example must be an instance of {T}&#34;)
+    elif not isinstance(score, ndarray):
+      raise TypeError(f&#34;score must be an instance of ndarray&#34;)
+    elif not isinstance(charset_tensor, ndarray):
+      raise TypeError(f&#34;charset_tensor must be an instance of {ndarray}; found {charset_tensor.__class__}&#34;)
+    # elif len(charset_tensor) != len(score):
+    #   raise ValueError(&#34;charset_tensor must be the same length as score&#34;)
+
+    self.example = example
+    self.score = score
+    self.charset_tensor = charset_tensor
+
+
+  def __eq__(self,other):
+    return self.example == other.example and np_all(self.score == other.score) and np_all(self.charset_tensor == other.charset_tensor)
+  #
+  def to_bytes_dict(self) -&gt; t.Dict:
+    #
+    return {
+    &#34;charset_tensor&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.charset_tensor, dtype=tf.string)), 
+    &#34;score&#34;: self.record_type.bytes_feature(self.record_type.array_to_bytes(self.score, dtype=tf.float32)),
+    **self.example.to_bytes_dict()
+    }
+  #
+  @classmethod
+  def parse_bytes_dict(cls, record):
+    parsed_record_bytes_dict = cls.record_type.parse_bytes_dict(record)
+
+    score = tf.io.parse_tensor(record[&#34;score&#34;], out_type=tf.float32)
+    parsed_record_bytes_dict[&#34;score&#34;] = score
+
+    charset_tensor = tf.io.parse_tensor(record[&#34;charset_tensor&#34;], out_type=tf.string)
+    parsed_record_bytes_dict[&#34;charset_tensor&#34;] = charset_tensor
+
+    return parsed_record_bytes_dict 
+
+  @classmethod
+  def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+
+    kwargs = {key: kwargs[key].numpy() for key in kwargs}
+    score = kwargs.pop(&#34;score&#34;)
+    charset_tensor = kwargs.pop(&#34;charset_tensor&#34;)
+
+    return cls(example = cls.record_type(**kwargs), score = score, charset_tensor = charset_tensor)
+
+  @classmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+
+    return cls.record_type.get_training_parser(charset_tensor=charset_tensor)
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    labels: ndarray,
+    fontnames: ndarray,
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[LabeledChar, None, None]:
+
+    return cls.record_type.from_scored_batch(
+      features,
+      labels,
+      fontnames,
+      scores,
+      charset_tensor)
+
+  @classmethod
+  def filter_charset_for_scoring(cls, dataset: TFRecordDataset, charset_tensor: ndarray):
+
+    return cls.record_type.filter_charset_for_scoring(dataset, charset_tensor)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.record_type"><code class="name">var <span class="ident">record_type</span></code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></b></code>:
+<ul class="hlist">
+<li><code><a title="fontai.io.records.TfrWritable.add_score" href="#fontai.io.records.TfrWritable.add_score">add_score</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.array_to_bytes" href="#fontai.io.records.TfrWritable.array_to_bytes">array_to_bytes</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.bytes_feature" href="#fontai.io.records.TfrWritable.bytes_feature">bytes_feature</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.filter_charset_for_scoring" href="#fontai.io.records.TfrWritable.filter_charset_for_scoring">filter_charset_for_scoring</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_parsed_bytes_dict" href="#fontai.io.records.TfrWritable.from_parsed_bytes_dict">from_parsed_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_scored_batch" href="#fontai.io.records.TfrWritable.from_scored_batch">from_scored_batch</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_tf_example" href="#fontai.io.records.TfrWritable.from_tf_example">from_tf_example</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.get_training_parser" href="#fontai.io.records.TfrWritable.get_training_parser">get_training_parser</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.parse_bytes_dict" href="#fontai.io.records.TfrWritable.parse_bytes_dict">parse_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.tensor_to_numpy" href="#fontai.io.records.TfrWritable.tensor_to_numpy">tensor_to_numpy</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_bytes_dict" href="#fontai.io.records.TfrWritable.to_bytes_dict">to_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_tf_example" href="#fontai.io.records.TfrWritable.to_tf_example">to_tf_example</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="fontai.io.records.TfrWritable"><code class="flex name class">
+<span>class <span class="ident">TfrWritable</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class that provides Tensorflow record's encoding and decoding logic for downstream data formats used by the package</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TfrWritable(ABC):
+
+  &#34;&#34;&#34;Class that provides Tensorflow record&#39;s encoding and decoding logic for downstream data formats used by the package
+  &#34;&#34;&#34;
+  
+  _tfr_schema: t.Dict
+
+  _nonbatched_scoring: bool #if True, batch size is ignored at scoring time for this record type.
+
+  @classmethod
+  def tensor_to_numpy(cls, x: Tensor) -&gt; ndarray:
+    &#34;&#34;&#34;Converts Tensor to numpy array
+    
+    Args:
+        x (Tensor): Input tensor
+    
+    Returns:
+        ndarray: numpy array
+    &#34;&#34;&#34;
+
+    if executing_eagerly():
+      return x.numpy()
+    else:
+      return x.eval()
+
+  @classmethod
+  def array_to_bytes(cls, x: t.Union[Tensor, ndarray], dtype: type) -&gt; bytes:
+    &#34;&#34;&#34;Converts an array, either from numpy or Tensorflow, to a stream of bytes to be serialized
+    
+    Args:
+        x (t.Union[Tensor, ndarray]): Input array
+        dtype: type of returned tensor
+    
+    Returns:
+        bytes: serialized array
+    &#34;&#34;&#34;
+
+    serialised_tensor = serialize_tensor(convert_to_tensor(x, dtype=dtype))
+
+    byte_content = cls.tensor_to_numpy(serialised_tensor)
+
+    return byte_content
+
+  @classmethod
+  def bytes_feature(cls, value: bytes) -&gt; TFFeature:
+    &#34;&#34;&#34;Maps a bytestream to a TF Feature instance
+    
+    Args:
+        value (bytes): bytes to encode
+    
+    Returns:
+        TFFeature: encoded value
+    &#34;&#34;&#34;
+    return TFFeature(bytes_list=TFBytesList(value=[value]))
+
+
+  @classmethod
+  @abstractmethod
+  def to_bytes_dict(self) -&gt; TFFeature:
+    &#34;&#34;&#34;Maps an object inheriting from this class to a TF record compatible format
+    
+    Returns:
+        t.Dict: dictionary with encoded features that will be stored into a TF record.
+    &#34;&#34;&#34;
+    pass
+
+  def to_tf_example(self):
+    &#34;&#34;&#34;Returns a Tensorflow example instance encoding the instance&#39;s contents
+    
+    &#34;&#34;&#34;
+
+    return TFExample(
+      features = TFFeatures(feature = self.to_bytes_dict()))
+
+  @classmethod
+  def from_tf_example(cls, example: Tensor) -&gt; t.Dict:
+    &#34;&#34;&#34;Creates an instance by deserialising a TF record using the class schema
+    
+    Args:
+        example (TFExample): example TF example
+    
+    Returns:
+        TfrWritable: deserialised TfrWritable instance
+    &#34;&#34;&#34;
+    return parse_single_example(example,cls._tfr_schema)
+
+  @classmethod
+  def img_to_png_bytes(cls, img):
+    bf = io.BytesIO()
+    imageio.imwrite(bf,img.astype(uint8),&#34;png&#34;)
+    val = bf.getvalue()
+    bf.close()
+    return val
+
+  def add_score(self, score: Tensor, charset_tensor: Tensor) -&gt; TfrWritable:
+    &#34;&#34;&#34;Adds a model&#39;s score and return the appropriate record instance
+    
+    Args:
+        score (Tensor): Model score
+
+        charset (Tensor): charset used by the scoring model
+    
+    Returns:
+
+        TfrWritable: scored record instance
+    &#34;&#34;&#34;
+    return NotImplementError(&#34;Adding a score is not implemented for this schema.&#34;)
+
+  @classmethod
+  @abstractmethod
+  def parse_bytes_dict(self, record):
+    &#34;&#34;&#34;Performs basic parsing of deserialised features and returns dict with the same keys as the tfr schema&#39;s ordered dict
+    
+    Args:
+        record (tf.train.TFExample): Input record
+    
+    Returns:
+        t.Dict: Output dictionary
+    &#34;&#34;&#34;
+    pass
+
+
+  @classmethod
+  @abstractmethod
+  def get_training_parser(
+    cls, 
+    charset_tensor: Tensor) -&gt; t.Callable:
+    &#34;&#34;&#34;Returns a function that maps partially parsed objects as outputted by parse_bytes_dict to a (features, label) tuple for training consumption
+    
+    Args:
+        charset_tensor (Tensor): tensor fo valid characters
+    
+    Returns:
+        t.Callable: Parser function
+    &#34;&#34;&#34;
+    pass
+
+  @classmethod
+  def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+    &#34;&#34;&#34;Instantiate from a parsed bytes dict extracted from a Tensorflow record file
+    
+    Args:
+        kwargs (t.Dict): Parsed dictionary
+    
+    Returns:
+        TfrWritable
+    &#34;&#34;&#34;
+    return cls(**{key: kwargs[key].numpy() for key in kwargs})
+
+  @classmethod
+  def from_scored_batch(
+    cls,
+    features: ndarray,
+    label: ndarray,
+    fontname: t.Union[str, ndarray],
+    scores: ndarray,
+    charset_tensor: ndarray) -&gt; t.Generator[TfrWritable, None, None]:
+    &#34;&#34;&#34;Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.
+    
+    Args:
+        features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.
+        label (ndarray): batch labels
+        fontname (t.Union[str, ndarray]): batch fontnames
+        scores (ndarray): batch scores
+        charset_tensor (ndarray): tensor with a single char element per charset element
+    
+    Returns:
+        t.Generator[TfrWritable, None, None]: Generator of formatted records
+    
+    &#34;&#34;&#34;
+    return NotImplementError(&#34;This method is only implemented for subclasses&#34;)
+
+  @classmethod
+  def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+    &#34;&#34;&#34;This function is needed because filtering by character requires different logic for individual char images and for entire fonts.
+    
+    Args:
+        dataset (TFRecordDataset): input dataset
+        charset_tensor (ndarray): tensor with a single char element per charset element
+    &#34;&#34;&#34;
+
+    return NotImplementError(&#34;This method is only implemented for subclasses&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="fontai.io.records.LabeledChar" href="#fontai.io.records.LabeledChar">LabeledChar</a></li>
+<li><a title="fontai.io.records.LabeledFont" href="#fontai.io.records.LabeledFont">LabeledFont</a></li>
+<li><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord">ScoredRecordFactory.create.<locals>.ScoredRecord</a></li>
+<li><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord">ScoredRecordFactory.create.<locals>.ScoredRecord</a></li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="fontai.io.records.TfrWritable.array_to_bytes"><code class="name flex">
+<span>def <span class="ident">array_to_bytes</span></span>(<span>x: t.Union[Tensor, ndarray], dtype: type) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts an array, either from numpy or Tensorflow, to a stream of bytes to be serialized</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>t.Union[Tensor, ndarray]</code></dt>
+<dd>Input array</dd>
+<dt><strong><code>dtype</code></strong></dt>
+<dd>type of returned tensor</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bytes</code></dt>
+<dd>serialized array</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def array_to_bytes(cls, x: t.Union[Tensor, ndarray], dtype: type) -&gt; bytes:
+  &#34;&#34;&#34;Converts an array, either from numpy or Tensorflow, to a stream of bytes to be serialized
+  
+  Args:
+      x (t.Union[Tensor, ndarray]): Input array
+      dtype: type of returned tensor
+  
+  Returns:
+      bytes: serialized array
+  &#34;&#34;&#34;
+
+  serialised_tensor = serialize_tensor(convert_to_tensor(x, dtype=dtype))
+
+  byte_content = cls.tensor_to_numpy(serialised_tensor)
+
+  return byte_content</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.bytes_feature"><code class="name flex">
+<span>def <span class="ident">bytes_feature</span></span>(<span>value: bytes) ‑> tensorflow.core.example.feature_pb2.Feature</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Maps a bytestream to a TF Feature instance</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>value</code></strong> :&ensp;<code>bytes</code></dt>
+<dd>bytes to encode</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>TFFeature</code></dt>
+<dd>encoded value</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def bytes_feature(cls, value: bytes) -&gt; TFFeature:
+  &#34;&#34;&#34;Maps a bytestream to a TF Feature instance
+  
+  Args:
+      value (bytes): bytes to encode
+  
+  Returns:
+      TFFeature: encoded value
+  &#34;&#34;&#34;
+  return TFFeature(bytes_list=TFBytesList(value=[value]))</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.filter_charset_for_scoring"><code class="name flex">
+<span>def <span class="ident">filter_charset_for_scoring</span></span>(<span>dataset: TFRecordDataset, charset_tensor: ndarray)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function is needed because filtering by character requires different logic for individual char images and for entire fonts.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset</code></strong> :&ensp;<code>TFRecordDataset</code></dt>
+<dd>input dataset</dd>
+<dt><strong><code>charset_tensor</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>tensor with a single char element per charset element</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def filter_charset_for_scoring(self, dataset: TFRecordDataset, charset_tensor: ndarray):
+  &#34;&#34;&#34;This function is needed because filtering by character requires different logic for individual char images and for entire fonts.
+  
+  Args:
+      dataset (TFRecordDataset): input dataset
+      charset_tensor (ndarray): tensor with a single char element per charset element
+  &#34;&#34;&#34;
+
+  return NotImplementError(&#34;This method is only implemented for subclasses&#34;)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.from_parsed_bytes_dict"><code class="name flex">
+<span>def <span class="ident">from_parsed_bytes_dict</span></span>(<span>kwargs: t.Dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Instantiate from a parsed bytes dict extracted from a Tensorflow record file</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>kwargs</code></strong> :&ensp;<code>t.Dict</code></dt>
+<dd>Parsed dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>TfrWritable</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_parsed_bytes_dict(cls, kwargs: t.Dict):
+  &#34;&#34;&#34;Instantiate from a parsed bytes dict extracted from a Tensorflow record file
+  
+  Args:
+      kwargs (t.Dict): Parsed dictionary
+  
+  Returns:
+      TfrWritable
+  &#34;&#34;&#34;
+  return cls(**{key: kwargs[key].numpy() for key in kwargs})</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.from_scored_batch"><code class="name flex">
+<span>def <span class="ident">from_scored_batch</span></span>(<span>features: ndarray, label: ndarray, fontname: t.Union[str, ndarray], scores: ndarray, charset_tensor: ndarray) ‑> Generator[<a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a>, None, None]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>features</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.</dd>
+<dt><strong><code>label</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>batch labels</dd>
+<dt><strong><code>fontname</code></strong> :&ensp;<code>t.Union[str, ndarray]</code></dt>
+<dd>batch fontnames</dd>
+<dt><strong><code>scores</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>batch scores</dd>
+<dt><strong><code>charset_tensor</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>tensor with a single char element per charset element</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Generator[<a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a>, None, None]</code></dt>
+<dd>Generator of formatted records</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_scored_batch(
+  cls,
+  features: ndarray,
+  label: ndarray,
+  fontname: t.Union[str, ndarray],
+  scores: ndarray,
+  charset_tensor: ndarray) -&gt; t.Generator[TfrWritable, None, None]:
+  &#34;&#34;&#34;Maps a batch of scored features and associated objects to a generator of TfrWritable instances. This method is necessary because labeled chars and labeled fonts differ in shape, and logic for mapping scored batches to records is different for each of them.
+  
+  Args:
+      features (ndarray): batch features; they must be preprocessed for scoring, which usually means they are in unit scale and are of type float32.
+      label (ndarray): batch labels
+      fontname (t.Union[str, ndarray]): batch fontnames
+      scores (ndarray): batch scores
+      charset_tensor (ndarray): tensor with a single char element per charset element
+  
+  Returns:
+      t.Generator[TfrWritable, None, None]: Generator of formatted records
+  
+  &#34;&#34;&#34;
+  return NotImplementError(&#34;This method is only implemented for subclasses&#34;)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.from_tf_example"><code class="name flex">
+<span>def <span class="ident">from_tf_example</span></span>(<span>example: Tensor) ‑> Dict[~KT, ~VT]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates an instance by deserialising a TF record using the class schema</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>example</code></strong> :&ensp;<code>TFExample</code></dt>
+<dd>example TF example</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></code></dt>
+<dd>deserialised TfrWritable instance</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_tf_example(cls, example: Tensor) -&gt; t.Dict:
+  &#34;&#34;&#34;Creates an instance by deserialising a TF record using the class schema
+  
+  Args:
+      example (TFExample): example TF example
+  
+  Returns:
+      TfrWritable: deserialised TfrWritable instance
+  &#34;&#34;&#34;
+  return parse_single_example(example,cls._tfr_schema)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.get_training_parser"><code class="name flex">
+<span>def <span class="ident">get_training_parser</span></span>(<span>charset_tensor: Tensor) ‑> Callable</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a function that maps partially parsed objects as outputted by parse_bytes_dict to a (features, label) tuple for training consumption</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>charset_tensor</code></strong> :&ensp;<code>Tensor</code></dt>
+<dd>tensor fo valid characters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Callable</code></dt>
+<dd>Parser function</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+@abstractmethod
+def get_training_parser(
+  cls, 
+  charset_tensor: Tensor) -&gt; t.Callable:
+  &#34;&#34;&#34;Returns a function that maps partially parsed objects as outputted by parse_bytes_dict to a (features, label) tuple for training consumption
+  
+  Args:
+      charset_tensor (Tensor): tensor fo valid characters
+  
+  Returns:
+      t.Callable: Parser function
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.img_to_png_bytes"><code class="name flex">
+<span>def <span class="ident">img_to_png_bytes</span></span>(<span>img)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def img_to_png_bytes(cls, img):
+  bf = io.BytesIO()
+  imageio.imwrite(bf,img.astype(uint8),&#34;png&#34;)
+  val = bf.getvalue()
+  bf.close()
+  return val</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.parse_bytes_dict"><code class="name flex">
+<span>def <span class="ident">parse_bytes_dict</span></span>(<span>record)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Performs basic parsing of deserialised features and returns dict with the same keys as the tfr schema's ordered dict</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>record</code></strong> :&ensp;<code>tf.train.TFExample</code></dt>
+<dd>Input record</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Dict</code></dt>
+<dd>Output dictionary</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+@abstractmethod
+def parse_bytes_dict(self, record):
+  &#34;&#34;&#34;Performs basic parsing of deserialised features and returns dict with the same keys as the tfr schema&#39;s ordered dict
+  
+  Args:
+      record (tf.train.TFExample): Input record
+  
+  Returns:
+      t.Dict: Output dictionary
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.tensor_to_numpy"><code class="name flex">
+<span>def <span class="ident">tensor_to_numpy</span></span>(<span>x: Tensor) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts Tensor to numpy array</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>Tensor</code></dt>
+<dd>Input tensor</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ndarray</code></dt>
+<dd>numpy array</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def tensor_to_numpy(cls, x: Tensor) -&gt; ndarray:
+  &#34;&#34;&#34;Converts Tensor to numpy array
+  
+  Args:
+      x (Tensor): Input tensor
+  
+  Returns:
+      ndarray: numpy array
+  &#34;&#34;&#34;
+
+  if executing_eagerly():
+    return x.numpy()
+  else:
+    return x.eval()</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.to_bytes_dict"><code class="name flex">
+<span>def <span class="ident">to_bytes_dict</span></span>(<span>) ‑> tensorflow.core.example.feature_pb2.Feature</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Maps an object inheriting from this class to a TF record compatible format</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>t.Dict</code></dt>
+<dd>dictionary with encoded features that will be stored into a TF record.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+@abstractmethod
+def to_bytes_dict(self) -&gt; TFFeature:
+  &#34;&#34;&#34;Maps an object inheriting from this class to a TF record compatible format
+  
+  Returns:
+      t.Dict: dictionary with encoded features that will be stored into a TF record.
+  &#34;&#34;&#34;
+  pass</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.records.TfrWritable.add_score"><code class="name flex">
+<span>def <span class="ident">add_score</span></span>(<span>self, score: Tensor, charset_tensor: Tensor) ‑> <a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds a model's score and return the appropriate record instance</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>score</code></strong> :&ensp;<code>Tensor</code></dt>
+<dd>Model score</dd>
+<dt><strong><code>charset</code></strong> :&ensp;<code>Tensor</code></dt>
+<dd>charset used by the scoring model</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></code></dt>
+<dd>scored record instance</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_score(self, score: Tensor, charset_tensor: Tensor) -&gt; TfrWritable:
+  &#34;&#34;&#34;Adds a model&#39;s score and return the appropriate record instance
+  
+  Args:
+      score (Tensor): Model score
+
+      charset (Tensor): charset used by the scoring model
+  
+  Returns:
+
+      TfrWritable: scored record instance
+  &#34;&#34;&#34;
+  return NotImplementError(&#34;Adding a score is not implemented for this schema.&#34;)</code></pre>
+</details>
+</dd>
+<dt id="fontai.io.records.TfrWritable.to_tf_example"><code class="name flex">
+<span>def <span class="ident">to_tf_example</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a Tensorflow example instance encoding the instance's contents</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_tf_example(self):
+  &#34;&#34;&#34;Returns a Tensorflow example instance encoding the instance&#39;s contents
+  
+  &#34;&#34;&#34;
+
+  return TFExample(
+    features = TFFeatures(feature = self.to_bytes_dict()))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="fontai.io" href="index.html">fontai.io</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="fontai.io.records.LabeledChar" href="#fontai.io.records.LabeledChar">LabeledChar</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.LabeledChar.features" href="#fontai.io.records.LabeledChar.features">features</a></code></li>
+<li><code><a title="fontai.io.records.LabeledChar.fontname" href="#fontai.io.records.LabeledChar.fontname">fontname</a></code></li>
+<li><code><a title="fontai.io.records.LabeledChar.label" href="#fontai.io.records.LabeledChar.label">label</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.records.LabeledFont" href="#fontai.io.records.LabeledFont">LabeledFont</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.LabeledFont.features" href="#fontai.io.records.LabeledFont.features">features</a></code></li>
+<li><code><a title="fontai.io.records.LabeledFont.fontname" href="#fontai.io.records.LabeledFont.fontname">fontname</a></code></li>
+<li><code><a title="fontai.io.records.LabeledFont.label" href="#fontai.io.records.LabeledFont.label">label</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.records.ModelWithAnyType" href="#fontai.io.records.ModelWithAnyType">ModelWithAnyType</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.ModelWithAnyType.Config" href="#fontai.io.records.ModelWithAnyType.Config">Config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.records.ScoredRecordFactory" href="#fontai.io.records.ScoredRecordFactory">ScoredRecordFactory</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create" href="#fontai.io.records.ScoredRecordFactory.create">create</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord">ScoredRecordFactory.create.<locals>.ScoredRecord</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.filter_charset_for_scoring" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.filter_charset_for_scoring">filter_charset_for_scoring</a></code></li>
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.from_parsed_bytes_dict" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.from_parsed_bytes_dict">from_parsed_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.from_scored_batch" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.from_scored_batch">from_scored_batch</a></code></li>
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.get_training_parser" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.get_training_parser">get_training_parser</a></code></li>
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.parse_bytes_dict" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.parse_bytes_dict">parse_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.record_type" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.record_type">record_type</a></code></li>
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.to_bytes_dict" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.to_bytes_dict">to_bytes_dict</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord">ScoredRecordFactory.create.<locals>.ScoredRecord</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.record_type" href="#fontai.io.records.ScoredRecordFactory.create.<locals>.ScoredRecord.record_type">record_type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.records.TfrWritable" href="#fontai.io.records.TfrWritable">TfrWritable</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.records.TfrWritable.add_score" href="#fontai.io.records.TfrWritable.add_score">add_score</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.array_to_bytes" href="#fontai.io.records.TfrWritable.array_to_bytes">array_to_bytes</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.bytes_feature" href="#fontai.io.records.TfrWritable.bytes_feature">bytes_feature</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.filter_charset_for_scoring" href="#fontai.io.records.TfrWritable.filter_charset_for_scoring">filter_charset_for_scoring</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_parsed_bytes_dict" href="#fontai.io.records.TfrWritable.from_parsed_bytes_dict">from_parsed_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_scored_batch" href="#fontai.io.records.TfrWritable.from_scored_batch">from_scored_batch</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.from_tf_example" href="#fontai.io.records.TfrWritable.from_tf_example">from_tf_example</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.get_training_parser" href="#fontai.io.records.TfrWritable.get_training_parser">get_training_parser</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.img_to_png_bytes" href="#fontai.io.records.TfrWritable.img_to_png_bytes">img_to_png_bytes</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.parse_bytes_dict" href="#fontai.io.records.TfrWritable.parse_bytes_dict">parse_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.tensor_to_numpy" href="#fontai.io.records.TfrWritable.tensor_to_numpy">tensor_to_numpy</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_bytes_dict" href="#fontai.io.records.TfrWritable.to_bytes_dict">to_bytes_dict</a></code></li>
+<li><code><a title="fontai.io.records.TfrWritable.to_tf_example" href="#fontai.io.records.TfrWritable.to_tf_example">to_tf_example</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

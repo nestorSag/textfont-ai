@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>fontai.io.scrappers API documentation</title>
+<meta name="description" content="This module contains logic that was used to scrape three font file sources: google, 1001fonts.com and dafont.com. As of May 2021 at least one of those …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>fontai.io.scrappers</code></h1>
+</header>
+<section id="section-intro">
+<p>This module contains logic that was used to scrape three font file sources: google, 1001fonts.com and dafont.com. As of May 2021 at least one of those sites have changed their url sources and so, some of these classes might not work anymore, and some work might be required to scrape the files again.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;This module contains logic that was used to scrape three font file sources: google, 1001fonts.com and dafont.com. As of May 2021 at least one of those sites have changed their url sources and so, some of these classes might not work anymore, and some work might be required to scrape the files again.
+
+&#34;&#34;&#34;
+import time
+import requests 
+import re
+import random
+import typing as t
+from abc import ABC, abstractmethod
+import urllib.request
+import logging
+from pathlib import Path
+
+from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
+
+__all__ = [
+ &#34;FreeFontsFileScrapper&#34;,
+ &#34;DafontsFileScrapper&#34;,
+ &#34;GoogleFontsScrapper&#34;]
+ 
+class Scrapper(ABC):
+
+  &#34;&#34;&#34;Interface implemented by web scrapper classes. Contains a single method, get_source_urls.
+  &#34;&#34;&#34;
+
+  @abstractmethod
+  def get_source_urls(self) -&gt; t.Generator[str, None, None]:
+    &#34;&#34;&#34;Returns a generator of string objects pointing to each scrappable URL
+
+    &#34;&#34;&#34;
+    pass
+
+class GoogleFontsScrapper(Scrapper):
+
+  &#34;&#34;&#34;Retrieves the main zip file from Google fonts repository
+  &#34;&#34;&#34;
+  
+  def get_source_urls(self):
+    yield &#34;https://github.com/google/fonts/archive/main.zip&#34;
+
+
+class FreeFontsFileScrapper(Scrapper):
+
+  &#34;&#34;&#34;Retrieves font files from www.1001freefonts.com
+  
+  &#34;&#34;&#34;
+  
+  def __init__(self):
+    self.min_id = 0
+    self.max_id = 27000
+
+  def get_source_urls(self):
+    
+    for font_id in range(self.min_id,self.max_id):
+      font_url = f&#34;https://www.1001freefonts.com/d/{font_id}/&#34;
+      yield font_url
+
+
+class DafontsFileScrapper(Scrapper):
+  &#34;&#34;&#34;
+    Retrieves font files from www.dafont.com
+
+  &#34;&#34;&#34;
+  def __init__(self):
+    super().__init__(&#34;www.dafont.com&#34;)
+
+
+  def get_source_urls(self):
+    my_ua = &#34;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36&#34;
+    for letter in &#34;ABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;:
+      # parse html of first letter page
+      letter_page_url = &#34;https://www.dafont.com/alpha.php?lettre={l}&amp;page=1&amp;fpp=200&#34;.format(l=letter.lower())
+
+      raw_html = requests.get(letter_page_url,headers = {&#34;user-agent&#34;: my_ua}).text
+      page_html = BeautifulSoup(raw_html,&#34;html.parser&#34;)
+      ## find number of letter pages
+      letter_pages = page_html.find(class_=&#34;noindex&#34;).find_all(&#34;a&#34;)
+      page_refs = [page[&#34;href&#34;] for page in letter_pages]
+      # get number of pages for current letter
+      n_pages_rgx = re.compile(&#34;page=([0-9]+)&#34;)
+      try:
+      # if this happens, there is a single page
+        n_pages = max([int(n_pages_rgx.search(x).group(1)) for x in page_refs])
+      except Exception as e:
+        logger.exception(&#34;an error occured while scrapping website (there mya be a single scrappable link) {e}&#34;.format(e=e))
+        n_pages = 1
+      for page_number in range(1,n_pages+1):
+        page = &#34;alpha.php?lettre={l}&amp;page={k}&amp;fpp=200&#34;.format(l=letter.lower(),k=page_number)
+        if not ((letter == &#34;A&#34; and page_number in list(range(1,11)) + [20]) or (letter == &#34;B&#34; and page_number in list(range(1,11)) + [24])):
+          logger.info(&#34;downloading page {p}&#34;.format(p=page))
+          page_url = &#34;https://www.dafont.com/&#34; + page.replace(&#34;&amp;amp;&#34;,&#34;&#34;)
+
+          raw_html = requests.get(page_url,headers = {&#34;user-agent&#34;: my_ua}).text
+          #print(&#34;raw_html: {x}&#34;.format(x=raw_html))
+          page_html = BeautifulSoup(raw_html,&#34;html.parser&#34;)
+          dl_links = page_html.findAll(&#34;a&#34;,{&#34;class&#34;: &#34;dl&#34;})
+
+          #print(&#34;dl_links {d}&#34;.format(d=dl_links))
+          for link in dl_links:
+            href = link[&#34;href&#34;]
+            # random sleep time 
+            time.sleep(random.uniform(1,2))
+            yield &#34;https:&#34; + href
+
+
+class LocalScrapper(Scrapper):
+
+  &#34;&#34;&#34;
+  Scrapper simulator from local files
+  
+  Attributes:
+      folders (str): Source folder
+  &#34;&#34;&#34;
+  def __init__(self, folder: str):
+    self.folder = folder
+
+  def get_source_urls(self):
+
+    current = Path(self.folder)
+    for file in current.iterdir():
+      if file.is_file():
+        yield str(file)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="fontai.io.scrappers.DafontsFileScrapper"><code class="flex name class">
+<span>class <span class="ident">DafontsFileScrapper</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves font files from www.dafont.com</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DafontsFileScrapper(Scrapper):
+  &#34;&#34;&#34;
+    Retrieves font files from www.dafont.com
+
+  &#34;&#34;&#34;
+  def __init__(self):
+    super().__init__(&#34;www.dafont.com&#34;)
+
+
+  def get_source_urls(self):
+    my_ua = &#34;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36&#34;
+    for letter in &#34;ABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;:
+      # parse html of first letter page
+      letter_page_url = &#34;https://www.dafont.com/alpha.php?lettre={l}&amp;page=1&amp;fpp=200&#34;.format(l=letter.lower())
+
+      raw_html = requests.get(letter_page_url,headers = {&#34;user-agent&#34;: my_ua}).text
+      page_html = BeautifulSoup(raw_html,&#34;html.parser&#34;)
+      ## find number of letter pages
+      letter_pages = page_html.find(class_=&#34;noindex&#34;).find_all(&#34;a&#34;)
+      page_refs = [page[&#34;href&#34;] for page in letter_pages]
+      # get number of pages for current letter
+      n_pages_rgx = re.compile(&#34;page=([0-9]+)&#34;)
+      try:
+      # if this happens, there is a single page
+        n_pages = max([int(n_pages_rgx.search(x).group(1)) for x in page_refs])
+      except Exception as e:
+        logger.exception(&#34;an error occured while scrapping website (there mya be a single scrappable link) {e}&#34;.format(e=e))
+        n_pages = 1
+      for page_number in range(1,n_pages+1):
+        page = &#34;alpha.php?lettre={l}&amp;page={k}&amp;fpp=200&#34;.format(l=letter.lower(),k=page_number)
+        if not ((letter == &#34;A&#34; and page_number in list(range(1,11)) + [20]) or (letter == &#34;B&#34; and page_number in list(range(1,11)) + [24])):
+          logger.info(&#34;downloading page {p}&#34;.format(p=page))
+          page_url = &#34;https://www.dafont.com/&#34; + page.replace(&#34;&amp;amp;&#34;,&#34;&#34;)
+
+          raw_html = requests.get(page_url,headers = {&#34;user-agent&#34;: my_ua}).text
+          #print(&#34;raw_html: {x}&#34;.format(x=raw_html))
+          page_html = BeautifulSoup(raw_html,&#34;html.parser&#34;)
+          dl_links = page_html.findAll(&#34;a&#34;,{&#34;class&#34;: &#34;dl&#34;})
+
+          #print(&#34;dl_links {d}&#34;.format(d=dl_links))
+          for link in dl_links:
+            href = link[&#34;href&#34;]
+            # random sleep time 
+            time.sleep(random.uniform(1,2))
+            yield &#34;https:&#34; + href</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>fontai.io.scrappers.Scrapper</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.scrappers.DafontsFileScrapper.get_source_urls"><code class="name flex">
+<span>def <span class="ident">get_source_urls</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a generator of string objects pointing to each scrappable URL</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_source_urls(self):
+  my_ua = &#34;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36&#34;
+  for letter in &#34;ABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;:
+    # parse html of first letter page
+    letter_page_url = &#34;https://www.dafont.com/alpha.php?lettre={l}&amp;page=1&amp;fpp=200&#34;.format(l=letter.lower())
+
+    raw_html = requests.get(letter_page_url,headers = {&#34;user-agent&#34;: my_ua}).text
+    page_html = BeautifulSoup(raw_html,&#34;html.parser&#34;)
+    ## find number of letter pages
+    letter_pages = page_html.find(class_=&#34;noindex&#34;).find_all(&#34;a&#34;)
+    page_refs = [page[&#34;href&#34;] for page in letter_pages]
+    # get number of pages for current letter
+    n_pages_rgx = re.compile(&#34;page=([0-9]+)&#34;)
+    try:
+    # if this happens, there is a single page
+      n_pages = max([int(n_pages_rgx.search(x).group(1)) for x in page_refs])
+    except Exception as e:
+      logger.exception(&#34;an error occured while scrapping website (there mya be a single scrappable link) {e}&#34;.format(e=e))
+      n_pages = 1
+    for page_number in range(1,n_pages+1):
+      page = &#34;alpha.php?lettre={l}&amp;page={k}&amp;fpp=200&#34;.format(l=letter.lower(),k=page_number)
+      if not ((letter == &#34;A&#34; and page_number in list(range(1,11)) + [20]) or (letter == &#34;B&#34; and page_number in list(range(1,11)) + [24])):
+        logger.info(&#34;downloading page {p}&#34;.format(p=page))
+        page_url = &#34;https://www.dafont.com/&#34; + page.replace(&#34;&amp;amp;&#34;,&#34;&#34;)
+
+        raw_html = requests.get(page_url,headers = {&#34;user-agent&#34;: my_ua}).text
+        #print(&#34;raw_html: {x}&#34;.format(x=raw_html))
+        page_html = BeautifulSoup(raw_html,&#34;html.parser&#34;)
+        dl_links = page_html.findAll(&#34;a&#34;,{&#34;class&#34;: &#34;dl&#34;})
+
+        #print(&#34;dl_links {d}&#34;.format(d=dl_links))
+        for link in dl_links:
+          href = link[&#34;href&#34;]
+          # random sleep time 
+          time.sleep(random.uniform(1,2))
+          yield &#34;https:&#34; + href</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.scrappers.FreeFontsFileScrapper"><code class="flex name class">
+<span>class <span class="ident">FreeFontsFileScrapper</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves font files from www.1001freefonts.com</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FreeFontsFileScrapper(Scrapper):
+
+  &#34;&#34;&#34;Retrieves font files from www.1001freefonts.com
+  
+  &#34;&#34;&#34;
+  
+  def __init__(self):
+    self.min_id = 0
+    self.max_id = 27000
+
+  def get_source_urls(self):
+    
+    for font_id in range(self.min_id,self.max_id):
+      font_url = f&#34;https://www.1001freefonts.com/d/{font_id}/&#34;
+      yield font_url</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>fontai.io.scrappers.Scrapper</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.scrappers.FreeFontsFileScrapper.get_source_urls"><code class="name flex">
+<span>def <span class="ident">get_source_urls</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a generator of string objects pointing to each scrappable URL</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_source_urls(self):
+  
+  for font_id in range(self.min_id,self.max_id):
+    font_url = f&#34;https://www.1001freefonts.com/d/{font_id}/&#34;
+    yield font_url</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="fontai.io.scrappers.GoogleFontsScrapper"><code class="flex name class">
+<span>class <span class="ident">GoogleFontsScrapper</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the main zip file from Google fonts repository</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GoogleFontsScrapper(Scrapper):
+
+  &#34;&#34;&#34;Retrieves the main zip file from Google fonts repository
+  &#34;&#34;&#34;
+  
+  def get_source_urls(self):
+    yield &#34;https://github.com/google/fonts/archive/main.zip&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>fontai.io.scrappers.Scrapper</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="fontai.io.scrappers.GoogleFontsScrapper.get_source_urls"><code class="name flex">
+<span>def <span class="ident">get_source_urls</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a generator of string objects pointing to each scrappable URL</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_source_urls(self):
+  yield &#34;https://github.com/google/fonts/archive/main.zip&#34;</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="fontai.io" href="index.html">fontai.io</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="fontai.io.scrappers.DafontsFileScrapper" href="#fontai.io.scrappers.DafontsFileScrapper">DafontsFileScrapper</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.scrappers.DafontsFileScrapper.get_source_urls" href="#fontai.io.scrappers.DafontsFileScrapper.get_source_urls">get_source_urls</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.scrappers.FreeFontsFileScrapper" href="#fontai.io.scrappers.FreeFontsFileScrapper">FreeFontsFileScrapper</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.scrappers.FreeFontsFileScrapper.get_source_urls" href="#fontai.io.scrappers.FreeFontsFileScrapper.get_source_urls">get_source_urls</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="fontai.io.scrappers.GoogleFontsScrapper" href="#fontai.io.scrappers.GoogleFontsScrapper">GoogleFontsScrapper</a></code></h4>
+<ul class="">
+<li><code><a title="fontai.io.scrappers.GoogleFontsScrapper.get_source_urls" href="#fontai.io.scrappers.GoogleFontsScrapper.get_source_urls">get_source_urls</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
